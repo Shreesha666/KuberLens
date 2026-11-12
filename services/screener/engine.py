@@ -92,7 +92,7 @@ class ScreenerEngine:
         Returns matched records with human-readable reasons explaining why conditions passed.
         """
         listings = (
-            ExchangeListing.objects.filter(is_tradeable=True)
+            ExchangeListing.objects.filter(is_tradeable=True, is_primary=True)
             .select_related("instrument", "exchange")
             .order_by("symbol")
         )

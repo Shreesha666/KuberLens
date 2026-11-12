@@ -93,6 +93,9 @@ class SwingScannerView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
         context["page_obj"] = page_obj
         context["setups"] = page_obj.object_list
         context["setups_count"] = len(annotated_setups)
+        context["page_range"] = paginator.get_elided_page_range(
+            number=page_obj.number, on_each_side=2, on_ends=1
+        )
         context["strategy_choices"] = SwingStrategyType.choices
         context["selected_strategy"] = strat_filter
         context["selected_cap"] = cap_filter

@@ -195,56 +195,67 @@
 
     <!-- Pagination Bar -->
     {% if page_obj.paginator.num_pages > 1 %}
-    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mt-4 pt-3 border-top">
         <div class="small text-muted">
             Showing <strong>{{ page_obj.start_index }}</strong> to <strong>{{ page_obj.end_index }}</strong> of <strong>{{ setups_count }}</strong> setups (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
         </div>
-        <nav aria-label="Swing setups pagination">
-            <ul class="pagination pagination-sm mb-0">
+        <nav aria-label="Swing setups page navigation">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <!-- Previous Button -->
                 {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link"
-                       href="{% url 'trading:scanner' %}?page=1&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
-                       hx-get="{% url 'trading:scanner' %}?page=1&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
-                       hx-target="#main-content" hx-push-url="true">
-                        <i class="bi bi-chevron-double-left"></i>
-                    </a>
-                </li>
                 <li class="page-item">
                     <a class="page-link"
                        href="{% url 'trading:scanner' %}?page={{ page_obj.previous_page_number }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
                        hx-get="{% url 'trading:scanner' %}?page={{ page_obj.previous_page_number }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
-                       hx-target="#main-content" hx-push-url="true">
-                        Previous
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&laquo;</span>
+                </li>
                 {% endif %}
 
-                <li class="page-item active">
-                    <span class="page-link">{{ page_obj.number }}</span>
-                </li>
+                <!-- Numbered Page Items (with elision support) -->
+                {% for p in page_range %}
+                    {% if p == page_obj.paginator.ELLIPSIS or p == '…' %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&hellip;</span>
+                    </li>
+                    {% elif p == page_obj.number %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ p }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{% url 'trading:scanner' %}?page={{ p }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
+                           hx-get="{% url 'trading:scanner' %}?page={{ p }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
+                           hx-target="#main-content"
+                           hx-push-url="true">{{ p }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
 
+                <!-- Next Button -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link"
                        href="{% url 'trading:scanner' %}?page={{ page_obj.next_page_number }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
                        hx-get="{% url 'trading:scanner' %}?page={{ page_obj.next_page_number }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
-                       hx-target="#main-content" hx-push-url="true">
-                        Next
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link"
-                       href="{% url 'trading:scanner' %}?page={{ page_obj.paginator.num_pages }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
-                       hx-get="{% url 'trading:scanner' %}?page={{ page_obj.paginator.num_pages }}&strategy={{ selected_strategy }}&market_cap={{ selected_cap }}&min_rr={{ selected_min_rr }}&capital={{ trading_capital }}&risk_pct={{ risk_pct }}"
-                       hx-target="#main-content" hx-push-url="true">
-                        <i class="bi bi-chevron-double-right"></i>
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">Next</span></li>
+                <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&raquo;</span>
+                </li>
                 {% endif %}
             </ul>
         </nav>

@@ -1,0 +1,95 @@
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 fw-bold mb-1">User Preferences & Security</h2>
+            <p class="text-muted small mb-0">Manage account information, platform theme, and alert delivery channels.</p>
+        </div>
+        <span class="badge bg-secondary bg-opacity-25 text-secondary py-2 px-3">
+            <i class="bi bi-shield-lock me-1"></i> AES-256 Symmetric Encryption Active
+        </span>
+    </div>
+
+    {% if success_message %}
+    <div class="alert alert-success py-2 px-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ success_message }}</span>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="stat-card">
+                <h5 class="fw-semibold mb-3">Investor Profile</h5>
+                <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small">First Name</label>
+                            {{ user_form.first_name }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Last Name</label>
+                            {{ user_form.last_name }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Email Address</label>
+                        {{ user_form.email }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Phone Number</label>
+                        {{ user_form.phone_number }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small">Preferred Timezone</label>
+                        {{ user_form.preferred_timezone }}
+                    </div>
+                    <hr class="border-secondary border-opacity-25 my-4">
+                    <h5 class="fw-semibold mb-3">System Preferences</h5>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Dashboard Theme</label>
+                        {{ preference_form.theme }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Default Chart Interval</label>
+                        {{ preference_form.default_chart_interval }}
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        {{ preference_form.email_alerts_enabled }}
+                        <label class="form-check-label text-muted small" for="{{ preference_form.email_alerts_enabled.id_for_label }}">
+                            Enable Email Notifications
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        {{ preference_form.in_app_alerts_enabled }}
+                        <label class="form-check-label text-muted small" for="{{ preference_form.in_app_alerts_enabled.id_for_label }}">
+                            Enable In-App Notification Center
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="stat-card">
+                <h5 class="fw-semibold mb-3">Credential Security</h5>
+                <p class="text-muted small">
+                    Platform credentials (broker access tokens, AI provider keys) are encrypted using authenticated symmetric encryption (Fernet / AES-128-CBC with HMAC-SHA256).
+                </p>
+                <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary border-opacity-25 mb-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="small text-muted">Master Key Status</span>
+                        <span class="badge bg-success">Configured (Env Secret)</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <span class="small text-muted">Broker Integration</span>
+                        <span class="badge bg-secondary">Phase 10 Placeholder</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

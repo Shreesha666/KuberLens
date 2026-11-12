@@ -1,0 +1,43 @@
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 fw-bold mb-1">Market Overview</h2>
+            <p class="text-muted small mb-0">NSE & BSE Benchmark Indices, Sector Heatmap and Advance/Decline breadth.</p>
+        </div>
+        <span class="badge {{ data_freshness.css_class }} p-2">{{ data_freshness.label }}</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-md-6">
+            <div class="stat-card">
+                <h5 class="fw-semibold mb-3">Broad Market Indices</h5>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for item in market_ticker %}
+                    <li class="list-group-item bg-transparent text-white border-secondary border-opacity-25 d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <span class="fw-bold">{{ item.symbol }}</span>
+                            <span class="badge bg-secondary bg-opacity-25 text-muted ms-2">Index</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="num-mono fw-bold">{{ item.price }}</span>
+                            <div class="num-mono small {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}">
+                                {{ item.change }} ({{ item.change_percent }})
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="stat-card">
+                <h5 class="fw-semibold mb-3">Exchange Breadth & Activity</h5>
+                <p class="text-muted small">Advance/Decline metrics and sector participation will be populated once daily Bhavcopy ingestion is activated in Phase 2.</p>
+                <div class="alert alert-secondary bg-dark border-secondary text-secondary small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Phase 1 Foundation Active. Data pipelines decoupled via adapter interfaces.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

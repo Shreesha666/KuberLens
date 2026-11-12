@@ -1,0 +1,13 @@
+{% extends "base/shell.html" %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="display-1 text-secondary fw-bold mb-3">404</div>
+    <h3 class="fw-bold mb-2">Resource Not Found</h3>
+    <p class="text-muted mb-4">The financial instrument, analysis view, or page you requested could not be located.</p>
+    <a href="{% url 'dashboard:index' %}" class="btn btn-outline-primary"
+       hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
+        <i class="bi bi-house-door me-1"></i> Return to Dashboard
+    </a>
+</div>
+{% endblock %}

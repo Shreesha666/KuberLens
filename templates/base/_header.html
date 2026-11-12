@@ -1,0 +1,91 @@
+{% load static %}
+<header id="top-header" class="d-flex align-items-center justify-content-between">
+    <!-- Left: Brand Logo & Mobile Toggle -->
+    <div class="d-flex align-items-center gap-3">
+        <button id="mobile-sidebar-toggle" class="btn btn-outline-secondary btn-sm d-lg-none" type="button" aria-label="Toggle Navigation">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center gap-2 text-white"
+           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
+            <span class="fs-4 text-primary"><i class="bi bi-graph-up-arrow"></i></span>
+            <span class="fw-bold tracking-tight d-none d-sm-inline">INDIAN STOCK INTEL</span>
+        </a>
+    </div>
+
+    <!-- Center: Indices Ticker (Desktop) -->
+    <div class="d-none d-xl-flex align-items-center gap-4 bg-dark bg-opacity-50 px-3 py-1 rounded border border-secondary border-opacity-25">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge {% if market_status.is_open %}bg-success{% else %}bg-secondary{% endif %} rounded-circle p-1" style="width: 8px; height: 8px;"></span>
+            <span class="small text-muted fw-semibold">{{ market_status.exchange }}: {{ market_status.session_name }}</span>
+        </div>
+        <div class="vr my-1 text-secondary"></div>
+        {% for item in market_ticker %}
+        <div class="d-flex align-items-center gap-2 small">
+            <span class="text-muted fw-medium">{{ item.symbol }}</span>
+            <span class="fw-bold num-mono">{{ item.price }}</span>
+            <span class="num-mono {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}">
+                {% if item.is_positive %}&#9650;{% else %}&#9660;{% endif %} {{ item.change }} ({{ item.change_percent }})
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Right: Search, Data Freshness, Alerts, User Profile -->
+    <div class="d-flex align-items-center gap-3">
+        <!-- Global Search Placeholder -->
+        <div class="d-none d-md-block position-relative" style="width: 240px;">
+            <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary border-opacity-50 ps-4"
+                   placeholder="Search stock, ISIN..." aria-label="Global Search">
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted small"></i>
+        </div>
+
+        <!-- Data Freshness Indicator -->
+        <span class="badge {{ data_freshness.css_class }} d-none d-md-inline-flex align-items-center gap-1 py-1 px-2">
+            <i class="bi bi-shield-check"></i>
+            <span>{{ data_freshness.label }}</span>
+        </span>
+
+        <!-- Notifications Trigger -->
+        <button class="btn btn-outline-secondary btn-sm position-relative rounded-circle p-2" type="button" aria-label="Notifications"
+                hx-get="{% url 'dashboard:placeholder' 'notifications' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-bell"></i>
+            {% if unread_notifications_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ unread_notifications_count }}
+            </span>
+            {% endif %}
+        </button>
+
+        <!-- User Profile Menu -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle"></i>
+                <span class="d-none d-sm-inline">{% if user.is_authenticated %}{{ user.username }}{% else %}Guest{% endif %}</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
+                {% if user.is_authenticated %}
+                <li><h6 class="dropdown-header">Signed in as <strong>{{ user.username }}</strong></h6></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'accounts:profile' %}"
+                       hx-get="{% url 'accounts:profile' %}" hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-person-gear"></i> Preferences & Profile
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="{% url 'accounts:logout' %}">
+                        <i class="bi bi-box-arrow-right"></i> Sign Out
+                    </a>
+                </li>
+                {% else %}
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 text-primary" href="{% url 'accounts:login' %}">
+                        <i class="bi bi-box-arrow-in-right"></i> Sign In
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</header>

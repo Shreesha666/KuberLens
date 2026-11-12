@@ -1,0 +1,117 @@
+<aside id="sidebar">
+    <nav class="sidebar-nav">
+        <!-- OVERVIEW -->
+        <div class="nav-section-title">Overview</div>
+        <a href="{% url 'dashboard:index' %}" class="nav-link {% if active_nav == 'dashboard' %}active{% endif %}"
+           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'dashboard:market_overview' %}" class="nav-link {% if active_nav == 'market_overview' %}active{% endif %}"
+           hx-get="{% url 'dashboard:market_overview' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-globe2"></i> Market Overview
+        </a>
+
+        <!-- RESEARCH -->
+        <div class="nav-section-title">Research</div>
+        <a href="{% url 'dashboard:placeholder' 'stock_analysis' %}" class="nav-link {% if active_nav == 'stock_analysis' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'stock_analysis' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-search"></i> Stock Analysis
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'technical_analysis' %}" class="nav-link {% if active_nav == 'technical_analysis' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'technical_analysis' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-activity"></i> Technical Analysis
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'fundamental_analysis' %}" class="nav-link {% if active_nav == 'fundamental_analysis' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'fundamental_analysis' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-bar-chart-steps"></i> Fundamental Analysis
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'screener' %}" class="nav-link {% if active_nav == 'screener' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'screener' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-funnel"></i> Stock Screener
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'sector_analysis' %}" class="nav-link {% if active_nav == 'sector_analysis' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'sector_analysis' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-pie-chart"></i> Sector Analysis
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'news_events' %}" class="nav-link {% if active_nav == 'news_events' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'news_events' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-newspaper"></i> News & Events
+        </a>
+
+        <!-- MY INVESTMENTS -->
+        <div class="nav-section-title">My Investments</div>
+        <a href="{% url 'dashboard:placeholder' 'portfolio_overview' %}" class="nav-link {% if active_nav == 'portfolio_overview' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'portfolio_overview' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-wallet2"></i> Portfolio Overview
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'my_holdings' %}" class="nav-link {% if active_nav == 'my_holdings' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'my_holdings' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-collection"></i> My Holdings
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'watchlists' %}" class="nav-link {% if active_nav == 'watchlists' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'watchlists' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-star"></i> Watchlists
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'investment_journal' %}" class="nav-link {% if active_nav == 'investment_journal' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'investment_journal' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-journal-text"></i> Investment Journal
+        </a>
+
+        <!-- TRADING -->
+        <div class="nav-section-title">Trading</div>
+        <a href="{% url 'dashboard:placeholder' 'swing_trading' %}" class="nav-link {% if active_nav == 'swing_trading' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'swing_trading' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-lightning-charge"></i> Swing Trading
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'trading_signals' %}" class="nav-link {% if active_nav == 'trading_signals' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'trading_signals' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-broadcast"></i> Trading Signals
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'strategy_backtesting' %}" class="nav-link {% if active_nav == 'strategy_backtesting' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'strategy_backtesting' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-clock-history"></i> Strategy Backtesting
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'risk_management' %}" class="nav-link {% if active_nav == 'risk_management' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'risk_management' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-shield-exclamation"></i> Risk Management
+        </a>
+
+        <!-- INTELLIGENCE -->
+        <div class="nav-section-title">Intelligence</div>
+        <a href="{% url 'dashboard:placeholder' 'ai_stock_research' %}" class="nav-link {% if active_nav == 'ai_stock_research' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'ai_stock_research' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-robot"></i> AI Stock Research
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'ai_recommendations' %}" class="nav-link {% if active_nav == 'ai_recommendations' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'ai_recommendations' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-lightbulb"></i> AI Recommendations
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'ml_predictions' %}" class="nav-link {% if active_nav == 'ml_predictions' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'ml_predictions' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-cpu"></i> ML Predictions
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'alerts_notifications' %}" class="nav-link {% if active_nav == 'alerts_notifications' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'alerts_notifications' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-bell"></i> Alerts & Notifications
+        </a>
+
+        <!-- SYSTEM -->
+        <div class="nav-section-title">System</div>
+        <a href="{% url 'dashboard:placeholder' 'data_sources' %}" class="nav-link {% if active_nav == 'data_sources' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'data_sources' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-database-check"></i> Data Sources
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'broker_connections' %}" class="nav-link {% if active_nav == 'broker_connections' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'broker_connections' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-link-45deg"></i> Broker Connections
+        </a>
+        <a href="{% url 'dashboard:placeholder' 'reports' %}" class="nav-link {% if active_nav == 'reports' %}active{% endif %}"
+           hx-get="{% url 'dashboard:placeholder' 'reports' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-file-earmark-bar-graph"></i> Reports
+        </a>
+        <a href="{% url 'accounts:profile' %}" class="nav-link {% if active_nav == 'settings' %}active{% endif %}"
+           hx-get="{% url 'accounts:profile' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-gear"></i> Application Settings
+        </a>
+    </nav>
+</aside>

@@ -1,0 +1,110 @@
+import pytest
+from django.contrib.auth import get_user_model
+from django.test import Client
+from django.urls import reverse
+
+User = get_user_model()
+
+@pytest.mark.django_db
+def test_custom_user_creation():
+    user = User.objects.create_user(
+        username="investor1",
+        email="investor1@example.com",
+        password="TestPassword123!",
+        phone_number="+919876543210",
+        preferred_timezone="Asia/Kolkata",
+    )
+    assert user.pk is not None
+    assert str(user) == "investor1"
+    assert user.phone_number == "+919876543210"
+    
+    # Assert UserPreference was created automatically via signal
+    assert hasattr(user, "preference")
+    assert user.preference.theme == "dark"
+    assert user.preference.default_chart_interval == "1d"
+
+@pytest.mark.django_db
+def test_login_and_logout_flow():
+    client = Client()
+    User.objects.create_user(
+        username="trader1",
+        password="ValidPassword123!"
+    )
+
+    # 1. Access login page
+    login_url = reverse("accounts:login")
+    res_get = client.get(login_url)
+    assert res_get.status_code == 200
+    assert "accounts/login.html" in [t.name for t in res_get.templates]
+
+    # 2. Attempt login with invalid password
+    res_bad = client.post(login_url, {"username": "trader1", "password": "WrongPassword"})
+    assert res_bad.status_code == 200
+    assert not res_bad.context["user"].is_authenticated
+
+    # 3. Successful login
+    res_good = client.post(login_url, {"username": "trader1", "password": "ValidPassword123!"})
+    assert res_good.status_code == 302
+    assert res_good.url == reverse("dashboard:index")
+
+    # 4. Verify authenticated session
+    res_dash = client.get(reverse("dashboard:index"))
+    assert res_dash.status_code == 200
+    assert res_dash.context["user"].is_authenticated
+    assert res_dash.context["user"].username == "trader1"
+
+    # 5. Logout
+    res_logout = client.post(reverse("accounts:logout"))
+    assert res_logout.status_code == 302
+    assert res_logout.url == reverse("accounts:login")
+
+@pytest.mark.django_db
+def test_profile_and_preferences_view():
+    client = Client()
+    user = User.objects.create_user(
+        username="portfolio_mgr",
+        email="mgr@example.com",
+        password="ValidPassword123!"
+    )
+    client.force_login(user)
+
+    profile_url = reverse("accounts:profile")
+    res_get = client.get(profile_url)
+    assert res_get.status_code == 200
+
+    # Update profile & preferences
+    res_post = client.post(
+        profile_url,
+        {
+            "first_name": "Ramesh",
+            "last_name": "Sharma",
+            "email": "ramesh.sharma@example.com",
+            "phone_number": "+919999988888",
+            "preferred_timezone": "Asia/Kolkata",
+            "theme": "light",
+            "default_chart_interval": "1w",
+            "email_alerts_enabled": "on",
+            "in_app_alerts_enabled": "on",
+        }
+    )
+    assert res_post.status_code == 200
+    user.refresh_from_db()
+    assert user.first_name == "Ramesh"
+    assert user.preference.theme == "light"
+    assert user.preference.default_chart_interval == "1w"
+
+@pytest.mark.django_db
+def test_unauthenticated_profile_redirect():
+    client = Client()
+    res = client.get(reverse("accounts:profile"))
+    assert res.status_code == 302
+    assert "/accounts/login/" in res.url
+
+@pytest.mark.django_db
+def test_create_dev_user_command():
+    from io import StringIO
+    from django.core.management import call_command
+    out = StringIO()
+    call_command("create_dev_user", username="testadmin", password="TestPass@123", stdout=out)
+    assert "Successfully created development superuser 'testadmin'" in out.getvalue()
+    assert User.objects.filter(username="testadmin", is_superuser=True).exists()

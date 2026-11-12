@@ -1,0 +1,32 @@
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 fw-bold mb-1">{{ module_name }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-muted" hx-get="{% url 'dashboard:index' %}" hx-target="#main-content">Home</a></li>
+                    <li class="breadcrumb-item active text-white" aria-current="page">{{ module_name }}</li>
+                </ol>
+            </nav>
+        </div>
+        <span class="badge bg-secondary bg-opacity-50 text-secondary py-2 px-3">
+            <i class="bi bi-clock-history me-1"></i> Architecture Ready &bull; Scheduled Phase
+        </span>
+    </div>
+
+    <div class="stat-card text-center py-5">
+        <div class="display-6 text-primary mb-3">
+            <i class="bi bi-layers"></i>
+        </div>
+        <h4 class="fw-semibold mb-2">{{ module_name }} Module Shell</h4>
+        <p class="text-muted mx-auto" style="max-width: 560px;">
+            This module route is registered in the Django modular monolith and verified for dynamic HTMX swapping and direct browser access. Business logic will be activated in its designated implementation phase.
+        </p>
+        <div class="d-inline-flex gap-2 mt-2">
+            <a href="{% url 'dashboard:index' %}" class="btn btn-outline-primary btn-sm"
+               hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-arrow-left"></i> Return to Dashboard
+            </a>
+        </div>
+    </div>
+</div>

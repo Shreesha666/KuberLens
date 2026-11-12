@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.ai_analysis.views import AIRecommendationsView
 from apps.portfolio.views import InvestmentJournalListView
 from apps.stocks.views import SectorAnalysisView
 
@@ -13,5 +14,6 @@ urlpatterns = [
     path("market-overview/", MarketOverviewView.as_view(), name="market_overview"),
     path("modules/sector_analysis/", SectorAnalysisView.as_view(), name="sector_analysis_alias"),
     path("modules/investment_journal/", InvestmentJournalListView.as_view(), name="investment_journal_alias"),
+    path("modules/ai_recommendations/", AIRecommendationsView.as_view(), name="ai_recommendations_alias"),
     path("modules/<slug:module_name>/", ModulePlaceholderView.as_view(), name="placeholder"),
 ]

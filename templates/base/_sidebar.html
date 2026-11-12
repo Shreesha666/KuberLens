@@ -86,8 +86,8 @@
            hx-get="{% url 'ai_analysis:hub' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-robot"></i> AI Stock Research
         </a>
-        <a href="{% url 'dashboard:placeholder' 'ai_recommendations' %}" class="nav-link {% if active_nav == 'ai_recommendations' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'ai_recommendations' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'ai_analysis:recommendations' %}" class="nav-link {% if active_nav == 'ai_recommendations' %}active{% endif %}"
+           hx-get="{% url 'ai_analysis:recommendations' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-lightbulb"></i> AI Recommendations
         </a>
         <a href="{% url 'ml_engine:dashboard' %}" class="nav-link {% if active_nav == 'ml_predictions' %}active{% endif %}"

@@ -94,3 +94,45 @@ class TestAIViews:
         res = self.client.get(url)
         assert res.status_code == 302
         assert "/accounts/login/" in res.url
+
+    def test_ai_recommendations_full_shell_and_htmx(self):
+        url = reverse("ai_analysis:recommendations")
+
+        # Full page load
+        res = self.client.get(url)
+        assert res.status_code == 200
+        content = res.content.decode()
+        assert "<!DOCTYPE html>" in content
+        assert "AI Investment Recommendations" in content
+        assert "Guidance for Existing Holdings" in content
+        assert "Opportunities for Prospective Investors" in content
+
+        # HTMX partial load
+        htmx_res = self.client.get(url, HTTP_HX_REQUEST="true")
+        assert htmx_res.status_code == 200
+        htmx_content = htmx_res.content.decode()
+        assert "<!DOCTYPE html>" not in htmx_content
+        assert "AI Investment Recommendations" in htmx_content
+
+    def test_ai_recommendations_alias_url(self):
+        url = "/modules/ai_recommendations/"
+        res = self.client.get(url)
+        assert res.status_code == 200
+        content = res.content.decode()
+        assert "AI Investment Recommendations" in content
+        assert "AI Recommendations Module Shell" not in content
+
+    def test_ai_recommendations_filtering(self):
+        url = reverse("ai_analysis:recommendations")
+
+        # Filter by tab
+        res_tab = self.client.get(url, {"tab": "opportunities"})
+        assert res_tab.status_code == 200
+        content_tab = res_tab.content.decode()
+        assert "Opportunities for Prospective Investors" in content_tab
+
+        # Filter by search query
+        res_query = self.client.get(url, {"q": "INFY"})
+        assert res_query.status_code == 200
+        content_query = res_query.content.decode()
+        assert "INFY" in content_query

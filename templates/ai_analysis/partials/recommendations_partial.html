@@ -1,0 +1,352 @@
+{% load core_tags %}
+<div class="container-fluid p-0">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted"
+                           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">Intelligence</li>
+                    <li class="breadcrumb-item active text-body" aria-current="page">AI Recommendations</li>
+                </ol>
+            </nav>
+            <h2 class="h3 fw-bold mb-1">AI Investment Recommendations</h2>
+            <p class="text-muted small mb-0">Dual-perspective algorithmic guidance distinguishing capital preservation for existing holdings vs favorable risk/reward entries for prospective investors.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5"
+                    hx-get="{% url 'ai_analysis:recommendations' %}" hx-target="#main-content">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Analysis
+            </button>
+        </div>
+    </div>
+
+    <!-- Mandatory Regulatory Warning Banner -->
+    <div class="alert alert-warning border-0 d-flex align-items-start gap-2.5 p-3 mb-4 rounded-3" role="alert">
+        <i class="bi bi-shield-exclamation text-warning flex-shrink-0 mt-0.5 fs-5"></i>
+        <div class="small">
+            <strong class="d-block mb-0.5">Mandatory Regulatory Notice:</strong>
+            Algorithmic model opinions and dual-perspective recommendations are calculated strictly from historical statistical distributions, quantitative technical momentum, and published financial metrics. These models do not guarantee future returns and should not be construed as SEBI-registered individualized investment advisory.
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Portfolio Holdings</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0">{{ total_holdings_analyzed }}</h3>
+                <div class="mt-2 small text-muted">
+                    <span>Active Portfolio Positions</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Actions Required</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0 {% if actions_required_count > 0 %}text-warning{% endif %}">
+                    {{ actions_required_count }}
+                </h3>
+                <div class="mt-2 small text-muted">
+                    <span>Rebalance, Trim or Accumulate</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Favorable New Entries</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0 {% if favorable_entries_count > 0 %}text-success{% endif %}">
+                    {{ favorable_entries_count }}
+                </h3>
+                <div class="mt-2 small text-muted">
+                    <span>Prospective Setups with High R:R</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Capital Preservation</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0 {% if capital_alerts_count > 0 %}text-danger{% endif %}">
+                    {{ capital_alerts_count }}
+                </h3>
+                <div class="mt-2 small text-muted">
+                    <span>Exit or Invalidation Warnings</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Perspective Tabs & Filter Controls -->
+    <div class="card border mb-4">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center justify-content-between">
+                <!-- Tab Switching Pills -->
+                <div class="col-12 col-lg-auto">
+                    <ul class="nav nav-pills small gap-1">
+                        <li class="nav-item">
+                            <a class="nav-link py-1.5 px-3 {% if active_tab == 'all' %}active{% endif %}"
+                               href="{% url 'ai_analysis:recommendations' %}?tab=all{% if search_query %}&q={{ search_query }}{% endif %}{% if action_filter != 'all' %}&action={{ action_filter }}{% endif %}"
+                               hx-get="{% url 'ai_analysis:recommendations' %}?tab=all{% if search_query %}&q={{ search_query }}{% endif %}{% if action_filter != 'all' %}&action={{ action_filter }}{% endif %}"
+                               hx-target="#main-content" hx-push-url="true">
+                                <i class="bi bi-grid me-1"></i> All Guidance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1.5 px-3 {% if active_tab == 'holdings' %}active{% endif %}"
+                               href="{% url 'ai_analysis:recommendations' %}?tab=holdings{% if search_query %}&q={{ search_query }}{% endif %}{% if action_filter != 'all' %}&action={{ action_filter }}{% endif %}"
+                               hx-get="{% url 'ai_analysis:recommendations' %}?tab=holdings{% if search_query %}&q={{ search_query }}{% endif %}{% if action_filter != 'all' %}&action={{ action_filter }}{% endif %}"
+                               hx-target="#main-content" hx-push-url="true">
+                                <i class="bi bi-briefcase me-1"></i> Existing Holdings ({{ total_holdings_analyzed }})
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1.5 px-3 {% if active_tab == 'opportunities' %}active{% endif %}"
+                               href="{% url 'ai_analysis:recommendations' %}?tab=opportunities{% if search_query %}&q={{ search_query }}{% endif %}{% if action_filter != 'all' %}&action={{ action_filter }}{% endif %}"
+                               hx-get="{% url 'ai_analysis:recommendations' %}?tab=opportunities{% if search_query %}&q={{ search_query }}{% endif %}{% if action_filter != 'all' %}&action={{ action_filter }}{% endif %}"
+                               hx-target="#main-content" hx-push-url="true">
+                                <i class="bi bi-bullseye me-1"></i> New Opportunities ({{ prospective_evaluations|length }})
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Live Search and Action Filters -->
+                <div class="col-12 col-lg-auto">
+                    <form method="get" action="{% url 'ai_analysis:recommendations' %}" class="d-flex flex-wrap gap-2 align-items-center"
+                          hx-get="{% url 'ai_analysis:recommendations' %}" hx-target="#main-content" hx-push-url="true">
+                        <input type="hidden" name="tab" value="{{ active_tab }}">
+                        
+                        <div class="input-group input-group-sm" style="width: 200px;">
+                            <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0"
+                                   placeholder="Filter stock..."
+                                   hx-get="{% url 'ai_analysis:recommendations' %}"
+                                   hx-trigger="keyup changed delay:350ms"
+                                   hx-target="#main-content"
+                                   hx-include="[name='tab'], [name='action']">
+                        </div>
+
+                        <select name="action" class="form-select form-select-sm" style="width: 180px;"
+                                hx-get="{% url 'ai_analysis:recommendations' %}"
+                                hx-trigger="change"
+                                hx-target="#main-content"
+                                hx-include="[name='tab'], [name='q']">
+                            <option value="all" {% if action_filter == 'all' %}selected{% endif %}>All Actions &amp; States</option>
+                            <option value="actions_required" {% if action_filter == 'actions_required' %}selected{% endif %}>Actions Required Only</option>
+                            <option value="accumulate" {% if action_filter == 'accumulate' %}selected{% endif %}>Add / Accumulate</option>
+                            <option value="profit_booking" {% if action_filter == 'profit_booking' %}selected{% endif %}>Profit Booking</option>
+                            <option value="reduce_exit" {% if action_filter == 'reduce_exit' %}selected{% endif %}>Reduce / Exit</option>
+                            <option value="hold" {% if action_filter == 'hold' %}selected{% endif %}>Hold / Tighten Stop</option>
+                            <option value="favorable" {% if action_filter == 'favorable' %}selected{% endif %}>Favorable Entry (New)</option>
+                            <option value="pullback" {% if action_filter == 'pullback' %}selected{% endif %}>Wait for Pullback (New)</option>
+                        </select>
+
+                        {% if search_query or action_filter != 'all' %}
+                        <a href="{% url 'ai_analysis:recommendations' %}?tab={{ active_tab }}"
+                           class="btn btn-sm btn-outline-secondary"
+                           hx-get="{% url 'ai_analysis:recommendations' %}?tab={{ active_tab }}"
+                           hx-target="#main-content">
+                            Clear
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Guidance for Existing Portfolio Holdings -->
+    {% if active_tab == 'all' or active_tab == 'holdings' %}
+    <div class="card border mb-4">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-briefcase text-primary"></i> Guidance for Existing Holdings
+                </h5>
+                <span class="text-muted small">Position management, capital preservation, allocation caps, and anti-averaging down rules.</span>
+            </div>
+            <span class="badge bg-secondary-subtle text-secondary small">{{ holdings_evaluations|length }} Holdings Shown</span>
+        </div>
+        <div class="card-body p-0">
+            {% if holdings_evaluations %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-muted">
+                        <tr>
+                            <th class="ps-3">Stock / Holding</th>
+                            <th class="text-end">Allocation %</th>
+                            <th class="text-end">Avg vs CMP</th>
+                            <th class="text-end">Unrealised P&amp;L</th>
+                            <th class="text-center">Action Guidance</th>
+                            <th>Strategic Rationale &amp; Invalidation</th>
+                            <th class="text-end pe-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for h in holdings_evaluations %}
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{% url 'stocks:stock_detail' h.listing.symbol %}" class="fw-bold text-decoration-none text-body"
+                                   hx-get="{% url 'stocks:stock_detail' h.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                    {{ h.listing.symbol }}
+                                </a>
+                                <div class="text-muted extra-small">{{ h.listing.instrument.display_name|truncatechars:24 }}</div>
+                                <span class="badge bg-light text-muted border extra-small mt-0.5">{{ h.listing.instrument.sector|default:"General" }}</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="fw-semibold num-mono">{{ h.rec.allocation_pct }}%</div>
+                                <div class="text-muted extra-small">{{ h.holding.current_value|format_inr }}</div>
+                            </td>
+                            <td class="text-end">
+                                <div class="num-mono">{{ h.holding.average_buy_price|format_inr }}</div>
+                                <div class="text-muted extra-small">CMP: {{ h.holding.current_price|format_inr }}</div>
+                            </td>
+                            <td class="text-end">
+                                <div class="fw-bold num-mono {{ h.rec.unrealised_pct|financial_color }}">
+                                    {% if h.rec.unrealised_pct > 0 %}+{% endif %}{{ h.rec.unrealised_pct }}%
+                                </div>
+                                <div class="extra-small {{ h.rec.unrealised_pnl|financial_color }}">
+                                    {{ h.rec.unrealised_pnl|format_inr }}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {{ h.badge_class }} px-2 py-1.5 fw-semibold text-nowrap">
+                                    {{ h.rec.action }}
+                                </span>
+                            </td>
+                            <td style="max-width: 380px;">
+                                <div class="mb-1 text-body">{{ h.rec.reasoning }}</div>
+                                <div class="text-muted extra-small">
+                                    <i class="bi bi-flag-fill me-1 text-secondary"></i><strong>Invalidation:</strong> {{ h.rec.invalidation_condition }}
+                                </div>
+                                {% if h.rec.warning %}
+                                <div class="alert alert-danger p-1.5 mt-1.5 mb-0 small border-0 rounded-2 d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-exclamation-octagon-fill text-danger flex-shrink-0"></i>
+                                    <span class="fw-semibold">{{ h.rec.warning }}</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'ai_analysis:hub' %}?symbol={{ h.listing.symbol }}"
+                                   class="btn btn-sm btn-outline-primary text-nowrap"
+                                   hx-get="{% url 'ai_analysis:hub' %}?symbol={{ h.listing.symbol }}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    <i class="bi bi-robot"></i> AI Hub
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-2 mb-2 d-block"></i>
+                <p class="mb-0">No holdings matching the current filter criteria.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Section 2: Guidance for New Prospective Investors -->
+    {% if active_tab == 'all' or active_tab == 'opportunities' %}
+    <div class="card border mb-4">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-bullseye text-success"></i> Opportunities for Prospective Investors
+                </h5>
+                <span class="text-muted small">Algorithmic entry zones, invalidation stop losses, profit targets, and structural risk-to-reward ratios.</span>
+            </div>
+            <span class="badge bg-secondary-subtle text-secondary small">{{ prospective_evaluations|length }} Opportunities Shown</span>
+        </div>
+        <div class="card-body p-0">
+            {% if prospective_evaluations %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-muted">
+                        <tr>
+                            <th class="ps-3">Stock / Asset</th>
+                            <th class="text-center">Status</th>
+                            <th>Entry Zone</th>
+                            <th>Stop Loss</th>
+                            <th>Target Levels</th>
+                            <th class="text-center">Risk / Reward</th>
+                            <th>Horizon &amp; Conditions</th>
+                            <th class="text-end pe-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for p in prospective_evaluations %}
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{% url 'stocks:stock_detail' p.listing.symbol %}" class="fw-bold text-decoration-none text-body"
+                                   hx-get="{% url 'stocks:stock_detail' p.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                    {{ p.listing.symbol }}
+                                </a>
+                                <div class="text-muted extra-small">{{ p.listing.instrument.display_name|truncatechars:24 }}</div>
+                                <div class="num-mono extra-small text-muted">
+                                    CMP: {% if p.quote %}{{ p.quote.price|format_inr }}{% else %}-{% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {{ p.badge_class }} px-2 py-1.5 fw-semibold text-nowrap">
+                                    {{ p.rec.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="fw-semibold num-mono text-body">{{ p.rec.entry_zone }}</span>
+                            </td>
+                            <td>
+                                <span class="num-mono text-danger fw-semibold">{{ p.rec.stop_loss }}</span>
+                            </td>
+                            <td>
+                                <div class="num-mono text-success fw-semibold">
+                                    {% for tgt in p.rec.target_levels %}
+                                    <span class="me-1">{{ tgt }}{% if not forloop.last %},{% endif %}</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border num-mono fw-semibold">
+                                    {{ p.rec.risk_reward }}
+                                </span>
+                            </td>
+                            <td style="max-width: 320px;">
+                                <div class="fw-semibold extra-small text-muted mb-0.5">{{ p.rec.suitable_horizon }}</div>
+                                <ul class="list-unstyled mb-0 extra-small text-muted">
+                                    {% for cond in p.rec.conditions|slice:":2" %}
+                                    <li class="d-flex align-items-start gap-1">
+                                        <i class="bi bi-check2 text-primary mt-0.5"></i>
+                                        <span>{{ cond }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'stocks:stock_detail' p.listing.symbol %}"
+                                   class="btn btn-sm btn-outline-secondary text-nowrap"
+                                   hx-get="{% url 'stocks:stock_detail' p.listing.symbol %}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    <i class="bi bi-graph-up"></i> Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-2 mb-2 d-block"></i>
+                <p class="mb-0">No prospective opportunities matching the current filter criteria.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>

@@ -40,12 +40,12 @@
 
         <!-- MY INVESTMENTS -->
         <div class="nav-section-title">My Investments</div>
-        <a href="{% url 'dashboard:placeholder' 'portfolio_overview' %}" class="nav-link {% if active_nav == 'portfolio_overview' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'portfolio_overview' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'portfolio:overview' %}" class="nav-link {% if active_nav == 'portfolio_overview' %}active{% endif %}"
+           hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-wallet2"></i> Portfolio Overview
         </a>
-        <a href="{% url 'dashboard:placeholder' 'my_holdings' %}" class="nav-link {% if active_nav == 'my_holdings' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'my_holdings' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'holdings:list' %}" class="nav-link {% if active_nav == 'my_holdings' %}active{% endif %}"
+           hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-collection"></i> My Holdings
         </a>
         <a href="{% url 'dashboard:placeholder' 'watchlists' %}" class="nav-link {% if active_nav == 'watchlists' %}active{% endif %}"

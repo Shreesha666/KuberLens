@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform  
 **Document Purpose:** Living tracker of modules, phases, and components  
 **Last Updated:** 2026-11-12  
-**Current Overall State:** Phase 3 Completed & Validated &bull; Ready for Phase 4 Approval
+**Current Overall State:** Phase 4 Completed & Validated &bull; Ready for Phase 5 Approval
 
 ---
 
@@ -26,7 +26,7 @@
 | **Phase 1** | Django Foundation, Ops & Dynamic UI Shell | 🟢 **COMPLETED** | 2026-11-12 | Django 5.1, CustomUser (UUID), `django-htmx`, Shell, Light Theme default |
 | **Phase 2** | Market Data Providers & Historical Storage | 🟢 **COMPLETED** | 2026-11-12 | Jugaad-Data & Yahoo adapters, ExchangeCalendar, MarketDataService, 43 tests passing |
 | **Phase 3** | Instruments & Stock Research Engine | 🟢 **COMPLETED** | 2026-11-12 | Autocomplete search, Stock profiles, Canvas candlestick chart, Technical & Fundamental engines, 63 tests passing |
-| **Phase 4** | Portfolio & Holdings Analysis | ⚪ **NOT STARTED** | Follows Phase 3 | Awaiting approval. Immutable ledger, FIFO lot matching, Capital charges, Corporate actions |
+| **Phase 4** | Portfolio & Holdings Analysis | 🟢 **COMPLETED** | 2026-11-12 | Immutable ledger, FIFO lot matching, Capital charges, Corporate actions, Dual recommendations, 80 tests passing |
 | **Phase 5** | Screener & Watchlists | ⚪ **NOT STARTED** | Follows Phase 4 | Multi-variable scanner over pre-calculated snapshots, Custom user lists |
 | **Phase 6** | Swing Trading & Risk Management | ⚪ **NOT STARTED** | Follows Phase 5 | 1-8 week setups, position sizing engine, Trade Journal |
 | **Phase 7** | AI Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 6 | Investor, Swing, and Risk AI agents consuming structured data with prompt versions |
@@ -50,8 +50,8 @@
 | `stocks` | Stock profiles, search autocomplete, quotes, historical charts | 🟢 **COMPLETED** | `StockSearchView` (HTMX instant dropdown), `StockListView` (Directory & filters), `StockDetailView` (Full research profile), `StockChartDataView` (JSON chart API), `seed_stock_research` command |
 | `technical_analysis` | SMA, EMA, RSI, MACD, Bollinger, Snapshots with calculation version | 🟢 **COMPLETED** | `TechnicalIndicatorSnapshot` (with compound constraints), `TechnicalOverviewView` (`/research/technical/`), Celery calculation tasks |
 | `fundamental_analysis` | P/E, P/B, ROE, ROCE, Debt/Equity, Snapshots with calculation version | 🟢 **COMPLETED** | `FundamentalSnapshot` (with multi-factor scores), `FundamentalOverviewView` (`/research/fundamental/`) |
-| `portfolio` | Portfolio container, cash balances, asset allocation, sector exposure | ⚪ **NOT STARTED** | Phase 4 Scope |
-| `holdings` | Transaction ledger (source of truth), FIFO lot matcher, derived holding | ⚪ **NOT STARTED** | Phase 4 Scope |
+| `portfolio` | Portfolio container, cash balances, asset allocation, sector exposure | 🟢 **COMPLETED** | `Portfolio` model, `PortfolioOverviewView` (`/portfolio/`), net worth, sector distribution, concentration risk alerts, `seed_portfolio` command |
+| `holdings` | Transaction ledger (source of truth), FIFO lot matcher, derived holding | 🟢 **COMPLETED** | `HoldingTransaction` (immutable ledger with reversals), `Holding` (derived snapshot), `LotAllocation` (closed lots audit trail), `HoldingListView` (`/portfolio/holdings/`), `HoldingDetailView` (`/portfolio/holdings/<symbol>/`), `HoldingTransactionCreateView` |
 | `trading` | Swing trade setups, risk management, trade journal, log entries | ⚪ **NOT STARTED** | Phase 6 Scope |
 | `screener` | Multi-filter screening engine over snapshots, saved screening queries | ⚪ **NOT STARTED** | Phase 5 Scope |
 | `watchlists` | User-defined watchlists, quick quote monitoring | ⚪ **NOT STARTED** | Phase 5 Scope |
@@ -66,10 +66,12 @@
 
 ---
 
-## 4. Analytical Engines & Architecture (Phase 3 Deliverables)
+## 4. Analytical Engines & Architecture (Phase 4 Deliverables)
 
 | Component | Path | Status | Details |
 |---|---|:---:|---|
+| **FIFO Accounting Engine** | `services/portfolio/accounting.py` | 🟢 **COMPLETED** | Deterministic FIFO lot queue matching, buy fee capitalization, sell fee deduction, corporate action proportional redistribution (Bonus/Split/Cost Adjustment), reversal processing, and position state derivation |
+| **Dual Recommendation Evaluator** | `services/recommendations/evaluator.py` | 🟢 **COMPLETED** | Evaluates distinct perspectives: Existing Holder (Capital preservation, trim, accumulate, stop loss, anti-averaging down check) vs New Investor (Entry zone, stop loss, targets, risk/reward) |
 | **Technical Indicator Engine** | `services/indicators/calculator.py` | 🟢 **COMPLETED** | Trend (SMA 20/50/100/200, EMA 9/20/50, MACD), Momentum (Wilder's RSI 14, Stoch RSI), Volatility (Bollinger Bands, ATR 14), Volume (VolSMA20, OBV), Signals |
 | **Fundamental Analyzer Engine** | `services/fundamentals/analyzer.py` | 🟢 **COMPLETED** | 5-Factor scoring (Growth, Profitability, Solvency, Valuation, Ownership), Sector-relative P/E, Dynamic positive & risk drivers |
 | **Interactive Canvas Chart** | `static/js/charting.js` | 🟢 **COMPLETED** | Standalone HTML5 Canvas candlestick and volume chart with SMA 20/50 overlays, crosshair, and hover tooltips (zero external CDN dependency) |
@@ -90,7 +92,10 @@
 | **Fundamental Analysis & Multi-Factor Scoring** | `tests/test_fundamentals.py` | 3 | 🟢 PASSED | 98% |
 | **Stocks Autocomplete & Research Profiles** | `tests/test_stocks.py` | 7 | 🟢 PASSED | 87% |
 | **Research Hubs & Background Tasks** | `tests/test_research_views.py` | 5 | 🟢 PASSED | 91% |
-| **TOTAL** | — | **63** | **63 / 63 PASSED** | **87% Overall** |
+| **FIFO Accounting & Corporate Actions** | `tests/test_portfolio_accounting.py` | 6 | 🟢 PASSED | 85% |
+| **Dual Recommendation Evaluator** | `tests/test_recommendations.py` | 5 | 🟢 PASSED | 82% |
+| **Portfolio & Holdings Views & HTMX** | `tests/test_portfolio_views.py` | 6 | 🟢 PASSED | 95% |
+| **TOTAL** | — | **80** | **80 / 80 PASSED** | **87% Overall** |
 
 ---
 
@@ -98,4 +103,4 @@
 
 | ID | Date Logged | Description | Severity | Mitigation / Resolution |
 |---|---|---|:---:|---|
-| *None* | 2026-11-12 | Phase 3 execution successfully completed and verified. | Low | Ready to begin Phase 4 upon user approval. |
+| *None* | 2026-11-12 | Phase 4 execution successfully completed and verified. | Low | Ready to begin Phase 5 upon user approval. |

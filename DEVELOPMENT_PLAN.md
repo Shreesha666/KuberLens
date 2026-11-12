@@ -158,6 +158,7 @@ Before writing application code, the environment and workspace scaffolding must 
 
 ### Phase 4: Portfolio Accounting: Immutable Ledger & FIFO Lot Matching
 
+- **Status:** 🟢 **COMPLETED (2026-11-12)** &bull; 80 tests passing (87% overall coverage)
 - **Objective:** Build multi-portfolio tracking where immutable transaction records serve as the single source of truth, implementing FIFO lot matching for partial sales, capital charges allocation, adjustment/reversal entries, corporate actions handling, and automated reconciliation tests.
 - **Django Apps Involved:** `portfolio`, `holdings`, `stocks`, `news`
 - **Files to Create or Modify:**

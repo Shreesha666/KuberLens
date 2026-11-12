@@ -59,7 +59,40 @@ body {
     z-index: 1030;
     display: flex;
     align-items: center;
+    padding: 0;
+}
+
+.header-brand-box {
+    width: var(--sidebar-width);
+    height: 100%;
     padding: 0 1.25rem;
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-surface);
+}
+
+.header-main-bar {
+    flex-grow: 1;
+    height: 100%;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+    .header-brand-box {
+        width: auto;
+        border-right: none;
+        padding: 0 1rem;
+    }
+    .header-main-bar {
+        padding: 0 1rem;
+    }
 }
 
 /* Sidebar */

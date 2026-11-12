@@ -4,8 +4,14 @@ def shell_context(request):
     Supplies context variables required by the persistent HTML application shell
     (Header, Ticker, Data Freshness status, and Navigation categories).
     """
+    current_theme = "light"
+    if hasattr(request, "user") and request.user.is_authenticated:
+        pref = getattr(request.user, "preference", None) or request.user.get_preference()
+        current_theme = pref.theme
+
     return {
         "platform_title": "Indian Stock Intelligence",
+        "current_theme": current_theme,
         "market_status": {
             "is_open": False,
             "session_name": "Post-Market",

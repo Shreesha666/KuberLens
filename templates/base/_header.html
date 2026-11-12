@@ -5,7 +5,7 @@
         <button id="mobile-sidebar-toggle" class="btn btn-outline-secondary btn-sm d-lg-none" type="button" aria-label="Toggle Navigation">
             <i class="bi bi-list fs-5"></i>
         </button>
-        <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center gap-2 text-white"
+        <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center gap-2 text-body"
            hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
             <span class="fs-4 text-primary"><i class="bi bi-graph-up-arrow"></i></span>
             <span class="fw-bold tracking-tight d-none d-sm-inline">INDIAN STOCK INTEL</span>
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Center: Indices Ticker (Desktop) -->
-    <div class="d-none d-xl-flex align-items-center gap-4 bg-dark bg-opacity-50 px-3 py-1 rounded border border-secondary border-opacity-25">
+    <div class="d-none d-xl-flex align-items-center gap-4 bg-body-tertiary px-3 py-1 rounded border border-secondary border-opacity-25">
         <div class="d-flex align-items-center gap-2">
             <span class="badge {% if market_status.is_open %}bg-success{% else %}bg-secondary{% endif %} rounded-circle p-1" style="width: 8px; height: 8px;"></span>
             <span class="small text-muted fw-semibold">{{ market_status.exchange }}: {{ market_status.session_name }}</span>
@@ -22,7 +22,7 @@
         {% for item in market_ticker %}
         <div class="d-flex align-items-center gap-2 small">
             <span class="text-muted fw-medium">{{ item.symbol }}</span>
-            <span class="fw-bold num-mono">{{ item.price }}</span>
+            <span class="fw-bold num-mono text-body">{{ item.price }}</span>
             <span class="num-mono {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}">
                 {% if item.is_positive %}&#9650;{% else %}&#9660;{% endif %} {{ item.change }} ({{ item.change_percent }})
             </span>
@@ -34,7 +34,7 @@
     <div class="d-flex align-items-center gap-3">
         <!-- Global Search Placeholder -->
         <div class="d-none d-md-block position-relative" style="width: 240px;">
-            <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary border-opacity-50 ps-4"
+            <input type="text" class="form-control form-control-sm bg-body-tertiary text-body border-secondary border-opacity-25 ps-4"
                    placeholder="Search stock, ISIN..." aria-label="Global Search">
             <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted small"></i>
         </div>
@@ -62,7 +62,7 @@
                 <i class="bi bi-person-circle"></i>
                 <span class="d-none d-sm-inline">{% if user.is_authenticated %}{{ user.username }}{% else %}Guest{% endif %}</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
+            <ul class="dropdown-menu dropdown-menu-end shadow border-secondary border-opacity-25">
                 {% if user.is_authenticated %}
                 <li><h6 class="dropdown-header">Signed in as <strong>{{ user.username }}</strong></h6></li>
                 <li><hr class="dropdown-divider"></li>
@@ -89,3 +89,4 @@
         </div>
     </div>
 </header>
+

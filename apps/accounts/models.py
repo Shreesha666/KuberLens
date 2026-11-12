@@ -30,8 +30,8 @@ class UserPreference(models.Model):
     Stores user preferences including theme and alerting preferences.
     """
     THEME_CHOICES = [
-        ("dark", "Financial Dark Theme"),
         ("light", "Clean Light Theme"),
+        ("dark", "Financial Dark Theme"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -40,7 +40,7 @@ class UserPreference(models.Model):
         on_delete=models.CASCADE,
         related_name="preference"
     )
-    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default="dark")
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default="light")
     default_chart_interval = models.CharField(max_length=10, default="1d")
     email_alerts_enabled = models.BooleanField(default=True)
     in_app_alerts_enabled = models.BooleanField(default=True)

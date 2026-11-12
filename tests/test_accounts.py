@@ -20,7 +20,7 @@ def test_custom_user_creation():
     
     # Assert UserPreference was created automatically via signal
     assert hasattr(user, "preference")
-    assert user.preference.theme == "dark"
+    assert user.preference.theme == "light"
     assert user.preference.default_chart_interval == "1d"
 
 @pytest.mark.django_db
@@ -81,7 +81,7 @@ def test_profile_and_preferences_view():
             "email": "ramesh.sharma@example.com",
             "phone_number": "+919999988888",
             "preferred_timezone": "Asia/Kolkata",
-            "theme": "light",
+            "theme": "dark",
             "default_chart_interval": "1w",
             "email_alerts_enabled": "on",
             "in_app_alerts_enabled": "on",
@@ -90,7 +90,7 @@ def test_profile_and_preferences_view():
     assert res_post.status_code == 200
     user.refresh_from_db()
     assert user.first_name == "Ramesh"
-    assert user.preference.theme == "light"
+    assert user.preference.theme == "dark"
     assert user.preference.default_chart_interval == "1w"
 
 @pytest.mark.django_db
@@ -103,6 +103,7 @@ def test_unauthenticated_profile_redirect():
 @pytest.mark.django_db
 def test_create_dev_user_command():
     from io import StringIO
+
     from django.core.management import call_command
     out = StringIO()
     call_command("create_dev_user", username="testadmin", password="TestPass@123", stdout=out)

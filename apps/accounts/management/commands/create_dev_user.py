@@ -33,3 +33,4 @@ class Command(BaseCommand):
                 f"Successfully created development superuser '{username}' with password '{password}'"
             )
         )
+

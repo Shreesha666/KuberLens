@@ -116,3 +116,4 @@ python manage.py check --deploy --settings=config.settings.production
 - **Phase 3:** Stock Research & Interactive Candlestick Charts
 - **Phase 4:** Portfolio Accounting (FIFO Lot Matching & Capital Charges)
 - **Phase 5:** Stock Screener & Custom Watchlists
+

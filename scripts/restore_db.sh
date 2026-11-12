@@ -27,3 +27,4 @@ if [[ "${DATABASE_URL:-}" =~ postgresql://([^:]+):([^@]+)@([^:]+):([0-9]+)/(.+) 
 else
     echo "Restoration for custom DB formats requires specific driver configuration."
 fi
+

@@ -26,3 +26,4 @@ else
         echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] SQLite snapshot saved to ${BACKUP_DIR}/db_${TIMESTAMP}.sqlite3"
     fi
 fi
+

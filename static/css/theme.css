@@ -1,5 +1,23 @@
-/* Financial Dashboard Custom Dark/Light Theme */
-:root {
+/* Financial Dashboard Theme - Light (Default) and Dark Support */
+:root, [data-bs-theme="light"] {
+    --bg-main: #f8fafc;        /* slate-50 */
+    --bg-surface: #ffffff;     /* pure white */
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;  /* slate-100 */
+    --border-color: #e2e8f0;    /* slate-200 */
+    --text-primary: #0f172a;    /* slate-900 */
+    --text-secondary: #475569;  /* slate-600 */
+    --text-muted: #64748b;      /* slate-500 */
+    --color-green: #059669;     /* emerald-600 */
+    --color-red: #dc2626;       /* red-600 */
+    --color-blue: #2563eb;      /* blue-600 */
+    --color-cyan: #0891b2;
+    --sidebar-width: 260px;
+    --header-height: 64px;
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+[data-bs-theme="dark"] {
     --bg-main: #0b0f19;
     --bg-surface: #111827;
     --bg-card: #1f2937;
@@ -12,8 +30,7 @@
     --color-red: #ef4444;
     --color-blue: #3b82f6;
     --color-cyan: #06b6d4;
-    --sidebar-width: 260px;
-    --header-height: 64px;
+    --card-shadow: none;
 }
 
 body {
@@ -104,13 +121,13 @@ body {
 }
 
 .sidebar-nav .nav-link:hover {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+    background-color: var(--bg-card-hover);
 }
 
 .sidebar-nav .nav-link.active {
-    color: #ffffff;
-    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--color-blue);
+    background-color: rgba(37, 99, 235, 0.08);
     border-left-color: var(--color-blue);
     font-weight: 600;
 }
@@ -121,34 +138,56 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 1.25rem;
-    transition: transform 0.15s, border-color 0.15s;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .stat-card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(37, 99, 235, 0.3);
 }
 
 /* Financial Indicators */
-.text-gain { color: var(--color-green) !important; }
-.text-loss { color: var(--color-red) !important; }
+.text-gain { color: var(--color-green) !important; font-weight: 600; }
+.text-loss { color: var(--color-red) !important; font-weight: 600; }
 
 /* Status Badges */
 .badge-soft-success {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+.badge-soft-warning {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+.badge-soft-info {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+.badge-soft-danger {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+[data-bs-theme="dark"] .badge-soft-success {
     background-color: rgba(16, 185, 129, 0.15);
     color: #34d399;
     border: 1px solid rgba(16, 185, 129, 0.25);
 }
-.badge-soft-warning {
+[data-bs-theme="dark"] .badge-soft-warning {
     background-color: rgba(245, 158, 11, 0.15);
     color: #fbbf24;
     border: 1px solid rgba(245, 158, 11, 0.25);
 }
-.badge-soft-info {
+[data-bs-theme="dark"] .badge-soft-info {
     background-color: rgba(59, 130, 246, 0.15);
     color: #60a5fa;
     border: 1px solid rgba(59, 130, 246, 0.25);
 }
-.badge-soft-danger {
+[data-bs-theme="dark"] .badge-soft-danger {
     background-color: rgba(239, 68, 68, 0.15);
     color: #f87171;
     border: 1px solid rgba(239, 68, 68, 0.25);
@@ -161,7 +200,7 @@ body {
     left: 0;
     height: 3px;
     width: 0%;
-    background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+    background: linear-gradient(90deg, #2563eb, #0891b2, #059669);
     z-index: 2000;
     transition: width 0.25s ease;
 }

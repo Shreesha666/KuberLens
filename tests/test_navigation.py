@@ -12,6 +12,7 @@ def test_dashboard_direct_url_full_shell():
     
     # Assert persistent shell elements exist on direct load
     assert "<!DOCTYPE html>" in content
+    assert 'data-bs-theme="light"' in content
     assert 'id="top-header"' in content
     assert 'id="sidebar"' in content
     assert 'id="main-content"' in content

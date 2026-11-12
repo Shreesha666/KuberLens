@@ -13,3 +13,4 @@ urlpatterns = [
     path("core/", include("apps.core.urls", namespace="core")),
     path("", include("apps.dashboard.urls", namespace="dashboard")),
 ]
+

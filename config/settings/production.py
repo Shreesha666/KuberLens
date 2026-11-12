@@ -34,3 +34,4 @@ CACHES = {
         "LOCATION": env("REDIS_URL"),
     }
 }
+

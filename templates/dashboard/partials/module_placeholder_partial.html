@@ -5,7 +5,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 small">
                     <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-muted" hx-get="{% url 'dashboard:index' %}" hx-target="#main-content">Home</a></li>
-                    <li class="breadcrumb-item active text-white" aria-current="page">{{ module_name }}</li>
+                    <li class="breadcrumb-item active text-body" aria-current="page">{{ module_name }}</li>
                 </ol>
             </nav>
         </div>
@@ -30,3 +30,4 @@
         </div>
     </div>
 </div>
+

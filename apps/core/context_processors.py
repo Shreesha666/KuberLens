@@ -16,7 +16,7 @@ def shell_context(request):
             unread_notifs = 0
 
     return {
-        "platform_title": "Indian Stock Intelligence",
+        "platform_title": "KuberLens",
         "current_theme": current_theme,
         "market_status": {
             "is_open": False,

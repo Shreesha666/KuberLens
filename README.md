@@ -1,9 +1,9 @@
-# Indian Stock Market Research & Intelligence Platform
+# KuberLens — Indian Stock Market Research & Intelligence Platform
 
 [![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.1-success.svg)](https://www.djangoproject.com/)
 [![HTMX](https://img.shields.io/badge/UI-HTMX%20%2B%20Bootstrap%205-purple.svg)](https://htmx.org/)
-[![Tests](https://img.shields.io/badge/Tests-183%20Passed%20(100%25)-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-186%20Passed%20(100%25)-brightgreen.svg)](tests/)
 [![Code Style](https://img.shields.io/badge/Linter-Ruff%20Clean-black.svg)](https://github.com/astral-sh/ruff)
 [![Architecture](https://img.shields.io/badge/Architecture-Django%20Modular%20Monolith-orange.svg)](ARCHITECTURE.md)
 

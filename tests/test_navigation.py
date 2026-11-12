@@ -16,7 +16,7 @@ def test_dashboard_direct_url_full_shell():
     assert 'id="top-header"' in content
     assert 'id="sidebar"' in content
     assert 'id="main-content"' in content
-    assert "INDIAN STOCK INTEL" in content
+    assert "KuberLens" in content
     assert "NIFTY 50" in content
 
 @pytest.mark.django_db

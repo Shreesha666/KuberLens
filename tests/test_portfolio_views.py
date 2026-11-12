@@ -216,3 +216,49 @@ class TestPortfolioViews:
         resp = client.post(url, data={"csv_text": ""})
         assert resp.status_code == 200
         assert "Please provide CSV data" in resp.content.decode()
+
+    def test_investment_journal_list_view_and_htmx(self, view_setup):
+        client = view_setup["client"]
+        url = reverse("portfolio:investment_journal")
+
+        # Full page
+        resp_full = client.get(url)
+        assert resp_full.status_code == 200
+        content = resp_full.content.decode()
+        assert "Investment Journal" in content
+
+        # HTMX partial
+        resp_htmx = client.get(url, HTTP_HX_REQUEST="true")
+        assert resp_htmx.status_code == 200
+        assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
+
+    def test_investment_journal_create_and_delete_flow(self, view_setup):
+        client = view_setup["client"]
+        add_url = reverse("portfolio:investment_journal_add")
+
+        post_data = {
+            "symbol": "INFY",
+            "title": "Digital Transformation Compounder",
+            "thesis_narrative": "Infosys has structural cost advantages and expanding enterprise cloud deals.",
+            "moat_description": "Global scale, sticky client relationships",
+            "conviction": "HIGH",
+            "horizon": "3_YEARS",
+            "target_price": "2200.00",
+            "catalysts": "Large deal ramp ups in Q3",
+            "key_risks": "Global enterprise slowdown",
+        }
+
+        resp = client.post(add_url, data=post_data)
+        assert resp.status_code == 302
+
+        from apps.portfolio.models import InvestmentJournalEntry
+        entry = InvestmentJournalEntry.objects.filter(listing__symbol="INFY").first()
+        assert entry is not None
+        assert entry.title == "Digital Transformation Compounder"
+        assert entry.target_price == Decimal("2200.00")
+
+        # Delete entry
+        del_url = reverse("portfolio:investment_journal_delete", kwargs={"pk": entry.pk})
+        resp_del = client.post(del_url)
+        assert resp_del.status_code == 302
+        assert not InvestmentJournalEntry.objects.filter(pk=entry.pk).exists()

@@ -4,12 +4,26 @@ Handles aggregate portfolio valuation, asset allocation, sector exposure, and co
 """
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from django.views import View
 from django.views.generic import TemplateView
 
 from apps.core.mixins import HTMXResponseMixin
 from apps.holdings.models import Holding
-from apps.portfolio.models import Portfolio
+from apps.instruments.models import ExchangeListing
+from apps.market.models import MarketQuote
+from apps.portfolio.models import (
+    ConvictionLevel,
+    InvestmentHorizon,
+    InvestmentJournalEntry,
+    InvestmentJournalStatus,
+    Portfolio,
+)
 from services.portfolio.accounting import FIFOAccountingEngine
 
 
@@ -174,6 +188,149 @@ class PortfolioImportView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
             return self.get(request, *args, **kwargs)
 
         redirect_url = reverse("portfolio:overview")
+        if request.htmx:
+            resp = HttpResponseRedirect(redirect_url)
+            resp["HX-Redirect"] = redirect_url
+            return resp
+        return redirect(redirect_url)
+
+
+class InvestmentJournalListView(HTMXResponseMixin, TemplateView):
+    """
+    Long-term investor thesis journal.
+    Tracks conviction level, economic moats, quarterly earnings updates,
+    and long-term fair value price targets.
+    """
+    template_name = "portfolio/investment_journal.html"
+    partial_template_name = "portfolio/partials/investment_journal_partial.html"
+    active_nav = "investment_journal"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Investment Journal & Long-Term Theses"
+
+        user = self.request.user if self.request.user.is_authenticated else None
+        entries_qs = InvestmentJournalEntry.objects.all().select_related("listing__instrument", "user")
+        if user:
+            entries_qs = entries_qs.filter(user=user)
+
+        # Filters
+        conviction_filter = self.request.GET.get("conviction", "").strip()
+        status_filter = self.request.GET.get("status", "").strip()
+        search_query = self.request.GET.get("q", "").strip()
+
+        if conviction_filter:
+            entries_qs = entries_qs.filter(conviction=conviction_filter)
+        if status_filter:
+            entries_qs = entries_qs.filter(status=status_filter)
+        if search_query:
+            entries_qs = entries_qs.filter(
+                Q(listing__symbol__icontains=search_query)
+                | Q(title__icontains=search_query)
+                | Q(listing__instrument__display_name__icontains=search_query)
+            )
+
+        entries_list = []
+        for entry in entries_qs:
+            quote = MarketQuote.objects.filter(listing=entry.listing).first()
+            upside_pct = None
+            if entry.target_price and quote and quote.price and quote.price > 0:
+                upside_pct = round(((entry.target_price - quote.price) / quote.price) * Decimal("100.0"), 2)
+
+            entries_list.append({
+                "entry": entry,
+                "quote": quote,
+                "upside_pct": upside_pct,
+            })
+
+        total_theses = len(entries_list)
+        high_conviction = sum(1 for e in entries_list if e["entry"].conviction == ConvictionLevel.HIGH)
+        active_theses = sum(1 for e in entries_list if e["entry"].status == InvestmentJournalStatus.ACTIVE)
+
+        # Listings for "+ New Thesis" dropdown
+        tradeable_listings = (
+            ExchangeListing.objects.filter(is_tradeable=True)
+            .select_related("instrument")
+            .order_by("symbol")
+        )
+
+        context["theses"] = entries_list
+        context["total_theses"] = total_theses
+        context["high_conviction_count"] = high_conviction
+        context["active_theses_count"] = active_theses
+        context["tradeable_listings"] = tradeable_listings
+        context["conviction_choices"] = ConvictionLevel.choices
+        context["horizon_choices"] = InvestmentHorizon.choices
+        context["status_choices"] = InvestmentJournalStatus.choices
+        context["active_conviction"] = conviction_filter
+        context["active_status"] = status_filter
+        context["search_query"] = search_query
+        return context
+
+
+class InvestmentJournalCreateView(View):
+    """Handles creation of a new long-term investment thesis."""
+    def post(self, request, *args, **kwargs):
+        user = request.user if request.user.is_authenticated else None
+        if not user:
+            from django.contrib.auth import get_user_model
+            user = get_user_model().objects.filter(is_superuser=True).first() or get_user_model().objects.first()
+
+        portfolio = Portfolio.objects.filter(user=user, is_default=True).first() or Portfolio.objects.filter(user=user).first()
+        symbol = request.POST.get("symbol", "").strip()
+        title = request.POST.get("title", "").strip()
+        narrative = request.POST.get("thesis_narrative", "").strip()
+        moat = request.POST.get("moat_description", "").strip()
+        conviction = request.POST.get("conviction", ConvictionLevel.HIGH)
+        horizon = request.POST.get("horizon", InvestmentHorizon.MEDIUM)
+        target_str = request.POST.get("target_price", "").strip()
+        key_risks = request.POST.get("key_risks", "").strip()
+        catalysts = request.POST.get("catalysts", "").strip()
+
+        listing = ExchangeListing.objects.filter(symbol__iexact=symbol).first()
+        if not listing or not title or not narrative:
+            messages.error(request, "Symbol, Title, and Thesis Narrative are required.")
+            redirect_url = reverse("portfolio:investment_journal")
+            return redirect(redirect_url)
+
+        target_price = None
+        if target_str:
+            try:
+                target_price = Decimal(target_str)
+            except Exception:
+                target_price = None
+
+        InvestmentJournalEntry.objects.create(
+            user=user,
+            portfolio=portfolio,
+            listing=listing,
+            title=title,
+            thesis_narrative=narrative,
+            moat_description=moat,
+            conviction=conviction,
+            horizon=horizon,
+            target_price=target_price,
+            key_risks=key_risks,
+            catalysts=catalysts,
+            status=InvestmentJournalStatus.ACTIVE,
+        )
+        messages.success(request, f"Investment thesis for {listing.symbol} saved successfully.")
+        redirect_url = reverse("portfolio:investment_journal")
+        if request.htmx:
+            resp = HttpResponseRedirect(redirect_url)
+            resp["HX-Redirect"] = redirect_url
+            return resp
+        return redirect(redirect_url)
+
+
+class InvestmentJournalDeleteView(View):
+    """Deletes an investment journal thesis entry."""
+    def post(self, request, pk, *args, **kwargs):
+        entry = get_object_or_404(InvestmentJournalEntry, pk=pk)
+        symbol = entry.listing.symbol
+        entry.delete()
+        messages.info(request, f"Investment thesis for {symbol} removed.")
+        redirect_url = reverse("portfolio:investment_journal")
         if request.htmx:
             resp = HttpResponseRedirect(redirect_url)
             resp["HX-Redirect"] = redirect_url

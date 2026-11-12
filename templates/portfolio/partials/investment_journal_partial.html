@@ -1,0 +1,323 @@
+{% load core_tags %}
+<div class="container-fluid p-0">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted"
+                           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">My Investments</li>
+                    <li class="breadcrumb-item active text-body" aria-current="page">Investment Journal</li>
+                </ol>
+            </nav>
+            <h2 class="h3 fw-bold mb-1">Investment Journal & Long-Term Theses</h2>
+            <p class="text-muted small mb-0">Document rationale, economic moats, quarterly milestones, and fair-value targets for long-term compounders.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-primary d-flex align-items-center gap-1.5"
+                    data-bs-toggle="modal" data-bs-target="#newThesisModal">
+                <i class="bi bi-plus-lg"></i> Log Investment Thesis
+            </button>
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5"
+                    hx-get="{% url 'portfolio:investment_journal' %}" hx-target="#main-content">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Messages / Alerts -->
+    {% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show small py-2 px-3 mb-2" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Theses Tracked</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0">{{ total_theses }}</h3>
+                <div class="mt-2 small text-muted">
+                    <span>Documented Investment Theses</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Active Theses</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0 text-primary">{{ active_theses_count }}</h3>
+                <div class="mt-2 small text-muted">
+                    <span>Ongoing Portfolio Allocations</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">High Conviction</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0 text-success">{{ high_conviction_count }}</h3>
+                <div class="mt-2 small text-muted">
+                    <span>Core Multi-Year Positions</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Trading vs Investing</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0 text-body">3–5+ Yrs</h3>
+                <div class="mt-2 small text-muted">
+                    <span>Fundamental Business Horizon</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="stat-card mb-4 py-2 px-3">
+        <form method="get" action="{% url 'portfolio:investment_journal' %}"
+              hx-get="{% url 'portfolio:investment_journal' %}" hx-target="#main-content" hx-push-url="true"
+              class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 320px;">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-body-tertiary border-secondary border-opacity-25"><i class="bi bi-search small"></i></span>
+                    <input type="search" name="q" value="{{ search_query }}" class="form-control"
+                           placeholder="Search company, symbol, title..." autocomplete="off">
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <select name="conviction" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                    <option value="">All Conviction Levels</option>
+                    {% for val, label in conviction_choices %}
+                    <option value="{{ val }}" {% if active_conviction == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <select name="status" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                    <option value="">All Statuses</option>
+                    {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if active_status == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if active_conviction or active_status or search_query %}
+                <a href="{% url 'portfolio:investment_journal' %}" class="btn btn-sm btn-outline-secondary"
+                   hx-get="{% url 'portfolio:investment_journal' %}" hx-target="#main-content" hx-push-url="true">
+                    Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Theses Cards Grid -->
+    <div class="row g-4 mb-4">
+        {% for item in theses %}
+        <div class="col-12 col-xl-6">
+            <div class="stat-card h-100 position-relative">
+                <!-- Top Card Bar: Symbol, Badges, Price Target -->
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'stocks:stock_detail' item.entry.listing.symbol %}" class="fw-bold fs-5 text-decoration-none text-body"
+                               hx-get="{% url 'stocks:stock_detail' item.entry.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                {{ item.entry.listing.symbol }}
+                            </a>
+                            <span class="badge {% if item.entry.conviction == 'HIGH' %}bg-success bg-opacity-10 text-success{% elif item.entry.conviction == 'MEDIUM' %}bg-primary bg-opacity-10 text-primary{% else %}bg-warning bg-opacity-10 text-warning{% endif %} fw-semibold">
+                                {{ item.entry.get_conviction_display }}
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                <i class="bi bi-hourglass-split"></i> {{ item.entry.get_horizon_display }}
+                            </span>
+                        </div>
+                        <div class="text-muted small">{{ item.entry.listing.instrument.display_name }} &bull; {{ item.entry.listing.instrument.sector }}</div>
+                    </div>
+                    <div class="text-end">
+                        {% if item.quote %}
+                        <div class="fw-bold num-mono fs-6">₹{{ item.quote.price }}</div>
+                        {% endif %}
+                        {% if item.entry.target_price %}
+                        <div class="small text-muted">
+                            Target: <span class="fw-bold num-mono text-body">₹{{ item.entry.target_price }}</span>
+                            {% if item.upside_pct is not None %}
+                            <span class="num-mono {% if item.upside_pct > 0 %}text-success fw-semibold{% else %}text-danger{% endif %}">
+                                ({% if item.upside_pct > 0 %}+{% endif %}{{ item.upside_pct }}%)
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Thesis Title -->
+                <h5 class="fw-semibold text-body mb-2">{{ item.entry.title }}</h5>
+
+                <!-- Economic Moat -->
+                {% if item.entry.moat_description %}
+                <div class="d-flex align-items-center gap-2 mb-2.5 p-2 rounded bg-body-tertiary border border-secondary border-opacity-10 small">
+                    <i class="bi bi-shield-check text-primary fs-6"></i>
+                    <div>
+                        <span class="fw-semibold text-muted" style="font-size: 0.725rem; text-transform: uppercase;">Economic Moat:</span>
+                        <span class="text-body ms-1">{{ item.entry.moat_description }}</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Core Thesis Narrative -->
+                <p class="text-muted small mb-3" style="line-height: 1.55;">
+                    {{ item.entry.thesis_narrative }}
+                </p>
+
+                <!-- Catalysts & Key Risks Columns -->
+                <div class="row g-2 mb-3">
+                    {% if item.entry.catalysts %}
+                    <div class="col-12 col-md-6">
+                        <div class="p-2 rounded bg-success bg-opacity-10 border border-success border-opacity-20 h-100">
+                            <span class="fw-bold text-success small d-flex align-items-center gap-1 mb-1">
+                                <i class="bi bi-graph-up-arrow"></i> Growth Catalysts
+                            </span>
+                            <p class="small text-muted mb-0" style="font-size: 0.8rem;">{{ item.entry.catalysts }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if item.entry.key_risks %}
+                    <div class="col-12 col-md-6">
+                        <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-20 h-100">
+                            <span class="fw-bold text-danger small d-flex align-items-center gap-1 mb-1">
+                                <i class="bi bi-exclamation-triangle"></i> Key Risks to Monitor
+                            </span>
+                            <p class="small text-muted mb-0" style="font-size: 0.8rem;">{{ item.entry.key_risks }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Footer: Date & Actions -->
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-10 mt-auto small">
+                    <span class="text-muted" style="font-size: 0.75rem;">
+                        <i class="bi bi-calendar3"></i> Logged on {{ item.entry.created_at|date:"d M Y" }}
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'stocks:stock_detail' item.entry.listing.symbol %}" class="btn btn-sm btn-outline-primary py-0.5 px-2" style="font-size: 0.75rem;"
+                           hx-get="{% url 'stocks:stock_detail' item.entry.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            Research Stock &rarr;
+                        </a>
+                        <form method="post" action="{% url 'portfolio:investment_journal_delete' item.entry.pk %}"
+                              hx-post="{% url 'portfolio:investment_journal_delete' item.entry.pk %}" hx-target="#main-content"
+                              onsubmit="return confirm('Remove this investment thesis?');" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger py-0.5 px-2" style="font-size: 0.75rem;" title="Delete Thesis">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="stat-card text-center py-5">
+                <i class="bi bi-journal-text display-4 text-muted mb-3 d-block"></i>
+                <h4 class="fw-bold mb-2">No Investment Theses Logged Yet</h4>
+                <p class="text-muted small mx-auto mb-4" style="max-width: 480px;">
+                    Unlike short-term swing trading, an Investment Journal documents why you own a company for the long haul: its competitive moat, growth drivers, valuation upside, and what risks would invalidate your long-term ownership.
+                </p>
+                <button class="btn btn-primary d-inline-flex align-items-center gap-2"
+                        data-bs-toggle="modal" data-bs-target="#newThesisModal">
+                    <i class="bi bi-plus-lg"></i> Log Your First Investment Thesis
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Modal: New Investment Thesis Form -->
+    <div class="modal fade" id="newThesisModal" tabindex="-1" aria-labelledby="newThesisModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post" action="{% url 'portfolio:investment_journal_add' %}"
+                      hx-post="{% url 'portfolio:investment_journal_add' %}" hx-target="#main-content">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="newThesisModalLabel">
+                            <i class="bi bi-journal-plus text-primary me-1.5"></i> Log Investment Thesis
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Select Company / Stock <span class="text-danger">*</span></label>
+                                <select name="symbol" class="form-select form-select-sm" required>
+                                    <option value="">-- Choose Stock --</option>
+                                    {% for l in tradeable_listings %}
+                                    <option value="{{ l.symbol }}">{{ l.symbol }} - {{ l.instrument.display_name }} ({{ l.instrument.sector }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Thesis Title / Summary <span class="text-danger">*</span></label>
+                                <input type="text" name="title" class="form-control form-control-sm"
+                                       placeholder="e.g. Dominant cloud & retail ecosystem compounder" required>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Conviction Level</label>
+                                <select name="conviction" class="form-select form-select-sm">
+                                    {% for val, label in conviction_choices %}
+                                    <option value="{{ val }}" {% if val == 'HIGH' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Holding Horizon</label>
+                                <select name="horizon" class="form-select form-select-sm">
+                                    {% for val, label in horizon_choices %}
+                                    <option value="{{ val }}" {% if val == '3_YEARS' %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-semibold">Target Price / Fair Value (₹)</label>
+                                <input type="number" step="0.01" name="target_price" class="form-control form-control-sm"
+                                       placeholder="e.g. 3200.00">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Economic Moat / Competitive Advantage</label>
+                                <input type="text" name="moat_description" class="form-control form-control-sm"
+                                       placeholder="e.g. Massive scale distribution network + 70% market share in enterprise contracts">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Core Investment Thesis & Business Model <span class="text-danger">*</span></label>
+                                <textarea name="thesis_narrative" class="form-control form-control-sm" rows="3"
+                                          placeholder="Why does this company have long-term pricing power and reinvestment runway? What industry tailwinds support it?" required></textarea>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Growth Catalysts to Watch</label>
+                                <textarea name="catalysts" class="form-control form-control-sm" rows="2"
+                                          placeholder="e.g. Capex commissioning in Q3, expanding gross margin +200 bps..."></textarea>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Key Downside Risks to Monitor</label>
+                                <textarea name="key_risks" class="form-control form-control-sm" rows="2"
+                                          placeholder="e.g. Regulatory changes in export tariffs, rising raw material prices..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm btn-primary">Save Investment Thesis</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

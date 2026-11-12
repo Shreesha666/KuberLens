@@ -22,6 +22,7 @@ urlpatterns = [
     path("trading/", include("apps.trading.urls", namespace="trading")),
     path("backtesting/", include("apps.backtesting.urls", namespace="backtesting")),
     path("ml/", include("apps.ml_engine.urls", namespace="ml_engine")),
+    path("brokers/", include("apps.brokers.urls", namespace="brokers")),
     path("news/", include("apps.news.urls", namespace="news")),
     path("alerts/", include("apps.alerts.urls", namespace="alerts")),
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),

@@ -1,0 +1,226 @@
+<!-- Broker Connections Settings Partial -->
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white"><i class="bi bi-link-45deg"></i> Phase 10</span>
+                <h1 class="h3 fw-bold mb-0 text-dark">Broker Connections &amp; Portfolio Sync</h1>
+            </div>
+            <p class="text-muted small mb-0">
+                Optional read-only integration with Zerodha Kite Connect v3 for real-time portfolio synchronization.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-dark border">
+                <i class="bi bi-shield-lock-fill text-success me-1"></i>Fernet-Encrypted Secret Storage
+            </span>
+        </div>
+    </div>
+
+    <!-- Mandatory Safety & Security Banner -->
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 py-3 px-3" role="alert">
+        <i class="bi bi-shield-check text-info me-3 fs-3"></i>
+        <div class="small">
+            <strong>Read-Only Research Architecture (Master Spec Section 22):</strong>
+            All stored API secrets and access tokens are strictly encrypted using authenticated AES/Fernet cryptography.
+            This module operates purely in read-only mode to synchronize existing portfolio holdings and quotes.
+            <strong>No order placement, trading execution, or broker order modification capabilities exist on this platform.</strong>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Connection Status & Sync Controls -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="card-title fw-bold mb-0 text-dark">
+                        <i class="bi bi-broadcast me-2 text-primary"></i>Zerodha Kite Connection Status
+                    </h5>
+                    {% if connection %}
+                        {% if is_token_valid %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-check-circle-fill me-1"></i>Active &amp; Connected
+                        </span>
+                        {% elif connection.status == 'EXPIRED' %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Session Expired
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border">
+                            {{ connection.get_status_display }}
+                        </span>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border">Not Configured</span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-4">
+                    {% if connection and connection.api_key %}
+                    <div class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Broker</span>
+                                <span class="fw-bold text-dark">{{ connection.get_broker_name_display }}</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">API Key</span>
+                                <span class="badge bg-light text-dark font-monospace border">{{ connection.api_key|truncatechars:10 }}</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Session Expiry</span>
+                                <span class="fw-semibold text-dark">
+                                    {% if connection.token_expires_at %}
+                                    {{ connection.token_expires_at|date:"d M Y, H:i" }} IST
+                                    {% else %}
+                                    <span class="text-muted">Not authorized</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Last Synced</span>
+                                <span class="fw-semibold text-dark">
+                                    {% if connection.last_synced_at %}
+                                    {{ connection.last_synced_at|date:"d M Y, H:i" }}
+                                    {% else %}
+                                    <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sync Summary Stats if present -->
+                    {% if connection.sync_summary %}
+                    <div class="p-3 rounded bg-light border mb-4">
+                        <div class="small fw-semibold text-muted mb-2">Latest Holdings Sync Audit</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="h5 fw-bold text-dark mb-0">{{ connection.sync_summary.synced_holdings_count|default:"0" }}</span>
+                                <span class="small text-muted ms-1">holdings reconciled</span>
+                            </div>
+                            <div>
+                                <span class="small text-muted">Current Value:</span>
+                                <span class="fw-bold text-success ms-1">₹{{ connection.sync_summary.total_current_value|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if is_token_valid %}
+                        <form method="post" action="{% url 'brokers:sync_now' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-repeat me-1"></i>Sync Holdings Now
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'brokers:disconnect' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-power me-1"></i>Disconnect Session
+                            </button>
+                        </form>
+                        {% else %}
+                        <!-- OAuth Flow Initiation & Token Input -->
+                        <div class="w-100">
+                            <p class="small text-muted mb-2">
+                                Daily session authorization required by Zerodha Kite Connect.
+                            </p>
+                            <a href="{{ login_url }}" target="_blank" class="btn btn-warning w-100 mb-3 fw-semibold text-dark">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Authorize with Kite Connect Login
+                            </a>
+
+                            <form method="post" action="{% url 'brokers:complete_oauth' %}">
+                                {% csrf_token %}
+                                <label class="form-label small fw-semibold text-muted">Enter Request Token from Kite Redirect URL</label>
+                                <div class="input-group">
+                                    <input type="text"
+                                           name="request_token"
+                                           class="form-control"
+                                           placeholder="Paste request_token here..."
+                                           required>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-key-fill me-1"></i>Connect
+                                    </button>
+                                </div>
+                                <div class="form-text small">
+                                    After logging in on Zerodha, copy the <code>request_token</code> parameter from the resulting URL.
+                                </div>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-plug fs-1 mb-2 d-block"></i>
+                        <p class="mb-0">No broker credentials configured yet.</p>
+                        <p class="small">Fill out the API credentials form on the right to get started.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Credential Setup Form -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title fw-bold mb-0 text-dark">
+                        <i class="bi bi-key me-2 text-primary"></i>Kite Connect Developer Credentials
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'brokers:save_credentials' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Broker Platform</label>
+                            <select class="form-select" disabled>
+                                <option selected>Zerodha Kite Connect v3 (Official API)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">API Key</label>
+                            <input type="text"
+                                   name="api_key"
+                                   class="form-control font-monospace"
+                                   placeholder="e.g. abcd1234xyz"
+                                   value="{{ connection.api_key|default:'' }}"
+                                   required>
+                            <div class="form-text small">Obtained from your developer app at developers.kite.trade.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-muted">API Secret</label>
+                            <input type="password"
+                                   name="api_secret"
+                                   class="form-control font-monospace"
+                                   placeholder="{% if connection.api_secret_encrypted %}•••••••••••••••• (Encrypted){% else %}Enter Kite API Secret{% endif %}">
+                            <div class="form-text small">Stored securely in the database using 256-bit Fernet encryption.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-save me-1"></i>Save Credentials Securely
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="small text-muted">
+                        <h6 class="fw-bold text-dark mb-2">How to Connect Your Zerodha Account:</h6>
+                        <ol class="ps-3 mb-0">
+                            <li>Create a Kite Connect developer app at <a href="https://developers.kite.trade" target="_blank" class="text-decoration-none">developers.kite.trade</a>.</li>
+                            <li>Set your Redirect URL in Kite developer portal to: <br><code>http://localhost:8000/brokers/callback/</code></li>
+                            <li>Copy and paste your <strong>API Key</strong> and <strong>API Secret</strong> above and click Save.</li>
+                            <li>Click <strong>Authorize with Kite Connect</strong> each morning to refresh your ephemeral daily session.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -32,7 +32,7 @@
 | **Phase 7** | AI Stock Research Engine | 🟢 **COMPLETED** | 2026-11-12 | Investor, Swing, and Risk AI personas, Provider abstraction (Gemini + Deterministic Fallback), Missing data audit, 128 tests passing |
 | **Phase 8** | News, Corporate Events & Alerts | 🟢 **COMPLETED** | 2026-11-12 | In-app alerts, Corporate actions calendar (Bonus/Split/Div), Filings feed, Deduplication cooldowns, 138 tests passing |
 | **Phase 9** | Strategy Backtesting & ML Engine | 🟢 **COMPLETED** | 2026-11-12 | Chronological simulation engine (zero lookahead), slippage & brokerage modeling, 4 quant strategies, time-series regime classifier & ML ranking, 150 tests passing |
-| **Phase 10** | F&O Preparation & Zerodha Kite Integration | ⚪ **NOT STARTED** | Follows Phase 9 | Optional read-only broker sync with Fernet encrypted token store |
+| **Phase 10** | F&O Preparation & Zerodha Kite Integration | 🟢 **COMPLETED** | 2026-11-12 | Read-only Zerodha Kite Connect v3 adapter, AES/Fernet encrypted token store, automated holdings sync, F&O Derivative contracts master, 161 tests passing |
 | **Phase 11** | Production Hardening, Audit & Deployment | ⚪ **NOT STARTED** | Final Milestone | Security audits, query optimizations, Docker/production rollout |
 
 ---
@@ -60,7 +60,7 @@
 | `news` | Financial news, corporate filings, earnings announcements | 🟢 **COMPLETED** | `NewsArticle`, `CorporateEvent`, `NewsFeedView` (`/news/`), `CorporateEventsCalendarView` (`/news/calendar/`), `seed_news_and_events` command (102 articles, 40 events) |
 | `alerts` | Price, indicator, and portfolio threshold alert triggers | 🟢 **COMPLETED** | `AlertRule`, `AlertEvaluator` engine (with cooldown deduplication and market-hours guard), `AlertListView` (`/alerts/`), `AlertCreateView`, `AlertToggleActiveView`, `AlertDeleteView`, `AlertRunEvaluationView` |
 | `backtesting` | Historical strategy engine, slippage/brokerage calculation | 🟢 **COMPLETED** | `BacktestStrategy`, `BacktestRun`, `BacktestEngine` (zero lookahead), KPI metrics (CAGR, Win Rate, Profit Factor, Drawdown), `BacktestDashboardView` (`/backtesting/`), `BacktestRunDetailView` |
-| `brokers` | Broker connection management (Zerodha Kite adapter stub) | ⚪ **NOT STARTED** | Phase 10 Scope |
+| `brokers` | Broker connection management (Zerodha Kite adapter stub) | 🟢 **COMPLETED** | `BrokerConnection` (Fernet-encrypted secrets/tokens), `KiteConnectClient`, `BrokerHoldingsSynchronizer`, `BrokerSettingsView` (`/brokers/`), `DerivativesOverviewView` (`/brokers/derivatives/`) |
 | `reports` | PDF/CSV generation of portfolio tear-sheets and stock memos | ⚪ **NOT STARTED** | Phase 11 Scope |
 | `notifications` | In-app notification center and alert delivery dispatch | 🟢 **COMPLETED** | `Notification`, `NotificationListView` (`/notifications/`), `NotificationMarkReadView`, `NotificationMarkAllReadView`, `NotificationClearAllView`, dynamic header unread badge |
 
@@ -107,7 +107,8 @@
 | **News, Events & Notifications** | `tests/test_news.py`, `tests/test_notifications.py`, `tests/test_alerts.py` | 10 | 🟢 PASSED | 91% |
 | **Strategy Backtesting Engine** | `tests/test_backtesting.py` | 6 | 🟢 PASSED | 94% |
 | **Machine Learning & Regime Analytics** | `tests/test_ml_engine.py` | 6 | 🟢 PASSED | 93% |
-| **TOTAL** | — | **150** | **150 / 150 PASSED** | **89% Overall** |
+| **Broker Integration & Derivatives Master** | `tests/test_brokers.py` | 11 | 🟢 PASSED | 95% |
+| **TOTAL** | — | **161** | **161 / 161 PASSED** | **90% Overall** |
 
 ---
 
@@ -115,4 +116,4 @@
 
 | ID | Date Logged | Description | Severity | Mitigation / Resolution |
 |---|---|---|:---:|---|
-| *None* | 2026-11-12 | Phase 9 execution successfully completed and verified. | Low | Ready to begin Phase 10 upon user approval. |
+| *None* | 2026-11-12 | Phase 10 execution successfully completed and verified. | Low | Ready to begin Phase 11 (Production Hardening & Reports) upon user approval. |

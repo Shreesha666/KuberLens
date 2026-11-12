@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 
 from apps.core.models import AuditedModel
@@ -200,3 +202,68 @@ class DataQualityIssue(AuditedModel):
     def __str__(self):
         symbol = self.listing.symbol if self.listing else "GLOBAL"
         return f"[{self.severity}] {self.issue_type} for {symbol}"
+
+
+class DerivativeContractType(models.TextChoices):
+    FUTURES = "FUTURES", "Futures"
+    OPTIONS = "OPTIONS", "Options"
+
+
+class OptionType(models.TextChoices):
+    CE = "CE", "Call Option (CE)"
+    PE = "PE", "Put Option (PE)"
+    NONE = "NONE", "None (Futures)"
+
+
+class DerivativeContract(AuditedModel):
+    """
+    Derivative contract specification for NSE/BSE Equity & Index Futures and Options.
+    Prepares data structures for Phase 10 F&O intelligence.
+    """
+    underlying_listing = models.ForeignKey(
+        ExchangeListing,
+        on_delete=models.CASCADE,
+        related_name="derivative_contracts",
+        db_index=True,
+    )
+    contract_type = models.CharField(
+        max_length=20,
+        choices=DerivativeContractType.choices,
+        default=DerivativeContractType.OPTIONS,
+        db_index=True,
+    )
+    option_type = models.CharField(
+        max_length=10,
+        choices=OptionType.choices,
+        default=OptionType.NONE,
+        db_index=True,
+    )
+    strike_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+    expiry_date = models.DateField(db_index=True)
+    lot_size = models.PositiveIntegerField(default=1)
+    tick_size = models.DecimalField(max_digits=6, decimal_places=4, default=Decimal("0.0500"))
+    trading_symbol = models.CharField(max_length=80, db_index=True)
+    open_interest = models.BigIntegerField(default=0)
+    change_in_oi = models.BigIntegerField(default=0)
+    implied_volatility = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "market_derivative_contract"
+        ordering = ["expiry_date", "strike_price", "option_type"]
+        indexes = [
+            models.Index(fields=["underlying_listing", "expiry_date", "contract_type"]),
+            models.Index(fields=["trading_symbol"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.trading_symbol} (Lot: {self.lot_size})"
+

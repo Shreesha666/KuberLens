@@ -255,7 +255,7 @@
                     <button class="btn btn-sm btn-light border py-1 px-2.5 text-muted fw-medium dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
                         <i class="bi bi-sliders text-secondary me-1"></i>Indicators
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="min-width: 220px; z-index: 1050;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="min-width: 250px; z-index: 1050; max-height: 480px; overflow-y: auto;">
                         <li class="dropdown-header text-uppercase small fw-bold">Moving Averages</li>
                         <li>
                             <div class="form-check form-switch small py-1">
@@ -277,13 +277,51 @@
                         </li>
                         <li>
                             <div class="form-check form-switch small py-1">
-                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-ema20" data-indicator="ema20">
-                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-ema20">
-                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #8b5cf6;"></span>
-                                    EMA 20 (Purple)
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-sma200" data-indicator="sma200">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-sma200">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #e11d48;"></span>
+                                    SMA 200 (Long-Term Trend)
                                 </label>
                             </div>
                         </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-ema9" data-indicator="ema9">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-ema9">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #06b6d4;"></span>
+                                    EMA 9 (Fast Trigger)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-ema20" data-indicator="ema20">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-ema20">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #8b5cf6;"></span>
+                                    EMA 20 (Swing Momentum)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-ema50" data-indicator="ema50">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-ema50">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #ec4899;"></span>
+                                    EMA 50 (Intermediate)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-vwap" data-indicator="vwap">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-vwap">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #eab308;"></span>
+                                    VWAP (Volume-Weighted)
+                                </label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li class="dropdown-header text-uppercase small fw-bold">Volatility & Channels</li>
                         <li>
                             <div class="form-check form-switch small py-1">
                                 <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-bb" data-indicator="bb">
@@ -293,18 +331,39 @@
                                 </label>
                             </div>
                         </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-donchian" data-indicator="donchian">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-donchian">
+                                    <span class="d-inline-block" style="width: 10px; height: 2px; background-color: #089981;"></span>
+                                    Donchian Channels (20D H/L)
+                                </label>
+                            </div>
+                        </li>
                         <li><hr class="dropdown-divider my-1"></li>
-                        <li class="dropdown-header text-uppercase small fw-bold">Oscillators</li>
+                        <li class="dropdown-header text-uppercase small fw-bold">Oscillators (Sub-Panes)</li>
                         <li>
                             <div class="form-check form-switch small py-1">
                                 <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-rsi" data-indicator="rsi">
-                                <label class="form-check-label" for="toggle-rsi">RSI 14 Pane</label>
+                                <label class="form-check-label" for="toggle-rsi">RSI 14 (70/30)</label>
                             </div>
                         </li>
                         <li>
                             <div class="form-check form-switch small py-1">
                                 <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-macd" data-indicator="macd">
-                                <label class="form-check-label" for="toggle-macd">MACD (12, 26, 9) Pane</label>
+                                <label class="form-check-label" for="toggle-macd">MACD (12, 26, 9)</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-stoch" data-indicator="stoch">
+                                <label class="form-check-label" for="toggle-stoch">Stochastic RSI (14, 3, 3)</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-atr" data-indicator="atr">
+                                <label class="form-check-label" for="toggle-atr">ATR (14) Volatility</label>
                             </div>
                         </li>
                     </ul>
@@ -340,6 +399,10 @@
             <span class="text-muted">Vol <strong id="legend-volume" class="text-body fw-bold">-</strong></span>
             <span id="legend-sma20-wrap" class="d-none text-muted">SMA20 <strong id="legend-sma20" style="color: #2563eb;">-</strong></span>
             <span id="legend-sma50-wrap" class="d-none text-muted">SMA50 <strong id="legend-sma50" style="color: #f59e0b;">-</strong></span>
+            <span id="legend-sma200-wrap" class="d-none text-muted">SMA200 <strong id="legend-sma200" style="color: #e11d48;">-</strong></span>
+            <span id="legend-ema9-wrap" class="d-none text-muted">EMA9 <strong id="legend-ema9" style="color: #06b6d4;">-</strong></span>
+            <span id="legend-ema20-wrap" class="d-none text-muted">EMA20 <strong id="legend-ema20" style="color: #8b5cf6;">-</strong></span>
+            <span id="legend-vwap-wrap" class="d-none text-muted">VWAP <strong id="legend-vwap" style="color: #eab308;">-</strong></span>
         </div>
 
         <!-- Main TradingView Chart Container -->
@@ -353,6 +416,16 @@
         <!-- Synchronized Sub-Pane for MACD (Hidden by default) -->
         <div id="tradingview-macd-container" class="border-top border-secondary border-opacity-10 d-none" style="width: 100%; height: 120px; position: relative;">
             <div class="position-absolute top-0 start-0 px-2 py-1 small fw-bold text-muted font-monospace" style="z-index: 5; font-size: 10px;">MACD (12, 26, 9)</div>
+        </div>
+
+        <!-- Synchronized Sub-Pane for Stochastic RSI (Hidden by default) -->
+        <div id="tradingview-stoch-container" class="border-top border-secondary border-opacity-10 d-none" style="width: 100%; height: 120px; position: relative;">
+            <div class="position-absolute top-0 start-0 px-2 py-1 small fw-bold text-muted font-monospace" style="z-index: 5; font-size: 10px;">Stoch RSI (14, 3, 3)</div>
+        </div>
+
+        <!-- Synchronized Sub-Pane for ATR (Hidden by default) -->
+        <div id="tradingview-atr-container" class="border-top border-secondary border-opacity-10 d-none" style="width: 100%; height: 120px; position: relative;">
+            <div class="position-absolute top-0 start-0 px-2 py-1 small fw-bold text-muted font-monospace" style="z-index: 5; font-size: 10px;">ATR (14) Volatility</div>
         </div>
 
         <!-- TradingView Authentic Bottom Range Bar (Exact Reference Match) -->

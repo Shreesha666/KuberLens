@@ -296,24 +296,40 @@ class StockChartDataView(View):
                 logger.warning("Could not compute technical indicators on the fly: %s", e)
 
         data = []
+        cum_pv = 0.0
+        cum_vol = 0
         for c in candles:
             date_str = c.timestamp.date().isoformat()
             snap = snapshots.get(date_str)
+            vol = int(c.volume)
+            typ_price = float(c.high + c.low + c.close) / 3.0
+            cum_pv += typ_price * vol
+            cum_vol += vol
+            vwap = round(cum_pv / cum_vol, 2) if cum_vol > 0 else float(c.close)
+
             item = {
                 "time": date_str,
                 "open": float(c.open),
                 "high": float(c.high),
                 "low": float(c.low),
                 "close": float(c.close),
-                "volume": int(c.volume),
+                "volume": vol,
                 "sma20": float(snap.sma_20) if snap and snap.sma_20 is not None else None,
                 "sma50": float(snap.sma_50) if snap and snap.sma_50 is not None else None,
+                "sma200": float(snap.sma_200) if snap and snap.sma_200 is not None else None,
+                "ema9": float(snap.ema_9) if snap and snap.ema_9 is not None else None,
                 "ema20": float(snap.ema_20) if snap and snap.ema_20 is not None else None,
                 "ema50": float(snap.ema_50) if snap and snap.ema_50 is not None else None,
+                "vwap": vwap,
                 "bb_upper": float(snap.bollinger_upper) if snap and snap.bollinger_upper is not None else None,
                 "bb_middle": float(snap.bollinger_middle) if snap and snap.bollinger_middle is not None else None,
                 "bb_lower": float(snap.bollinger_lower) if snap and snap.bollinger_lower is not None else None,
+                "support": float(snap.support_level) if snap and snap.support_level is not None else None,
+                "resistance": float(snap.resistance_level) if snap and snap.resistance_level is not None else None,
                 "rsi14": float(snap.rsi_14) if snap and snap.rsi_14 is not None else None,
+                "stoch_k": float(snap.stoch_rsi_k) if snap and snap.stoch_rsi_k is not None else None,
+                "stoch_d": float(snap.stoch_rsi_d) if snap and snap.stoch_rsi_d is not None else None,
+                "atr14": float(snap.atr_14) if snap and snap.atr_14 is not None else None,
                 "macd_line": float(snap.macd_line) if snap and snap.macd_line is not None else None,
                 "macd_signal": float(snap.macd_signal) if snap and snap.macd_signal is not None else None,
                 "macd_hist": float(snap.macd_histogram) if snap and snap.macd_histogram is not None else None,

@@ -1,11 +1,12 @@
 /**
  * Institutional Stock Market Analytics Charting Engine
  * Powered by:
- * 1. TradingView Lightweight Charts (v4.2.1) - Primary Candlestick, Volume & Indicator Engine
+ * 1. TradingView Lightweight Charts (v4.2.1) - Primary Candlestick, Volume & Technical Indicator Engine
  * 2. Apache ECharts (v5.5.1) - Dashboard Analytics & Portfolio Visualizations
  *
  * Modeled after top institutional broker interfaces (TradingView / Zerodha Kite).
- * Fully compatible with Django + HTMX single-page dynamic applications with dark/light themes.
+ * Supports comprehensive technical indicators: SMA (20, 50, 200), EMA (9, 20, 50), VWAP,
+ * Bollinger Bands, Donchian High/Low Channels, RSI (14), MACD, Stochastic RSI, and ATR (14).
  */
 
 // ============================================================================
@@ -22,17 +23,29 @@ class TradingViewStockChart {
         this.chart = null;
         this.rsiChart = null;
         this.macdChart = null;
+        this.stochChart = null;
+        this.atrChart = null;
 
         // Series references
         this.candlestickSeries = null;
         this.lineSeries = null;
         this.areaSeries = null;
         this.volumeSeries = null;
+
+        // Moving Average & Trend Overlays
         this.sma20Series = null;
         this.sma50Series = null;
+        this.sma200Series = null;
+        this.ema9Series = null;
         this.ema20Series = null;
+        this.ema50Series = null;
+        this.vwapSeries = null;
+
+        // Volatility & Channel Overlays
         this.bbUpperSeries = null;
         this.bbLowerSeries = null;
+        this.donchianUpperSeries = null;
+        this.donchianLowerSeries = null;
 
         // Price lines (Trade Levels)
         this.priceLines = [];
@@ -47,10 +60,17 @@ class TradingViewStockChart {
         this.indicatorState = {
             sma20: true,
             sma50: true,
+            sma200: false,
+            ema9: false,
             ema20: false,
+            ema50: false,
+            vwap: false,
             bb: false,
+            donchian: false,
             rsi: false,
             macd: false,
+            stoch: false,
+            atr: false,
             levels: true,
         };
 
@@ -78,7 +98,11 @@ class TradingViewStockChart {
             downColor: '#f23645',     // TradingView Crimson
             sma20Color: '#2563eb',    // Royal Blue
             sma50Color: '#f59e0b',    // Amber
-            ema20Color: '#8b5cf6',    // Violet
+            sma200Color: '#e11d48',   // Rose Crimson (Long-Term Trend)
+            ema9Color: '#06b6d4',     // Cyan (Fast Momentum Trigger)
+            ema20Color: '#8b5cf6',    // Violet (Swing Momentum)
+            ema50Color: '#ec4899',    // Pink (Medium Trend)
+            vwapColor: '#eab308',     // Gold (Volume-Weighted Average)
             bbColor: 'rgba(139, 92, 246, 0.65)',
         };
     }
@@ -89,12 +113,11 @@ class TradingViewStockChart {
             return;
         }
 
-        // Clean up any existing instances in this container
         this.destroy();
 
         const colors = this.getThemeColors();
         const width = this.container.clientWidth || 800;
-        const height = this.options.height || 440;
+        const height = this.options.height || 460;
 
         // Create Main TradingView Chart
         this.chart = LightweightCharts.createChart(this.container, {
@@ -129,7 +152,7 @@ class TradingViewStockChart {
                 borderColor: colors.border,
                 scaleMargins: {
                     top: 0.1,
-                    bottom: 0.18, // Clean spacing for price action
+                    bottom: 0.18,
                 },
                 alignLabels: true,
             },
@@ -140,15 +163,8 @@ class TradingViewStockChart {
                 fixLeftEdge: true,
                 fixRightEdge: true,
             },
-            handleScroll: {
-                mouseWheel: true,
-                pressedMouseMove: true,
-            },
-            handleScale: {
-                axisPressedMouseMove: true,
-                mouseWheel: true,
-                pinch: true,
-            },
+            handleScroll: { mouseWheel: true, pressedMouseMove: true },
+            handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
         });
 
         // 1. Candlestick Series (Main Price)
@@ -160,28 +176,25 @@ class TradingViewStockChart {
             wickDownColor: colors.downColor,
         });
 
-        // 2. Volume Series (Dedicated 'volume' scale, occupying only bottom 15%, no right-axis tags)
+        // 2. Volume Series (Isolated scale, occupying only bottom 16%)
         this.volumeSeries = this.chart.addHistogramSeries({
             priceFormat: { type: 'volume' },
-            priceScaleId: 'volume', // Isolated from main price scale
+            priceScaleId: 'volume',
         });
 
         this.chart.priceScale('volume').applyOptions({
-            scaleMargins: {
-                top: 0.84, // Volume strictly constrained to bottom 16%
-                bottom: 0,
-            },
-            visible: false, // Never bleed numbers into the price scale
+            scaleMargins: { top: 0.84, bottom: 0 },
+            visible: false,
         });
 
-        // 3. Technical Indicator Overlays (Hide right-axis tags to eliminate label crowding)
+        // 3. Moving Average & Trend Overlays
         this.sma20Series = this.chart.addLineSeries({
             color: colors.sma20Color,
             lineWidth: 1.5,
             title: 'SMA 20',
             crosshairMarkerVisible: true,
-            lastValueVisible: false, // No right axis tag
-            priceLineVisible: false, // No horizontal line at latest point
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
 
         this.sma50Series = this.chart.addLineSeries({
@@ -189,6 +202,26 @@ class TradingViewStockChart {
             lineWidth: 1.5,
             title: 'SMA 50',
             crosshairMarkerVisible: true,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        this.sma200Series = this.chart.addLineSeries({
+            color: colors.sma200Color,
+            lineWidth: 1.5,
+            title: 'SMA 200',
+            crosshairMarkerVisible: true,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        this.ema9Series = this.chart.addLineSeries({
+            color: colors.ema9Color,
+            lineWidth: 1.5,
+            title: 'EMA 9',
+            crosshairMarkerVisible: true,
+            visible: false,
             lastValueVisible: false,
             priceLineVisible: false,
         });
@@ -203,6 +236,27 @@ class TradingViewStockChart {
             priceLineVisible: false,
         });
 
+        this.ema50Series = this.chart.addLineSeries({
+            color: colors.ema50Color,
+            lineWidth: 1.5,
+            title: 'EMA 50',
+            crosshairMarkerVisible: true,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        this.vwapSeries = this.chart.addLineSeries({
+            color: colors.vwapColor,
+            lineWidth: 1.5,
+            title: 'VWAP',
+            crosshairMarkerVisible: true,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        // 4. Volatility & Channel Overlays
         this.bbUpperSeries = this.chart.addLineSeries({
             color: colors.bbColor,
             lineWidth: 1,
@@ -225,7 +279,29 @@ class TradingViewStockChart {
             priceLineVisible: false,
         });
 
-        // Crosshair legend inspection
+        this.donchianUpperSeries = this.chart.addLineSeries({
+            color: 'rgba(8, 153, 129, 0.75)',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            title: 'Resistance (20D)',
+            crosshairMarkerVisible: false,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        this.donchianLowerSeries = this.chart.addLineSeries({
+            color: 'rgba(242, 54, 69, 0.75)',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            title: 'Support (20D)',
+            crosshairMarkerVisible: false,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        // Crosshair move handler
         this.chart.subscribeCrosshairMove((param) => this.handleCrosshairMove(param));
 
         // Auto-Resize Observer
@@ -236,11 +312,12 @@ class TradingViewStockChart {
                 this.chart.applyOptions({ width: newRect.width });
                 if (this.rsiChart) this.rsiChart.applyOptions({ width: newRect.width });
                 if (this.macdChart) this.macdChart.applyOptions({ width: newRect.width });
+                if (this.stochChart) this.stochChart.applyOptions({ width: newRect.width });
+                if (this.atrChart) this.atrChart.applyOptions({ width: newRect.width });
             }
         });
         this.resizeObserver.observe(this.container);
 
-        // Fetch Data
         this.loadData(this.currentDays);
         this.bindToolbarEvents();
         this.observeThemeChanges();
@@ -269,299 +346,278 @@ class TradingViewStockChart {
         const volumeData = [];
         const sma20Data = [];
         const sma50Data = [];
+        const sma200Data = [];
+        const ema9Data = [];
         const ema20Data = [];
+        const ema50Data = [];
+        const vwapData = [];
         const bbUpperData = [];
         const bbLowerData = [];
+        const donchianUpperData = [];
+        const donchianLowerData = [];
         const rsiData = [];
         const macdLineData = [];
         const macdSignalData = [];
         const macdHistData = [];
+        const stochKData = [];
+        const stochDData = [];
+        const atrData = [];
 
         for (const c of this.rawCandles) {
-            const time = c.time; // YYYY-MM-DD
-            candleData.push({
-                time: time,
-                open: c.open,
-                high: c.high,
-                low: c.low,
-                close: c.close,
-            });
+            const time = c.time;
+            candleData.push({ time, open: c.open, high: c.high, low: c.low, close: c.close });
 
-            // Faint, subtle broker-style volume bars (opacity 0.22)
             const isUp = c.close >= c.open;
             volumeData.push({
-                time: time,
+                time,
                 value: c.volume,
                 color: isUp ? 'rgba(8, 153, 129, 0.25)' : 'rgba(242, 54, 69, 0.25)',
             });
 
-            if (c.sma20 !== null && c.sma20 !== undefined) {
-                sma20Data.push({ time: time, value: c.sma20 });
-            }
-            if (c.sma50 !== null && c.sma50 !== undefined) {
-                sma50Data.push({ time: time, value: c.sma50 });
-            }
-            if (c.ema20 !== null && c.ema20 !== undefined) {
-                ema20Data.push({ time: time, value: c.ema20 });
-            }
-            if (c.bb_upper !== null && c.bb_upper !== undefined) {
-                bbUpperData.push({ time: time, value: c.bb_upper });
-            }
-            if (c.bb_lower !== null && c.bb_lower !== undefined) {
-                bbLowerData.push({ time: time, value: c.bb_lower });
-            }
-            if (c.rsi14 !== null && c.rsi14 !== undefined) {
-                rsiData.push({ time: time, value: c.rsi14 });
-            }
-            if (c.macd_line !== null && c.macd_line !== undefined) {
-                macdLineData.push({ time: time, value: c.macd_line });
-            }
-            if (c.macd_signal !== null && c.macd_signal !== undefined) {
-                macdSignalData.push({ time: time, value: c.macd_signal });
-            }
+            if (c.sma20 !== null && c.sma20 !== undefined) sma20Data.push({ time, value: c.sma20 });
+            if (c.sma50 !== null && c.sma50 !== undefined) sma50Data.push({ time, value: c.sma50 });
+            if (c.sma200 !== null && c.sma200 !== undefined) sma200Data.push({ time, value: c.sma200 });
+            if (c.ema9 !== null && c.ema9 !== undefined) ema9Data.push({ time, value: c.ema9 });
+            if (c.ema20 !== null && c.ema20 !== undefined) ema20Data.push({ time, value: c.ema20 });
+            if (c.ema50 !== null && c.ema50 !== undefined) ema50Data.push({ time, value: c.ema50 });
+            if (c.vwap !== null && c.vwap !== undefined) vwapData.push({ time, value: c.vwap });
+            if (c.bb_upper !== null && c.bb_upper !== undefined) bbUpperData.push({ time, value: c.bb_upper });
+            if (c.bb_lower !== null && c.bb_lower !== undefined) bbLowerData.push({ time, value: c.bb_lower });
+            if (c.resistance !== null && c.resistance !== undefined) donchianUpperData.push({ time, value: c.resistance });
+            if (c.support !== null && c.support !== undefined) donchianLowerData.push({ time, value: c.support });
+            if (c.rsi14 !== null && c.rsi14 !== undefined) rsiData.push({ time, value: c.rsi14 });
+            if (c.macd_line !== null && c.macd_line !== undefined) macdLineData.push({ time, value: c.macd_line });
+            if (c.macd_signal !== null && c.macd_signal !== undefined) macdSignalData.push({ time, value: c.macd_signal });
             if (c.macd_hist !== null && c.macd_hist !== undefined) {
-                macdHistData.push({
-                    time: time,
-                    value: c.macd_hist,
-                    color: c.macd_hist >= 0 ? '#089981' : '#f23645',
-                });
+                macdHistData.push({ time, value: c.macd_hist, color: c.macd_hist >= 0 ? '#089981' : '#f23645' });
             }
+            if (c.stoch_k !== null && c.stoch_k !== undefined) stochKData.push({ time, value: c.stoch_k });
+            if (c.stoch_d !== null && c.stoch_d !== undefined) stochDData.push({ time, value: c.stoch_d });
+            if (c.atr14 !== null && c.atr14 !== undefined) atrData.push({ time, value: c.atr14 });
         }
 
-        // Set series data
+        // Apply Chart Types
         if (this.currentChartType === 'candlestick') {
             this.candlestickSeries.setData(candleData);
         } else if (this.currentChartType === 'area') {
-            const areaData = candleData.map(c => ({ time: c.time, value: c.close }));
-            if (this.areaSeries) this.areaSeries.setData(areaData);
+            if (this.areaSeries) this.areaSeries.setData(candleData.map(c => ({ time: c.time, value: c.close })));
         } else if (this.currentChartType === 'line') {
-            const lineData = candleData.map(c => ({ time: c.time, value: c.close }));
-            if (this.lineSeries) this.lineSeries.setData(lineData);
+            if (this.lineSeries) this.lineSeries.setData(candleData.map(c => ({ time: c.time, value: c.close })));
         }
 
         this.volumeSeries.setData(volumeData);
         this.sma20Series.setData(sma20Data);
         this.sma50Series.setData(sma50Data);
+        this.sma200Series.setData(sma200Data);
+        this.ema9Series.setData(ema9Data);
         this.ema20Series.setData(ema20Data);
+        this.ema50Series.setData(ema50Data);
+        this.vwapSeries.setData(vwapData);
         this.bbUpperSeries.setData(bbUpperData);
         this.bbLowerSeries.setData(bbLowerData);
+        this.donchianUpperSeries.setData(donchianUpperData);
+        this.donchianLowerSeries.setData(donchianLowerData);
 
-        // Apply visibility according to state
+        // Synchronize Visibility
         this.sma20Series.applyOptions({ visible: this.indicatorState.sma20 });
         this.sma50Series.applyOptions({ visible: this.indicatorState.sma50 });
+        this.sma200Series.applyOptions({ visible: this.indicatorState.sma200 });
+        this.ema9Series.applyOptions({ visible: this.indicatorState.ema9 });
         this.ema20Series.applyOptions({ visible: this.indicatorState.ema20 });
+        this.ema50Series.applyOptions({ visible: this.indicatorState.ema50 });
+        this.vwapSeries.applyOptions({ visible: this.indicatorState.vwap });
         this.bbUpperSeries.applyOptions({ visible: this.indicatorState.bb });
         this.bbLowerSeries.applyOptions({ visible: this.indicatorState.bb });
+        this.donchianUpperSeries.applyOptions({ visible: this.indicatorState.donchian });
+        this.donchianLowerSeries.applyOptions({ visible: this.indicatorState.donchian });
 
-        // Institutional Trade Level Price Lines
+        // Trade Levels (SL, T1, T2)
         this.renderTradeLevels();
 
-        // Sub-Panes: RSI & MACD
+        // Cached Data for Sub-Panes
         this.cachedSubPaneData = {
             rsi: rsiData,
             macdLine: macdLineData,
             macdSignal: macdSignalData,
             macdHist: macdHistData,
+            stochK: stochKData,
+            stochD: stochDData,
+            atr: atrData,
         };
 
         if (this.indicatorState.rsi) this.renderRsiPane(rsiData);
         if (this.indicatorState.macd) this.renderMacdPane(macdLineData, macdSignalData, macdHistData);
+        if (this.indicatorState.stoch) this.renderStochPane(stochKData, stochDData);
+        if (this.indicatorState.atr) this.renderAtrPane(atrData);
 
-        // Fit content into visible container
         this.chart.timeScale().fitContent();
 
-        // Update initial crosshair legend with latest candle
         if (this.rawCandles.length > 0) {
-            const latest = this.rawCandles[this.rawCandles.length - 1];
-            this.updateLegend(latest);
+            this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
         }
     }
 
     renderTradeLevels() {
-        // Clear existing price lines cleanly
         for (const pl of this.priceLines) {
-            try {
-                this.candlestickSeries.removePriceLine(pl);
-            } catch (e) {
-                // Ignore removal error
-            }
+            try { this.candlestickSeries.removePriceLine(pl); } catch (e) {}
         }
         this.priceLines = [];
 
         if (!this.indicatorState.levels || !this.levels) return;
 
-        // 1. Stop Loss (Red Dashed) - Title 'SL' so label renders as "SL 286.14" without duplicate text
+        // Stop Loss
         if (this.levels.stop_loss && this.levels.stop_loss > 0) {
-            const slLine = this.candlestickSeries.createPriceLine({
+            this.priceLines.push(this.candlestickSeries.createPriceLine({
                 price: parseFloat(this.levels.stop_loss),
                 color: '#ef4444',
                 lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
                 title: 'SL',
-            });
-            this.priceLines.push(slLine);
+            }));
         }
 
-        // 2. Target 1 (Green Dashed) - Title 'T1'
+        // Target 1
         if (this.levels.target_1 && this.levels.target_1 > 0) {
-            const t1Line = this.candlestickSeries.createPriceLine({
+            this.priceLines.push(this.candlestickSeries.createPriceLine({
                 price: parseFloat(this.levels.target_1),
                 color: '#089981',
                 lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
                 title: 'T1',
-            });
-            this.priceLines.push(t1Line);
+            }));
         }
 
-        // 3. Target 2 (Teal Dashed) - Title 'T2'
+        // Target 2
         if (this.levels.target_2 && this.levels.target_2 > 0) {
-            const t2Line = this.candlestickSeries.createPriceLine({
+            this.priceLines.push(this.candlestickSeries.createPriceLine({
                 price: parseFloat(this.levels.target_2),
                 color: '#06b6d4',
                 lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
                 title: 'T2',
-            });
-            this.priceLines.push(t2Line);
+            }));
         }
     }
 
     renderRsiPane(rsiData) {
         const rsiContainer = document.getElementById('tradingview-rsi-container');
         if (!rsiContainer) return;
-
         rsiContainer.classList.remove('d-none');
+
         if (!this.rsiChart) {
             const colors = this.getThemeColors();
             this.rsiChart = LightweightCharts.createChart(rsiContainer, {
                 width: this.container.clientWidth,
                 height: 120,
-                layout: {
-                    background: { type: 'solid', color: colors.bg },
-                    textColor: colors.text,
-                    fontSize: 10,
-                },
-                grid: {
-                    vertLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted },
-                    horzLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted },
-                },
-                rightPriceScale: {
-                    borderColor: colors.border,
-                    scaleMargins: { top: 0.1, bottom: 0.1 },
-                },
-                timeScale: {
-                    visible: false,
-                },
+                layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text, fontSize: 10 },
+                grid: { vertLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted }, horzLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted } },
+                rightPriceScale: { borderColor: colors.border, scaleMargins: { top: 0.1, bottom: 0.1 } },
+                timeScale: { visible: false },
             });
 
-            this.rsiSeries = this.rsiChart.addLineSeries({
-                color: '#8b5cf6',
-                lineWidth: 1.5,
-                title: 'RSI 14',
-            });
-
-            // Oversold 30 & Overbought 70 reference lines
-            this.rsiSeries.createPriceLine({
-                price: 70,
-                color: '#ef4444',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                axisLabelVisible: true,
-                title: '70 OB',
-            });
-            this.rsiSeries.createPriceLine({
-                price: 30,
-                color: '#089981',
-                lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                axisLabelVisible: true,
-                title: '30 OS',
-            });
+            this.rsiSeries = this.rsiChart.addLineSeries({ color: '#8b5cf6', lineWidth: 1.5, title: 'RSI 14' });
+            this.rsiSeries.createPriceLine({ price: 70, color: '#ef4444', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '70 OB' });
+            this.rsiSeries.createPriceLine({ price: 30, color: '#089981', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '30 OS' });
 
             this.chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-                if (this.rsiChart && range) {
-                    this.rsiChart.timeScale().setVisibleLogicalRange(range);
-                }
+                if (this.rsiChart && range) this.rsiChart.timeScale().setVisibleLogicalRange(range);
             });
         }
-
-        if (this.rsiSeries && rsiData) {
-            this.rsiSeries.setData(rsiData);
-        }
+        if (this.rsiSeries && rsiData) this.rsiSeries.setData(rsiData);
     }
 
     renderMacdPane(lineData, signalData, histData) {
         const macdContainer = document.getElementById('tradingview-macd-container');
         if (!macdContainer) return;
-
         macdContainer.classList.remove('d-none');
+
         if (!this.macdChart) {
             const colors = this.getThemeColors();
             this.macdChart = LightweightCharts.createChart(macdContainer, {
                 width: this.container.clientWidth,
                 height: 120,
-                layout: {
-                    background: { type: 'solid', color: colors.bg },
-                    textColor: colors.text,
-                    fontSize: 10,
-                },
-                grid: {
-                    vertLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted },
-                    horzLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted },
-                },
-                rightPriceScale: {
-                    borderColor: colors.border,
-                    scaleMargins: { top: 0.1, bottom: 0.1 },
-                },
-                timeScale: {
-                    visible: false,
-                },
+                layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text, fontSize: 10 },
+                grid: { vertLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted }, horzLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted } },
+                rightPriceScale: { borderColor: colors.border, scaleMargins: { top: 0.1, bottom: 0.1 } },
+                timeScale: { visible: false },
             });
 
-            this.macdHistSeries = this.macdChart.addHistogramSeries({
-                lineWidth: 1,
-                title: 'Histogram',
-            });
-
-            this.macdLineSeries = this.macdChart.addLineSeries({
-                color: '#2563eb',
-                lineWidth: 1.5,
-                title: 'MACD',
-            });
-
-            this.macdSignalSeries = this.macdChart.addLineSeries({
-                color: '#f59e0b',
-                lineWidth: 1.5,
-                title: 'Signal',
-            });
+            this.macdHistSeries = this.macdChart.addHistogramSeries({ lineWidth: 1, title: 'Histogram' });
+            this.macdLineSeries = this.macdChart.addLineSeries({ color: '#2563eb', lineWidth: 1.5, title: 'MACD' });
+            this.macdSignalSeries = this.macdChart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'Signal' });
 
             this.chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-                if (this.macdChart && range) {
-                    this.macdChart.timeScale().setVisibleLogicalRange(range);
-                }
+                if (this.macdChart && range) this.macdChart.timeScale().setVisibleLogicalRange(range);
             });
         }
-
         if (this.macdHistSeries && histData) this.macdHistSeries.setData(histData);
         if (this.macdLineSeries && lineData) this.macdLineSeries.setData(lineData);
         if (this.macdSignalSeries && signalData) this.macdSignalSeries.setData(signalData);
+    }
+
+    renderStochPane(kData, dData) {
+        const stochContainer = document.getElementById('tradingview-stoch-container');
+        if (!stochContainer) return;
+        stochContainer.classList.remove('d-none');
+
+        if (!this.stochChart) {
+            const colors = this.getThemeColors();
+            this.stochChart = LightweightCharts.createChart(stochContainer, {
+                width: this.container.clientWidth,
+                height: 120,
+                layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text, fontSize: 10 },
+                grid: { vertLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted }, horzLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted } },
+                rightPriceScale: { borderColor: colors.border, scaleMargins: { top: 0.1, bottom: 0.1 } },
+                timeScale: { visible: false },
+            });
+
+            this.stochKSeries = this.stochChart.addLineSeries({ color: '#2563eb', lineWidth: 1.5, title: '%K' });
+            this.stochDSeries = this.stochChart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: '%D' });
+
+            this.stochKSeries.createPriceLine({ price: 80, color: '#ef4444', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '80 OB' });
+            this.stochKSeries.createPriceLine({ price: 20, color: '#089981', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '20 OS' });
+
+            this.chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+                if (this.stochChart && range) this.stochChart.timeScale().setVisibleLogicalRange(range);
+            });
+        }
+        if (this.stochKSeries && kData) this.stochKSeries.setData(kData);
+        if (this.stochDSeries && dData) this.stochDSeries.setData(dData);
+    }
+
+    renderAtrPane(atrData) {
+        const atrContainer = document.getElementById('tradingview-atr-container');
+        if (!atrContainer) return;
+        atrContainer.classList.remove('d-none');
+
+        if (!this.atrChart) {
+            const colors = this.getThemeColors();
+            this.atrChart = LightweightCharts.createChart(atrContainer, {
+                width: this.container.clientWidth,
+                height: 120,
+                layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text, fontSize: 10 },
+                grid: { vertLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted }, horzLines: { color: colors.grid, style: LightweightCharts.LineStyle.Dotted } },
+                rightPriceScale: { borderColor: colors.border, scaleMargins: { top: 0.1, bottom: 0.1 } },
+                timeScale: { visible: false },
+            });
+
+            this.atrSeries = this.atrChart.addLineSeries({ color: '#06b6d4', lineWidth: 1.5, title: 'ATR (14)' });
+
+            this.chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+                if (this.atrChart && range) this.atrChart.timeScale().setVisibleLogicalRange(range);
+            });
+        }
+        if (this.atrSeries && atrData) this.atrSeries.setData(atrData);
     }
 
     setChartType(type) {
         if (type === this.currentChartType) return;
         this.currentChartType = type;
 
-        const candleData = this.rawCandles.map(c => ({
-            time: c.time,
-            open: c.open,
-            high: c.high,
-            low: c.low,
-            close: c.close,
-        }));
+        const candleData = this.rawCandles.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }));
         const lineData = this.rawCandles.map(c => ({ time: c.time, value: c.close }));
 
         if (type === 'candlestick') {
@@ -586,10 +642,7 @@ class TradingViewStockChart {
             this.candlestickSeries.applyOptions({ visible: false });
             if (this.areaSeries) this.areaSeries.applyOptions({ visible: false });
             if (!this.lineSeries) {
-                this.lineSeries = this.chart.addLineSeries({
-                    color: '#2563eb',
-                    lineWidth: 2,
-                });
+                this.lineSeries = this.chart.addLineSeries({ color: '#2563eb', lineWidth: 2 });
             }
             this.lineSeries.applyOptions({ visible: true });
             this.lineSeries.setData(lineData);
@@ -598,9 +651,7 @@ class TradingViewStockChart {
 
     handleCrosshairMove(param) {
         if (!param || !param.time || !param.seriesData) {
-            if (this.rawCandles.length > 0) {
-                this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
-            }
+            if (this.rawCandles.length > 0) this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
             return;
         }
 
@@ -634,10 +685,6 @@ class TradingViewStockChart {
         const lowEl = document.getElementById('legend-low');
         const closeEl = document.getElementById('legend-close');
         const volEl = document.getElementById('legend-volume');
-        const sma20El = document.getElementById('legend-sma20');
-        const sma50El = document.getElementById('legend-sma50');
-        const sma20Wrap = document.getElementById('legend-sma20-wrap');
-        const sma50Wrap = document.getElementById('legend-sma50-wrap');
 
         const isUp = candle.close >= candle.open;
         const colorClass = isUp ? 'text-success' : 'text-danger';
@@ -658,23 +705,25 @@ class TradingViewStockChart {
             else volEl.textContent = v > 0 ? v.toLocaleString('en-IN') : '-';
         }
 
-        if (sma20El && sma20Wrap) {
-            if (candle.sma20 && this.indicatorState.sma20) {
-                sma20Wrap.classList.remove('d-none');
-                sma20El.textContent = Number(candle.sma20).toFixed(2);
-            } else {
-                sma20Wrap.classList.add('d-none');
+        const updateTag = (wrapId, valId, val, show) => {
+            const wrap = document.getElementById(wrapId);
+            const el = document.getElementById(valId);
+            if (wrap && el) {
+                if (val && show) {
+                    wrap.classList.remove('d-none');
+                    el.textContent = Number(val).toFixed(2);
+                } else {
+                    wrap.classList.add('d-none');
+                }
             }
-        }
+        };
 
-        if (sma50El && sma50Wrap) {
-            if (candle.sma50 && this.indicatorState.sma50) {
-                sma50Wrap.classList.remove('d-none');
-                sma50El.textContent = Number(candle.sma50).toFixed(2);
-            } else {
-                sma50Wrap.classList.add('d-none');
-            }
-        }
+        updateTag('legend-sma20-wrap', 'legend-sma20', candle.sma20, this.indicatorState.sma20);
+        updateTag('legend-sma50-wrap', 'legend-sma50', candle.sma50, this.indicatorState.sma50);
+        updateTag('legend-sma200-wrap', 'legend-sma200', candle.sma200, this.indicatorState.sma200);
+        updateTag('legend-ema9-wrap', 'legend-ema9', candle.ema9, this.indicatorState.ema9);
+        updateTag('legend-ema20-wrap', 'legend-ema20', candle.ema20, this.indicatorState.ema20);
+        updateTag('legend-vwap-wrap', 'legend-vwap', candle.vwap, this.indicatorState.vwap);
     }
 
     bindToolbarEvents() {
@@ -708,9 +757,7 @@ class TradingViewStockChart {
                 item.classList.add('active');
 
                 const labelEl = document.getElementById('chart-type-label');
-                if (labelEl) {
-                    labelEl.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                }
+                if (labelEl) labelEl.textContent = type.charAt(0).toUpperCase() + type.slice(1);
                 this.setChartType(type);
             };
         });
@@ -724,32 +771,47 @@ class TradingViewStockChart {
 
                 if (ind === 'sma20' && this.sma20Series) this.sma20Series.applyOptions({ visible: checked });
                 if (ind === 'sma50' && this.sma50Series) this.sma50Series.applyOptions({ visible: checked });
+                if (ind === 'sma200' && this.sma200Series) this.sma200Series.applyOptions({ visible: checked });
+                if (ind === 'ema9' && this.ema9Series) this.ema9Series.applyOptions({ visible: checked });
                 if (ind === 'ema20' && this.ema20Series) this.ema20Series.applyOptions({ visible: checked });
+                if (ind === 'ema50' && this.ema50Series) this.ema50Series.applyOptions({ visible: checked });
+                if (ind === 'vwap' && this.vwapSeries) this.vwapSeries.applyOptions({ visible: checked });
+
                 if (ind === 'bb') {
                     if (this.bbUpperSeries) this.bbUpperSeries.applyOptions({ visible: checked });
                     if (this.bbLowerSeries) this.bbLowerSeries.applyOptions({ visible: checked });
                 }
+                if (ind === 'donchian') {
+                    if (this.donchianUpperSeries) this.donchianUpperSeries.applyOptions({ visible: checked });
+                    if (this.donchianLowerSeries) this.donchianLowerSeries.applyOptions({ visible: checked });
+                }
+
                 if (ind === 'rsi') {
-                    const rsiContainer = document.getElementById('tradingview-rsi-container');
-                    if (checked) {
-                        this.renderRsiPane(this.cachedSubPaneData ? this.cachedSubPaneData.rsi : []);
-                    } else if (rsiContainer) {
-                        rsiContainer.classList.add('d-none');
-                    }
+                    const c = document.getElementById('tradingview-rsi-container');
+                    if (checked) this.renderRsiPane(this.cachedSubPaneData ? this.cachedSubPaneData.rsi : []);
+                    else if (c) c.classList.add('d-none');
                 }
                 if (ind === 'macd') {
-                    const macdContainer = document.getElementById('tradingview-macd-container');
+                    const c = document.getElementById('tradingview-macd-container');
                     if (checked) {
                         const d = this.cachedSubPaneData;
                         this.renderMacdPane(d ? d.macdLine : [], d ? d.macdSignal : [], d ? d.macdHist : []);
-                    } else if (macdContainer) {
-                        macdContainer.classList.add('d-none');
-                    }
+                    } else if (c) c.classList.add('d-none');
+                }
+                if (ind === 'stoch') {
+                    const c = document.getElementById('tradingview-stoch-container');
+                    if (checked) {
+                        const d = this.cachedSubPaneData;
+                        this.renderStochPane(d ? d.stochK : [], d ? d.stochD : []);
+                    } else if (c) c.classList.add('d-none');
+                }
+                if (ind === 'atr') {
+                    const c = document.getElementById('tradingview-atr-container');
+                    if (checked) this.renderAtrPane(this.cachedSubPaneData ? this.cachedSubPaneData.atr : []);
+                    else if (c) c.classList.add('d-none');
                 }
 
-                if (this.rawCandles.length > 0) {
-                    this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
-                }
+                if (this.rawCandles.length > 0) this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
             };
         });
 
@@ -768,9 +830,7 @@ class TradingViewStockChart {
         // 5. Fit Content (Reset Zoom)
         const fitBtn = document.getElementById('btn-reset-zoom');
         if (fitBtn) {
-            fitBtn.onclick = () => {
-                if (this.chart) this.chart.timeScale().fitContent();
-            };
+            fitBtn.onclick = () => { if (this.chart) this.chart.timeScale().fitContent(); };
         }
 
         // 6. Fullscreen Toggle
@@ -792,32 +852,24 @@ class TradingViewStockChart {
     observeThemeChanges() {
         const observer = new MutationObserver(() => {
             const colors = this.getThemeColors();
-            if (this.chart) {
-                this.chart.applyOptions({
-                    layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text },
-                    grid: { vertLines: { color: colors.grid }, horzLines: { color: colors.grid } },
-                    rightPriceScale: { borderColor: colors.border },
-                    timeScale: { borderColor: colors.border },
-                });
-            }
-            if (this.rsiChart) {
-                this.rsiChart.applyOptions({
-                    layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text },
-                    grid: { vertLines: { color: colors.grid }, horzLines: { color: colors.grid } },
-                });
-            }
-            if (this.macdChart) {
-                this.macdChart.applyOptions({
-                    layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text },
-                    grid: { vertLines: { color: colors.grid }, horzLines: { color: colors.grid } },
-                });
-            }
+            const applyOpts = (c) => {
+                if (c) {
+                    c.applyOptions({
+                        layout: { background: { type: 'solid', color: colors.bg }, textColor: colors.text },
+                        grid: { vertLines: { color: colors.grid }, horzLines: { color: colors.grid } },
+                        rightPriceScale: { borderColor: colors.border },
+                        timeScale: { borderColor: colors.border },
+                    });
+                }
+            };
+            applyOpts(this.chart);
+            applyOpts(this.rsiChart);
+            applyOpts(this.macdChart);
+            applyOpts(this.stochChart);
+            applyOpts(this.atrChart);
         });
 
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-bs-theme'],
-        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
     }
 
     destroy() {
@@ -825,18 +877,11 @@ class TradingViewStockChart {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;
         }
-        if (this.chart) {
-            this.chart.remove();
-            this.chart = null;
-        }
-        if (this.rsiChart) {
-            this.rsiChart.remove();
-            this.rsiChart = null;
-        }
-        if (this.macdChart) {
-            this.macdChart.remove();
-            this.macdChart = null;
-        }
+        if (this.chart) { this.chart.remove(); this.chart = null; }
+        if (this.rsiChart) { this.rsiChart.remove(); this.rsiChart = null; }
+        if (this.macdChart) { this.macdChart.remove(); this.macdChart = null; }
+        if (this.stochChart) { this.stochChart.remove(); this.stochChart = null; }
+        if (this.atrChart) { this.atrChart.remove(); this.atrChart = null; }
     }
 }
 
@@ -868,9 +913,6 @@ window.EChartsAnalytics = {
         };
     },
 
-    /**
-     * Initializes a Donut chart for Portfolio Allocation or Sector Exposure
-     */
     initDonut(domId, data, title = '') {
         const dom = document.getElementById(domId);
         if (!dom || typeof echarts === 'undefined') return null;
@@ -881,33 +923,17 @@ window.EChartsAnalytics = {
         const option = {
             backgroundColor: common.backgroundColor,
             title: title ? { text: title, left: 'center', textStyle: common.textStyle } : undefined,
-            tooltip: {
-                ...common.tooltip,
-                trigger: 'item',
-                formatter: '{b}: ₹{c} ({d}%)',
-            },
-            legend: {
-                orient: 'horizontal',
-                bottom: '0',
-                textStyle: common.textStyle,
-            },
-            series: [
-                {
-                    type: 'pie',
-                    radius: ['45%', '70%'],
-                    avoidLabelOverlap: false,
-                    itemStyle: {
-                        borderRadius: 6,
-                        borderColor: this.isDark() ? '#0f172a' : '#ffffff',
-                        borderWidth: 2,
-                    },
-                    label: { show: false },
-                    emphasis: {
-                        label: { show: true, fontSize: 13, fontWeight: 'bold' },
-                    },
-                    data: data,
-                },
-            ],
+            tooltip: { ...common.tooltip, trigger: 'item', formatter: '{b}: ₹{c} ({d}%)' },
+            legend: { orient: 'horizontal', bottom: '0', textStyle: common.textStyle },
+            series: [{
+                type: 'pie',
+                radius: ['45%', '70%'],
+                avoidLabelOverlap: false,
+                itemStyle: { borderRadius: 6, borderColor: this.isDark() ? '#0f172a' : '#ffffff', borderWidth: 2 },
+                label: { show: false },
+                emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
+                data: data,
+            }],
         };
 
         chart.setOption(option);
@@ -915,9 +941,6 @@ window.EChartsAnalytics = {
         return chart;
     },
 
-    /**
-     * Initializes an Area/Line chart for Backtesting Equity Curves & Drawdown
-     */
     initLine(domId, xData, seriesList) {
         const dom = document.getElementById(domId);
         if (!dom || typeof echarts === 'undefined') return null;
@@ -969,7 +992,6 @@ window.initStockChart = function(containerId, dataUrl) {
         return;
     }
 
-    // Clean up previous instance on this container if present
     if (container._stockChartInstance && typeof container._stockChartInstance.destroy === 'function') {
         container._stockChartInstance.destroy();
     }
@@ -979,7 +1001,6 @@ window.initStockChart = function(containerId, dataUrl) {
     return chart;
 };
 
-// Cleanup charts before HTMX content swaps to prevent memory leaks
 document.addEventListener('htmx:beforeSwap', function(evt) {
     const target = evt.detail.target;
     if (target) {

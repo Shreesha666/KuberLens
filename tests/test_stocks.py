@@ -225,7 +225,11 @@ class TestStockViews:
         assert "close" in data["candles"][0]
         assert "sma20" in data["candles"][-1]
         assert "ema20" in data["candles"][-1]
+        assert "ema9" in data["candles"][-1]
+        assert "vwap" in data["candles"][-1]
         assert "rsi14" in data["candles"][-1]
+        assert "stoch_k" in data["candles"][-1]
+        assert "atr14" in data["candles"][-1]
         assert "macd_line" in data["candles"][-1]
         assert "levels" in data
         assert "stop_loss" in data["levels"]

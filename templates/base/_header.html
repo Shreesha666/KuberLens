@@ -7,7 +7,7 @@
         </button>
         <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center gap-2.5 text-body text-nowrap"
            hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
                 <i class="bi bi-graph-up-arrow fs-6"></i>
             </div>
             <span class="fw-bold tracking-tight text-nowrap text-body" style="font-size: 0.95rem; letter-spacing: -0.01em;">INDIAN STOCK INTEL</span>
@@ -17,33 +17,35 @@
     <!-- Main Bar: Center Market Ticker + Right Controls -->
     <div class="header-main-bar">
         <!-- Center: Indices Ticker (Desktop) -->
-        <div class="d-none d-xl-flex align-items-center gap-3">
+        <div class="d-none d-xl-flex align-items-center gap-2.5 overflow-hidden flex-shrink-1 min-w-0">
             <!-- Market Status Pill -->
-            <div class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-body-tertiary border border-secondary border-opacity-10" style="font-size: 0.75rem;">
-                <span class="badge {% if market_status.is_open %}bg-success{% else %}bg-secondary{% endif %} rounded-circle p-1" style="width: 7px; height: 7px;"></span>
-                <span class="text-muted fw-semibold">{{ market_status.exchange }}: {{ market_status.session_name }}</span>
+            <div class="d-inline-flex align-items-center gap-1.5 px-2.5 py-0.5 rounded-pill bg-body-tertiary border border-secondary border-opacity-10 text-nowrap flex-shrink-0" style="font-size: 0.725rem;">
+                <span class="badge {% if market_status.is_open %}bg-success{% else %}bg-secondary{% endif %} rounded-circle p-0 flex-shrink-0" style="width: 7px; height: 7px;"></span>
+                <span class="text-muted fw-semibold text-nowrap">{{ market_status.exchange }}: {{ market_status.session_name }}</span>
             </div>
 
-            <div class="vr my-2 text-secondary opacity-25"></div>
+            <div class="vr text-secondary opacity-25" style="height: 16px; align-self: center;"></div>
 
             {% for item in market_ticker %}
-            <div class="d-flex align-items-baseline gap-1.5 small text-nowrap">
+            <div class="d-flex align-items-baseline gap-1 small text-nowrap flex-shrink-0 {% if forloop.counter > 2 %}d-none d-xxl-flex{% endif %}">
                 <span class="text-muted fw-semibold" style="font-size: 0.775rem;">{{ item.symbol }}</span>
                 <span class="fw-bold num-mono text-body mx-1" style="font-size: 0.825rem;">{{ item.price }}</span>
                 <span class="num-mono fw-medium {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}" style="font-size: 0.75rem;">
                     {% if item.is_positive %}&#9650;{% else %}&#9660;{% endif %} {{ item.change }} ({{ item.change_percent }})
                 </span>
             </div>
-            {% if not forloop.last %}<div class="vr my-2 text-secondary opacity-25"></div>{% endif %}
+            {% if not forloop.last %}
+            <div class="vr text-secondary opacity-25 {% if forloop.counter >= 2 %}d-none d-xxl-block{% endif %}" style="height: 16px; align-self: center;"></div>
+            {% endif %}
             {% endfor %}
         </div>
 
         <!-- Right Controls: Global Search, Data Freshness, Notifications, User Menu -->
-        <div class="d-flex align-items-center gap-2.5 ms-auto">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
             <!-- Global Search with HTMX Autocomplete Dropdown -->
-            <div class="d-none d-md-block position-relative" style="width: 250px;" id="global-search-container">
+            <div class="d-none d-md-block position-relative" style="width: 190px;" id="global-search-container">
                 <input type="search" class="form-control form-control-sm bg-body-tertiary text-body border-0 rounded-pill ps-4 py-1.5"
-                       name="q" placeholder="Search NSE/BSE symbol, ISIN..." aria-label="Global Search"
+                       name="q" placeholder="Search symbol, ISIN..." aria-label="Global Search"
                        hx-get="{% url 'stocks:stock_search' %}"
                        hx-trigger="keyup changed delay:250ms, search"
                        hx-target="#search-results"
@@ -53,15 +55,15 @@
                 <div id="search-results" class="position-absolute w-100 mt-1 shadow-sm rounded-3 z-3" style="top: 100%; left: 0;"></div>
             </div>
 
-            <!-- Data Freshness Indicator -->
-            <span class="badge {{ data_freshness.css_class }} d-none d-lg-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-pill" style="font-weight: 500; font-size: 0.75rem;">
+            <!-- Data Freshness Indicator (Only on extra-wide screens to prevent laptop overflow) -->
+            <span class="badge {{ data_freshness.css_class }} d-none d-xxl-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-pill flex-shrink-0" style="font-weight: 500; font-size: 0.725rem;">
                 <i class="bi bi-shield-check"></i>
-                <span>{{ data_freshness.label }}</span>
+                <span class="text-nowrap">{{ data_freshness.label }}</span>
             </span>
 
             <!-- Notifications Trigger -->
-            <a class="btn btn-sm btn-light border-0 position-relative rounded-circle d-inline-flex align-items-center justify-content-center text-muted"
-               style="width: 34px; height: 34px; box-shadow: inset 0 0 0 1px var(--border-color);"
+            <a class="btn btn-sm btn-light border-0 position-relative rounded-circle d-inline-flex align-items-center justify-content-center text-muted flex-shrink-0"
+               style="width: 32px; height: 32px; box-shadow: inset 0 0 0 1px var(--border-color);"
                aria-label="Notifications"
                href="{% url 'notifications:list' %}"
                hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
@@ -74,15 +76,15 @@
             </a>
 
             <!-- User Profile Menu -->
-            <div class="dropdown">
-                <button class="btn btn-sm btn-light border-0 rounded-pill d-flex align-items-center gap-2 py-1 px-2.5 text-body"
+            <div class="dropdown flex-shrink-0">
+                <button class="btn btn-sm btn-light border-0 rounded-pill d-flex align-items-center gap-2 py-1 px-2 text-body"
                         type="button" data-bs-toggle="dropdown" aria-expanded="false"
                         style="box-shadow: inset 0 0 0 1px var(--border-color);">
-                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold"
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold flex-shrink-0"
                          style="width: 22px; height: 22px; font-size: 0.675rem;">
                         {% if user.is_authenticated %}{{ user.username|slice:":1"|upper }}{% else %}G{% endif %}
                     </div>
-                    <span class="d-none d-sm-inline fw-semibold small text-truncate" style="max-width: 90px; font-size: 0.8125rem;">
+                    <span class="d-none d-sm-inline fw-semibold small text-truncate" style="max-width: 85px; font-size: 0.8125rem;">
                         {% if user.is_authenticated %}{{ user.username }}{% else %}Guest{% endif %}
                     </span>
                     <i class="bi bi-chevron-down text-muted" style="font-size: 0.65rem;"></i>

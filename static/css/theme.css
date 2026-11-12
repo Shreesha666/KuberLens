@@ -76,12 +76,19 @@ body {
 .header-main-bar {
     flex-grow: 1;
     height: 100%;
-    padding: 0 1.5rem;
+    padding: 0 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
     min-width: 0;
+}
+
+@media (max-width: 1199.98px) {
+    .header-main-bar {
+        padding: 0 0.75rem;
+        gap: 0.5rem;
+    }
 }
 
 @media (max-width: 991.98px) {
@@ -91,7 +98,7 @@ body {
         padding: 0 1rem;
     }
     .header-main-bar {
-        padding: 0 1rem;
+        padding: 0 0.75rem;
     }
 }
 

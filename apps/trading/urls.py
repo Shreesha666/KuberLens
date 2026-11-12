@@ -19,3 +19,4 @@ urlpatterns = [
     path("journal/<uuid:pk>/close/", TradeJournalCloseView.as_view(), name="journal_close"),
     path("journal/<uuid:pk>/delete/", TradeJournalDeleteView.as_view(), name="journal_delete"),
 ]
+

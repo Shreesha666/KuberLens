@@ -231,8 +231,8 @@
                             {% for t in open_trades %}
                             <tr>
                                 <td>
-                                    <a href="{% url 'stocks:detail' t.listing.symbol %}" class="fw-bold text-decoration-none text-body"
-                                       hx-get="{% url 'stocks:detail' t.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                    <a href="{% url 'stocks:stock_detail' t.listing.symbol %}" class="fw-bold text-decoration-none text-body"
+                                       hx-get="{% url 'stocks:stock_detail' t.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
                                         {{ t.listing.symbol }}
                                     </a>
                                 </td>
@@ -336,8 +336,8 @@
                             {% for t in closed_trades %}
                             <tr>
                                 <td>
-                                    <a href="{% url 'stocks:detail' t.listing.symbol %}" class="fw-bold text-decoration-none text-body"
-                                       hx-get="{% url 'stocks:detail' t.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                    <a href="{% url 'stocks:stock_detail' t.listing.symbol %}" class="fw-bold text-decoration-none text-body"
+                                       hx-get="{% url 'stocks:stock_detail' t.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
                                         {{ t.listing.symbol }}
                                     </a>
                                 </td>
@@ -374,3 +374,4 @@
         </div>
     </div>
 </div>
+

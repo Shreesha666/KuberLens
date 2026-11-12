@@ -33,3 +33,4 @@ class Command(BaseCommand):
                 f" - [{s['symbol']}] {s['strategy_name']} | Price: ₹{s['current_price']:.2f} | "
                 f"SL: ₹{s['stop_loss']:.2f} | T1: ₹{s['target_1']:.2f} | R:R 1:{s['risk_reward']}"
             )
+

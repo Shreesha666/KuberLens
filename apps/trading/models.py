@@ -199,3 +199,4 @@ class TradeJournal(AuditedModel):
             self.status = TradeJournalStatus.CLOSED
 
         self.save()
+

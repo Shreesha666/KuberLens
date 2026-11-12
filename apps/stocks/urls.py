@@ -5,6 +5,7 @@ from apps.stocks.views import (
     StockChartDataView,
     StockDetailView,
     StockListView,
+    StockLogoProxyView,
     StockSearchView,
 )
 
@@ -16,4 +17,5 @@ urlpatterns = [
     path("sectors/", SectorAnalysisView.as_view(), name="sector_analysis"),
     path("<str:symbol>/", StockDetailView.as_view(), name="stock_detail"),
     path("<str:symbol>/chart-data/", StockChartDataView.as_view(), name="stock_chart_data"),
+    path("<str:symbol>/logo/", StockLogoProxyView.as_view(), name="stock_logo"),
 ]

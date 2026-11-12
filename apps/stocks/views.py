@@ -6,7 +6,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Avg, Max, Min, Q
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
@@ -17,6 +17,7 @@ from apps.instruments.models import ExchangeListing, Instrument
 from apps.market.models import HistoricalCandle, MarketQuote
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 from services.indicators.calculator import TechnicalIndicatorCalculator
+from services.logos import CompanyLogoService
 from services.market_data.service import MarketDataService
 
 logger = logging.getLogger(__name__)
@@ -409,3 +410,16 @@ class SectorAnalysisView(HTMXResponseMixin, TemplateView):
         context["selected_sector_summary"] = selected_sector_summary
         context["constituent_stocks"] = constituent_stocks
         return context
+
+
+class StockLogoProxyView(View):
+    """
+    High-performance vector logo proxy endpoint.
+    Retrieves and caches SVG logos from api.dharun.dev with automatic offline monogram fallback.
+    Sets aggressive browser cache headers (7 days) for instant subsequent renders.
+    """
+    def get(self, request, symbol: str, *args, **kwargs):
+        content, content_type = CompanyLogoService.get_logo(symbol)
+        response = HttpResponse(content, content_type=content_type)
+        response["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
+        return response

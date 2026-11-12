@@ -1,3 +1,4 @@
+{% load core_tags %}
 <!-- Holdings Header -->
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
@@ -100,13 +101,18 @@
                     {% for h in holdings %}
                     <tr>
                         <td class="ps-4">
-                            <a href="{% url 'holdings:detail' h.listing.symbol %}"
-                               class="text-decoration-none fw-bold text-body"
-                               hx-get="{% url 'holdings:detail' h.listing.symbol %}"
-                               hx-target="#main-content" hx-push-url="true">
-                                {{ h.listing.symbol }}
-                            </a>
-                            <div class="text-muted small">{{ h.listing.instrument.display_name }}</div>
+                            <div class="d-flex align-items-center gap-2">
+                                {% stock_logo h.listing size=34 css_class="p-0.5" %}
+                                <div>
+                                    <a href="{% url 'holdings:detail' h.listing.symbol %}"
+                                       class="text-decoration-none fw-bold text-body"
+                                       hx-get="{% url 'holdings:detail' h.listing.symbol %}"
+                                       hx-target="#main-content" hx-push-url="true">
+                                        {{ h.listing.symbol }}
+                                    </a>
+                                    <div class="text-muted small">{{ h.listing.instrument.display_name }}</div>
+                                </div>
+                            </div>
                         </td>
                         <td>
                             <span class="badge bg-secondary-subtle text-body border small">{{ h.listing.exchange.code }}</span>

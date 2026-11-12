@@ -189,12 +189,17 @@
                         {% for h in holdings_evaluations %}
                         <tr>
                             <td class="ps-3">
-                                <a href="{% url 'stocks:stock_detail' h.listing.symbol %}" class="fw-bold text-decoration-none text-body"
-                                   hx-get="{% url 'stocks:stock_detail' h.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
-                                    {{ h.listing.symbol }}
-                                </a>
-                                <div class="text-muted extra-small">{{ h.listing.instrument.display_name|truncatechars:24 }}</div>
-                                <span class="badge bg-light text-muted border extra-small mt-0.5">{{ h.listing.instrument.sector|default:"General" }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% stock_logo h.listing size=32 %}
+                                    <div>
+                                        <a href="{% url 'stocks:stock_detail' h.listing.symbol %}" class="fw-bold text-decoration-none text-body"
+                                           hx-get="{% url 'stocks:stock_detail' h.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                            {{ h.listing.symbol }}
+                                        </a>
+                                        <div class="text-muted extra-small">{{ h.listing.instrument.display_name|truncatechars:24 }}</div>
+                                        <span class="badge bg-light text-muted border extra-small mt-0.5">{{ h.listing.instrument.sector|default:"General" }}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="text-end">
                                 <div class="fw-semibold num-mono">{{ h.rec.allocation_pct }}%</div>
@@ -284,13 +289,18 @@
                         {% for p in prospective_evaluations %}
                         <tr>
                             <td class="ps-3">
-                                <a href="{% url 'stocks:stock_detail' p.listing.symbol %}" class="fw-bold text-decoration-none text-body"
-                                   hx-get="{% url 'stocks:stock_detail' p.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
-                                    {{ p.listing.symbol }}
-                                </a>
-                                <div class="text-muted extra-small">{{ p.listing.instrument.display_name|truncatechars:24 }}</div>
-                                <div class="num-mono extra-small text-muted">
-                                    CMP: {% if p.quote %}{{ p.quote.price|format_inr }}{% else %}-{% endif %}
+                                <div class="d-flex align-items-center gap-2">
+                                    {% stock_logo p.listing size=32 %}
+                                    <div>
+                                        <a href="{% url 'stocks:stock_detail' p.listing.symbol %}" class="fw-bold text-decoration-none text-body"
+                                           hx-get="{% url 'stocks:stock_detail' p.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                            {{ p.listing.symbol }}
+                                        </a>
+                                        <div class="text-muted extra-small">{{ p.listing.instrument.display_name|truncatechars:24 }}</div>
+                                        <div class="num-mono extra-small text-muted">
+                                            CMP: {% if p.quote %}{{ p.quote.price|format_inr }}{% else %}-{% endif %}
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                             <td class="text-center">

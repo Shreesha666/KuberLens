@@ -215,35 +215,165 @@
 {% endif %}
 
 
-<!-- Interactive Candlestick Chart Card -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-transparent d-flex flex-wrap align-items-center justify-content-between py-3 border-0 gap-2">
-        <div class="d-flex align-items-center gap-2">
-            <h3 class="h5 fw-bold mb-0">Interactive Price & Volume Chart</h3>
-            <span class="badge bg-secondary-subtle text-muted small">Daily OHLCV</span>
+<!-- Interactive TradingView Candlestick Chart Card -->
+<div class="card border-0 shadow-sm mb-4" id="stock-chart-card">
+    <div class="card-header bg-transparent py-3 border-bottom border-secondary border-opacity-10">
+        <!-- Top Row: Stock Identity, Live Quote, and Freshness Status -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold px-2 py-1">{{ listing.exchange.code }}</span>
+                <h3 class="h5 fw-bold mb-0">{{ listing.symbol }}</h3>
+                <span class="text-muted small d-none d-sm-inline">{{ listing.instrument.name }}</span>
+                {% if quote %}
+                <span class="badge bg-light text-secondary border small">
+                    <i class="bi bi-clock me-1"></i>{{ quote.get_market_status_display|default:"Market Closed" }}
+                </span>
+                <span class="badge bg-secondary-subtle text-muted small">
+                    <i class="bi bi-database me-1"></i>{{ quote.get_source_type_display|default:"EOD Bhavcopy" }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                {% if quote %}
+                <div class="text-end">
+                    <div class="h5 fw-bold mb-0">₹{{ quote.last_price|floatformat:2 }}</div>
+                    <div class="small fw-semibold {% if quote.change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {% if quote.change >= 0 %}+{% endif %}{{ quote.change|floatformat:2 }} ({{ quote.change_percent|floatformat:2 }}%)
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
-        <div class="d-flex flex-wrap align-items-center gap-3 small">
-            <span class="d-flex align-items-center gap-1">
-                <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background-color: #2563eb;"></span>
-                <span class="text-muted">SMA 20</span>
-            </span>
-            <span class="d-flex align-items-center gap-1">
-                <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background-color: #f59e0b;"></span>
-                <span class="text-muted">SMA 50</span>
-            </span>
-            <span class="d-flex align-items-center gap-1">
-                <span class="d-inline-block" style="width: 14px; height: 2px; border-top: 2px dashed #059669;"></span>
-                <span class="text-success fw-semibold">Targets (T1/T2)</span>
-            </span>
-            <span class="d-flex align-items-center gap-1">
-                <span class="d-inline-block" style="width: 14px; height: 2px; border-top: 2px dashed #dc2626;"></span>
-                <span class="text-danger fw-semibold">Stop Loss</span>
-            </span>
+
+        <!-- Toolbar Row: Timeframes, Chart Type, Indicators Dropdown, Levels Toggle, Zoom & Fullscreen -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top border-secondary border-opacity-10">
+            <!-- Timeframe Selector -->
+            <div class="btn-group btn-group-sm" role="group" id="chart-timeframe-group">
+                <button type="button" class="btn btn-outline-secondary py-1 px-2" data-days="30">1M</button>
+                <button type="button" class="btn btn-outline-secondary py-1 px-2" data-days="90">3M</button>
+                <button type="button" class="btn btn-primary py-1 px-2 active" data-days="180">6M</button>
+                <button type="button" class="btn btn-outline-secondary py-1 px-2" data-days="365">1Y</button>
+                <button type="button" class="btn btn-outline-secondary py-1 px-2" data-days="0">ALL</button>
+            </div>
+
+            <!-- Middle Group: Chart Type & Indicators Dropdown & Levels Toggle -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Chart Type Selector -->
+                <div class="btn-group btn-group-sm" role="group" id="chart-type-group">
+                    <button type="button" class="btn btn-secondary py-1 px-2 active" data-type="candlestick" title="Candlestick Chart">
+                        <i class="bi bi-bar-chart-fill me-1"></i>Candles
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary py-1 px-2" data-type="area" title="Area Chart">
+                        <i class="bi bi-graph-up me-1"></i>Area
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary py-1 px-2" data-type="line" title="Line Chart">
+                        <i class="bi bi-activity me-1"></i>Line
+                    </button>
+                </div>
+
+                <!-- Technical Indicators Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                        <i class="bi bi-sliders me-1"></i>Indicators
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" style="min-width: 210px; z-index: 1050;">
+                        <li class="dropdown-header text-uppercase small fw-bold">Overlays</li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-sma20" data-indicator="sma20" checked>
+                                <label class="form-check-label d-flex align-items-center gap-1" for="toggle-sma20">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #2563eb;"></span>
+                                    SMA 20 (Royal Blue)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-sma50" data-indicator="sma50" checked>
+                                <label class="form-check-label d-flex align-items-center gap-1" for="toggle-sma50">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #f59e0b;"></span>
+                                    SMA 50 (Amber)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-ema20" data-indicator="ema20">
+                                <label class="form-check-label d-flex align-items-center gap-1" for="toggle-ema20">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #8b5cf6;"></span>
+                                    EMA 20 (Purple)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-bb" data-indicator="bb">
+                                <label class="form-check-label d-flex align-items-center gap-1" for="toggle-bb">
+                                    <span class="d-inline-block" style="width: 10px; height: 2px; background-color: #a855f7;"></span>
+                                    Bollinger Bands (20, 2σ)
+                                </label>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li class="dropdown-header text-uppercase small fw-bold">Sub-Panes</li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-rsi" data-indicator="rsi">
+                                <label class="form-check-label" for="toggle-rsi">RSI 14 Sub-Pane</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-macd" data-indicator="macd">
+                                <label class="form-check-label" for="toggle-macd">MACD (12, 26, 9) Pane</label>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Trade Levels Toggle -->
+                <button type="button" class="btn btn-sm btn-secondary py-1 px-2 active" id="btn-toggle-levels" title="Toggle Stop Loss and Targets">
+                    <i class="bi bi-bullseye me-1 text-danger"></i>Levels
+                </button>
+            </div>
+
+            <!-- Actions: Fit Content & Fullscreen -->
+            <div class="d-flex align-items-center gap-1">
+                <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" id="btn-reset-zoom" title="Reset Zoom / Fit Content">
+                    <i class="bi bi-arrows-angle-contract me-1"></i>Fit
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" id="btn-chart-fullscreen" title="Toggle Fullscreen">
+                    <i class="bi bi-fullscreen"></i>
+                </button>
+            </div>
         </div>
     </div>
-    <div class="card-body p-3">
-        <div style="width: 100%; height: 360px; position: relative;">
-            <canvas id="stock-chart-canvas"></canvas>
+
+    <!-- Card Body: Floating OHLC Legend Bar and Chart Container -->
+    <div class="card-body p-2 position-relative">
+        <!-- Floating Live Crosshair Legend Bar -->
+        <div id="chart-legend-bar" class="d-flex flex-wrap align-items-center gap-3 px-3 py-1 mb-1 small text-muted font-monospace" style="min-height: 24px; font-size: 11px;">
+            <span id="legend-date">-</span>
+            <span>O: <strong id="legend-open" class="text-body">-</strong></span>
+            <span>H: <strong id="legend-high" class="text-body">-</strong></span>
+            <span>L: <strong id="legend-low" class="text-body">-</strong></span>
+            <span>C: <strong id="legend-close" class="text-body">-</strong></span>
+            <span>Vol: <strong id="legend-volume" class="text-body">-</strong></span>
+            <span id="legend-sma20-wrap" class="d-none">SMA20: <strong id="legend-sma20" style="color: #2563eb;">-</strong></span>
+            <span id="legend-sma50-wrap" class="d-none">SMA50: <strong id="legend-sma50" style="color: #f59e0b;">-</strong></span>
+        </div>
+
+        <!-- Main TradingView Chart Container -->
+        <div id="tradingview-chart-container" class="stock-chart-canvas" style="width: 100%; height: 420px; position: relative;"></div>
+
+        <!-- Synchronized Sub-Pane for RSI 14 (Hidden by default) -->
+        <div id="tradingview-rsi-container" class="mt-2 border-top border-secondary border-opacity-10 d-none" style="width: 100%; height: 130px; position: relative;">
+            <div class="position-absolute top-0 start-0 px-2 py-1 small fw-bold text-muted font-monospace" style="z-index: 5; font-size: 10px;">RSI (14)</div>
+        </div>
+
+        <!-- Synchronized Sub-Pane for MACD (Hidden by default) -->
+        <div id="tradingview-macd-container" class="mt-2 border-top border-secondary border-opacity-10 d-none" style="width: 100%; height: 130px; position: relative;">
+            <div class="position-absolute top-0 start-0 px-2 py-1 small fw-bold text-muted font-monospace" style="z-index: 5; font-size: 10px;">MACD (12, 26, 9)</div>
         </div>
     </div>
 </div>
@@ -578,7 +708,7 @@
         const dataUrl = '{% url "stocks:stock_chart_data" listing.symbol %}';
         function mount() {
             if (typeof window.initStockChart === 'function') {
-                window.initStockChart('stock-chart-canvas', dataUrl);
+                window.initStockChart('tradingview-chart-container', dataUrl);
             } else {
                 setTimeout(mount, 40);
             }

@@ -254,13 +254,14 @@ class StockDetailView(HTMXResponseMixin, DetailView):
 
 class StockChartDataView(View):
     """
-    JSON API for interactive candlestick charting.
-    Returns array of candles with SMA overlays.
+    JSON API for interactive candlestick charting using TradingView Lightweight Charts.
+    Returns OHLCV candles, volume, technical indicators (SMA, EMA, Bollinger, RSI, MACD),
+    and institutional trade levels (Stop Loss, Targets).
     """
     def get(self, request, symbol, *args, **kwargs):
         listing = (
             ExchangeListing.objects.filter(symbol=symbol.upper(), is_tradeable=True)
-            .select_related("exchange")
+            .select_related("exchange", "instrument")
             .first()
         )
         if not listing:
@@ -268,25 +269,30 @@ class StockChartDataView(View):
 
         days = int(request.GET.get("days", 180))
         interval = request.GET.get("interval", "1d")
-        start_date = timezone.now() - timedelta(days=days)
 
-        candles = list(
-            HistoricalCandle.objects.filter(
-                listing=listing,
-                interval=interval,
-                timestamp__gte=start_date,
-            ).order_by("timestamp")
-        )
+        query = HistoricalCandle.objects.filter(listing=listing, interval=interval)
+        if 0 < days < 1800:
+            start_date = timezone.now() - timedelta(days=days)
+            query = query.filter(timestamp__gte=start_date)
+        else:
+            start_date = None
 
-        # Pull technical snapshots for moving averages
-        snapshots = {
-            s.timestamp.date().isoformat(): s
-            for s in TechnicalIndicatorSnapshot.objects.filter(
-                listing=listing,
-                interval=interval,
-                timestamp__gte=start_date,
-            )
-        }
+        candles = list(query.order_by("timestamp"))
+
+        # Pull technical snapshots for moving averages and indicators
+        snap_query = TechnicalIndicatorSnapshot.objects.filter(listing=listing, interval=interval)
+        if start_date:
+            snap_query = snap_query.filter(timestamp__gte=start_date)
+
+        snapshots = {s.timestamp.date().isoformat(): s for s in snap_query}
+
+        # If snapshots are empty or sparse, trigger on-the-fly calculation
+        if len(snapshots) < len(candles) * 0.5 and len(candles) > 0:
+            try:
+                computed = TechnicalIndicatorCalculator.compute_and_store_snapshots(listing, candles)
+                snapshots = {s.timestamp.date().isoformat(): s for s in computed}
+            except Exception as e:
+                logger.warning("Could not compute technical indicators on the fly: %s", e)
 
         data = []
         for c in candles:
@@ -298,9 +304,18 @@ class StockChartDataView(View):
                 "high": float(c.high),
                 "low": float(c.low),
                 "close": float(c.close),
-                "volume": c.volume,
-                "sma20": float(snap.sma_20) if snap and snap.sma_20 else None,
-                "sma50": float(snap.sma_50) if snap and snap.sma_50 else None,
+                "volume": int(c.volume),
+                "sma20": float(snap.sma_20) if snap and snap.sma_20 is not None else None,
+                "sma50": float(snap.sma_50) if snap and snap.sma_50 is not None else None,
+                "ema20": float(snap.ema_20) if snap and snap.ema_20 is not None else None,
+                "ema50": float(snap.ema_50) if snap and snap.ema_50 is not None else None,
+                "bb_upper": float(snap.bollinger_upper) if snap and snap.bollinger_upper is not None else None,
+                "bb_middle": float(snap.bollinger_middle) if snap and snap.bollinger_middle is not None else None,
+                "bb_lower": float(snap.bollinger_lower) if snap and snap.bollinger_lower is not None else None,
+                "rsi14": float(snap.rsi_14) if snap and snap.rsi_14 is not None else None,
+                "macd_line": float(snap.macd_line) if snap and snap.macd_line is not None else None,
+                "macd_signal": float(snap.macd_signal) if snap and snap.macd_signal is not None else None,
+                "macd_hist": float(snap.macd_histogram) if snap and snap.macd_histogram is not None else None,
             }
             data.append(item)
 
@@ -320,7 +335,9 @@ class StockChartDataView(View):
             technical=tech_snap,
             fundamental=fund_snap,
         )
+        latest_quote = listing.quotes.first()
         levels = {
+            "entry_price": float(latest_quote.last_price) if latest_quote else None,
             "stop_loss": rec["new_investor"]["stop_loss_value"],
             "target_1": rec["new_investor"]["target_1_value"],
             "target_2": rec["new_investor"]["target_2_value"],

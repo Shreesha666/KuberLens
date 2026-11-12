@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="{% static 'css/theme.css' %}">
     <!-- Local HTMX JS (Zero CDN Dependency) -->
     <script src="{% static 'django_htmx/htmx.min.js' %}"></script>
+    <!-- Vendor Charting Libraries: TradingView Lightweight Charts & Apache ECharts -->
+    <script src="{% static 'vendor/lightweight-charts.standalone.production.js' %}"></script>
+    <script src="{% static 'vendor/echarts.min.js' %}"></script>
     <!-- Candlestick & Volume Charting Engine -->
     <script src="{% static 'js/charting.js' %}"></script>
     {% block extra_css %}{% endblock %}

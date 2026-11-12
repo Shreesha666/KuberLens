@@ -337,7 +337,7 @@ class StockChartDataView(View):
         )
         latest_quote = listing.quotes.first()
         levels = {
-            "entry_price": float(latest_quote.last_price) if latest_quote else None,
+            "entry_price": float(latest_quote.price) if latest_quote else None,
             "stop_loss": rec["new_investor"]["stop_loss_value"],
             "target_1": rec["new_investor"]["target_1_value"],
             "target_2": rec["new_investor"]["target_2_value"],

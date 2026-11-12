@@ -236,7 +236,7 @@
             <div class="d-flex align-items-center gap-3">
                 {% if quote %}
                 <div class="text-end">
-                    <div class="h5 fw-bold mb-0">₹{{ quote.last_price|floatformat:2 }}</div>
+                    <div class="h5 fw-bold mb-0">₹{{ quote.price|floatformat:2 }}</div>
                     <div class="small fw-semibold {% if quote.change >= 0 %}text-success{% else %}text-danger{% endif %}">
                         {% if quote.change >= 0 %}+{% endif %}{{ quote.change|floatformat:2 }} ({{ quote.change_percent|floatformat:2 }}%)
                     </div>

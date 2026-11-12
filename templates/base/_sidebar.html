@@ -13,16 +13,16 @@
 
         <!-- RESEARCH -->
         <div class="nav-section-title">Research</div>
-        <a href="{% url 'dashboard:placeholder' 'stock_analysis' %}" class="nav-link {% if active_nav == 'stock_analysis' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'stock_analysis' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'stocks:stock_list' %}" class="nav-link {% if active_nav == 'stock_analysis' %}active{% endif %}"
+           hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-search"></i> Stock Analysis
         </a>
-        <a href="{% url 'dashboard:placeholder' 'technical_analysis' %}" class="nav-link {% if active_nav == 'technical_analysis' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'technical_analysis' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'technical_analysis:overview' %}" class="nav-link {% if active_nav == 'technical_analysis' %}active{% endif %}"
+           hx-get="{% url 'technical_analysis:overview' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-activity"></i> Technical Analysis
         </a>
-        <a href="{% url 'dashboard:placeholder' 'fundamental_analysis' %}" class="nav-link {% if active_nav == 'fundamental_analysis' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'fundamental_analysis' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'fundamental_analysis:overview' %}" class="nav-link {% if active_nav == 'fundamental_analysis' %}active{% endif %}"
+           hx-get="{% url 'fundamental_analysis:overview' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-bar-chart-steps"></i> Fundamental Analysis
         </a>
         <a href="{% url 'dashboard:placeholder' 'screener' %}" class="nav-link {% if active_nav == 'screener' %}active{% endif %}"

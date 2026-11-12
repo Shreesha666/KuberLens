@@ -1,0 +1,122 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">Fundamental Analysis & Valuation Hub</h2>
+        <p class="text-muted small mb-0">Multi-factor corporate evaluations across profitability, growth, solvency, valuation, and ownership.</p>
+    </div>
+    <div>
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+            <i class="bi bi-shield-check"></i> Scoring Engine: <code class="num-mono">fund-v1.0.0</code>
+        </span>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Top Overall Scored Companies -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-success"><i class="bi bi-award"></i> Quality Leaders (Highest Overall Score)</h3>
+                <span class="badge bg-success-subtle text-success border border-success-subtle small">5-Factor Score</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in top_scored %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <div>
+                            <span class="fw-bold text-body">{{ item.instrument.display_name }}</span>
+                            <span class="badge bg-secondary-subtle text-body border ms-1">{{ item.instrument.sector }}</span>
+                            <div class="small text-muted" style="font-size: 0.75rem;">ROE: {{ item.roe|default:"—" }}% &bull; D/E: {{ item.debt_to_equity|default:"—" }}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success fs-6 px-2 py-1">{{ item.overall_score }}/100</span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">No fundamental snapshots compiled yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Value Picks -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-primary"><i class="bi bi-tag"></i> Attractive Valuation Picks</h3>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Valuation Score &ge; 70</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in value_picks %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <div>
+                            <span class="fw-bold text-body">{{ item.instrument.display_name }}</span>
+                            <div class="small text-muted" style="font-size: 0.75rem;">P/E: {{ item.pe_ratio }} (Sector: {{ item.sector_pe }}) &bull; Div: {{ item.dividend_yield|default:"0.0" }}%</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary px-2 py-1">Score: {{ item.valuation_score }}/100</span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">No value opportunities identified today.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Growth Leaders -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-info"><i class="bi bi-graph-up"></i> High Growth Businesses</h3>
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle small">Growth Score &ge; 70</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in growth_leaders %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <div>
+                            <span class="fw-bold text-body">{{ item.instrument.display_name }}</span>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Rev YoY: +{{ item.revenue_growth_yoy }}% &bull; Profit YoY: +{{ item.profit_growth_yoy }}%</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-info text-white px-2 py-1">Score: {{ item.growth_score }}/100</span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">No growth leaders meeting threshold.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Sheet Strength -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-warning-emphasis"><i class="bi bi-shield-lock"></i> Pristine Balance Sheets</h3>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle small">Solvency Score &ge; 75</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in healthy_balance_sheets %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <div>
+                            <span class="fw-bold text-body">{{ item.instrument.display_name }}</span>
+                            <div class="small text-muted" style="font-size: 0.75rem;">Debt/Equity: {{ item.debt_to_equity }} &bull; Current Ratio: {{ item.current_ratio }}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-warning text-dark px-2 py-1">Health: {{ item.financial_health_score }}/100</span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">No companies matching solvency criteria.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

@@ -78,9 +78,13 @@ python manage.py create_dev_user
 - **Username:** `admin`
 - **Password:** `Admin@12345`
 
-### 6. Seed Instruments & Exchange Listings
+### 6. Seed Instruments & Stock Research Data
 ```bash
+# Seed benchmark exchanges and top equities
 python manage.py seed_instruments
+
+# Seed historical candles, technical indicators, and fundamental snapshots
+python manage.py seed_stock_research
 ```
 
 ### 7. (Optional) Sync Quotes or Historical Candles via CLI
@@ -97,7 +101,11 @@ python manage.py import_market_data --symbol RELIANCE --exchange NSE --history -
 python manage.py runserver 8000
 ```
 Open [http://localhost:8000](http://localhost:8000) in your web browser.  
-Visit [http://localhost:8000/settings/data-sources/](http://localhost:8000/settings/data-sources/) to monitor provider health and metrics.
+- **Stock Research Directory:** [http://localhost:8000/stocks/](http://localhost:8000/stocks/)
+- **Stock Profile (e.g. RELIANCE):** [http://localhost:8000/stocks/RELIANCE/](http://localhost:8000/stocks/RELIANCE/)
+- **Technical Analysis Hub:** [http://localhost:8000/research/technical/](http://localhost:8000/research/technical/)
+- **Fundamental Analysis Hub:** [http://localhost:8000/research/fundamental/](http://localhost:8000/research/fundamental/)
+- **Data Sources Health:** [http://localhost:8000/settings/data-sources/](http://localhost:8000/settings/data-sources/)
 
 ---
 
@@ -127,7 +135,7 @@ python manage.py check --deploy --settings=config.settings.production
 
 ## 5. Upcoming Phases
 
-- **Phase 3:** Stock Research Engine, Autocomplete Search, Technical & Fundamental Snapshots (Raw vs Derived)
-- **Phase 4:** Portfolio Accounting (FIFO Lot Matching & Capital Charges)
+- **Phase 4:** Portfolio Accounting (Immutable Transaction Ledger, FIFO Lot Matching & Capital Charges)
 - **Phase 5:** Stock Screener & Custom Watchlists
+- **Phase 6:** Swing Trading & Risk Management Engine
 

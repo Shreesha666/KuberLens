@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform  
 **Document Purpose:** Living tracker of modules, phases, and components  
 **Last Updated:** 2026-11-12  
-**Current Overall State:** Phase 2 Completed & Validated &bull; Ready for Phase 3 Approval
+**Current Overall State:** Phase 3 Completed & Validated &bull; Ready for Phase 4 Approval
 
 ---
 
@@ -25,8 +25,8 @@
 | **Phase 0** | Architecture Review & Refinement 2.1 | 🟢 **COMPLETED** | 2026-11-12 | 2D Market Data status, Immutable ledger, Operations runbook & test matrix |
 | **Phase 1** | Django Foundation, Ops & Dynamic UI Shell | 🟢 **COMPLETED** | 2026-11-12 | Django 5.1, CustomUser (UUID), `django-htmx`, Shell, Light Theme default |
 | **Phase 2** | Market Data Providers & Historical Storage | 🟢 **COMPLETED** | 2026-11-12 | Jugaad-Data & Yahoo adapters, ExchangeCalendar, MarketDataService, 43 tests passing |
-| **Phase 3** | Instruments & Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 2 | Awaiting approval. Stock profiles, interactive charts, raw vs derived indicators |
-| **Phase 4** | Portfolio & Holdings Analysis | ⚪ **NOT STARTED** | Follows Phase 3 | Immutable ledger, FIFO lot matching, Capital charges, Corporate actions |
+| **Phase 3** | Instruments & Stock Research Engine | 🟢 **COMPLETED** | 2026-11-12 | Autocomplete search, Stock profiles, Canvas candlestick chart, Technical & Fundamental engines, 63 tests passing |
+| **Phase 4** | Portfolio & Holdings Analysis | ⚪ **NOT STARTED** | Follows Phase 3 | Awaiting approval. Immutable ledger, FIFO lot matching, Capital charges, Corporate actions |
 | **Phase 5** | Screener & Watchlists | ⚪ **NOT STARTED** | Follows Phase 4 | Multi-variable scanner over pre-calculated snapshots, Custom user lists |
 | **Phase 6** | Swing Trading & Risk Management | ⚪ **NOT STARTED** | Follows Phase 5 | 1-8 week setups, position sizing engine, Trade Journal |
 | **Phase 7** | AI Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 6 | Investor, Swing, and Risk AI agents consuming structured data with prompt versions |
@@ -47,9 +47,9 @@
 | `instruments` | Canonical `Instrument` (ISIN), `ExchangeListing` (NSE/BSE symbols) | 🟢 **COMPLETED** | `Exchange`, `Instrument`, `ExchangeListing`, `seed_instruments` management command (top 10 benchmark stocks) |
 | `market` | Index tracking, advance/decline stats, quotes, candles, logs | 🟢 **COMPLETED** | `DataProvider`, `MarketQuote` (2D status), `HistoricalCandle`, `DataRefreshLog`, `DataQualityIssue`, Celery tasks (`ingest_daily_bhavcopy_task`, `monitor_provider_health_task`), `import_market_data` command |
 | `settings_app` | Data source provider health, API keys, cache controls | 🟢 **COMPLETED** | `DataSourcesView`, `/settings/data-sources/` route with HTMX dual-mode rendering and provider health table |
-| `stocks` | Stock profiles, search autocomplete, quotes, historical charts | ⚪ **NOT STARTED** | Phase 3 Scope |
-| `technical_analysis` | SMA, EMA, RSI, MACD, Bollinger, Snapshots with calculation version | ⚪ **NOT STARTED** | Phase 3 Scope |
-| `fundamental_analysis` | P/E, P/B, ROE, ROCE, Debt/Equity, Snapshots with calculation version | ⚪ **NOT STARTED** | Phase 3 Scope |
+| `stocks` | Stock profiles, search autocomplete, quotes, historical charts | 🟢 **COMPLETED** | `StockSearchView` (HTMX instant dropdown), `StockListView` (Directory & filters), `StockDetailView` (Full research profile), `StockChartDataView` (JSON chart API), `seed_stock_research` command |
+| `technical_analysis` | SMA, EMA, RSI, MACD, Bollinger, Snapshots with calculation version | 🟢 **COMPLETED** | `TechnicalIndicatorSnapshot` (with compound constraints), `TechnicalOverviewView` (`/research/technical/`), Celery calculation tasks |
+| `fundamental_analysis` | P/E, P/B, ROE, ROCE, Debt/Equity, Snapshots with calculation version | 🟢 **COMPLETED** | `FundamentalSnapshot` (with multi-factor scores), `FundamentalOverviewView` (`/research/fundamental/`) |
 | `portfolio` | Portfolio container, cash balances, asset allocation, sector exposure | ⚪ **NOT STARTED** | Phase 4 Scope |
 | `holdings` | Transaction ledger (source of truth), FIFO lot matcher, derived holding | ⚪ **NOT STARTED** | Phase 4 Scope |
 | `trading` | Swing trade setups, risk management, trade journal, log entries | ⚪ **NOT STARTED** | Phase 6 Scope |
@@ -66,16 +66,14 @@
 
 ---
 
-## 4. Market Data & Service Architecture (Phase 2 Deliverables)
+## 4. Analytical Engines & Architecture (Phase 3 Deliverables)
 
 | Component | Path | Status | Details |
 |---|---|:---:|---|
-| **ExchangeCalendar** | `services/calendar/exchange_calendar.py` | 🟢 **COMPLETED** | NSE/BSE holidays (2024–2027), trading hours (09:15–15:30 IST), Diwali Muhurat session timings |
-| **MarketDataNormalizer** | `integrations/market_data/normalizer.py` | 🟢 **COMPLETED** | Validates OHLC rules ($L \le O \le H$, $L \le C \le H$, $V \ge 0$, $P > 0$) |
-| **Jugaad-Data Provider** | `integrations/market_data/providers/jugaad/` | 🟢 **COMPLETED** | NSE direct feed (`source_type=DIRECT`), Bhavcopy EOD ingestion, polite rate limiting |
-| **Yahoo Finance Provider** | `integrations/market_data/providers/yahoo/` | 🟢 **COMPLETED** | Secondary fallback, explicitly labeled `source_type=DELAYED` (15m delay) |
-| **Provider Registry & Health** | `integrations/market_data/registry.py`, `health.py` | 🟢 **COMPLETED** | Dynamic provider resolution, circuit breaker state tracking |
-| **MarketDataService** | `services/market_data/service.py` | 🟢 **COMPLETED** | Caching, transparent failover from Jugaad to Yahoo, historical candle backfill |
+| **Technical Indicator Engine** | `services/indicators/calculator.py` | 🟢 **COMPLETED** | Trend (SMA 20/50/100/200, EMA 9/20/50, MACD), Momentum (Wilder's RSI 14, Stoch RSI), Volatility (Bollinger Bands, ATR 14), Volume (VolSMA20, OBV), Signals |
+| **Fundamental Analyzer Engine** | `services/fundamentals/analyzer.py` | 🟢 **COMPLETED** | 5-Factor scoring (Growth, Profitability, Solvency, Valuation, Ownership), Sector-relative P/E, Dynamic positive & risk drivers |
+| **Interactive Canvas Chart** | `static/js/charting.js` | 🟢 **COMPLETED** | Standalone HTML5 Canvas candlestick and volume chart with SMA 20/50 overlays, crosshair, and hover tooltips (zero external CDN dependency) |
+| **Global Autocomplete Search** | `apps/stocks/views.py` | 🟢 **COMPLETED** | Instant header search by symbol, company legal name, display name, and ISIN via HTMX dropdown |
 
 ---
 
@@ -87,8 +85,12 @@
 | **Authentication & Accounts** | `tests/test_accounts.py` | 5 | 🟢 PASSED | 95% |
 | **Exchange Trading Calendar** | `tests/test_calendar.py` | 8 | 🟢 PASSED | 86% |
 | **Market Data, Providers & Tasks** | `tests/test_market_data.py` | 19 | 🟢 PASSED | 85% |
-| **Navigation & HTMX Swapping** | `tests/test_navigation.py` | 5 | 🟢 PASSED | 100% |
-| **TOTAL** | — | **43** | **43 / 43 PASSED** | **81% Overall** |
+| **Navigation & Shell Swapping** | `tests/test_navigation.py` | 5 | 🟢 PASSED | 100% |
+| **Technical Indicators Parity & Recalc** | `tests/test_indicators.py` | 5 | 🟢 PASSED | 97% |
+| **Fundamental Analysis & Multi-Factor Scoring** | `tests/test_fundamentals.py` | 3 | 🟢 PASSED | 98% |
+| **Stocks Autocomplete & Research Profiles** | `tests/test_stocks.py` | 7 | 🟢 PASSED | 87% |
+| **Research Hubs & Background Tasks** | `tests/test_research_views.py` | 5 | 🟢 PASSED | 91% |
+| **TOTAL** | — | **63** | **63 / 63 PASSED** | **87% Overall** |
 
 ---
 
@@ -96,4 +98,4 @@
 
 | ID | Date Logged | Description | Severity | Mitigation / Resolution |
 |---|---|---|:---:|---|
-| *None* | 2026-11-12 | Phase 2 execution successfully completed and verified. | Low | Ready to begin Phase 3 upon user approval. |
+| *None* | 2026-11-12 | Phase 3 execution successfully completed and verified. | Low | Ready to begin Phase 4 upon user approval. |

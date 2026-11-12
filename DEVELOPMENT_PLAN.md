@@ -118,6 +118,7 @@ Before writing application code, the environment and workspace scaffolding must 
 
 ### Phase 3: Instrument & Stock Research Engine (Raw vs. Derived Separation)
 
+- **Status:** 🟢 **COMPLETED (2026-11-12)** &bull; 63 tests passing (87% overall coverage)
 - **Objective:** Provide a fast stock directory, autocomplete search, detailed profile pages, historical interactive charts, and versioned technical/fundamental calculation engines separated from raw candle data.
 - **Django Apps Involved:** `stocks`, `instruments`, `technical_analysis`, `fundamental_analysis`
 - **Files to Create or Modify:**

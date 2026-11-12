@@ -1,0 +1,111 @@
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1">Technical Analysis Intelligence</h2>
+        <p class="text-muted small mb-0">Multi-timeframe trend signals, momentum extremes, breakouts, and moving average cross alerts.</p>
+    </div>
+    <div>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+            <i class="bi bi-cpu"></i> Engine: <code class="num-mono">tech-v1.0.0</code>
+        </span>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Bullish Trend Leaders -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-success"><i class="bi bi-graph-up-arrow"></i> Bullish Trends</h3>
+                <span class="badge bg-success-subtle text-success border border-success-subtle small">Price &gt; SMA50 &ge; SMA200</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in bullish_trends %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <a href="{% url 'stocks:stock_detail' item.listing.symbol %}" class="fw-bold text-decoration-none text-primary"
+                           hx-get="{% url 'stocks:stock_detail' item.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            {{ item.listing.symbol }}
+                        </a>
+                        <div class="text-end">
+                            <span class="num-mono fw-semibold">RSI: {{ item.rsi_14|floatformat:1 }}</span>
+                            <span class="badge bg-success ms-1">BULLISH</span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">No bullish trend signals active.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakout Alerts -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-primary"><i class="bi bi-lightning-charge"></i> Price Breakouts</h3>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">20-Day Range</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in breakouts %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <a href="{% url 'stocks:stock_detail' item.listing.symbol %}" class="fw-bold text-decoration-none text-primary"
+                           hx-get="{% url 'stocks:stock_detail' item.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            {{ item.listing.symbol }}
+                        </a>
+                        <div>
+                            <span class="badge {% if item.breakout_signal == 'RESISTANCE_BREAKOUT' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ item.breakout_signal }}
+                            </span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-muted text-center py-3">No breakout conditions detected today.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- RSI Extremes -->
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent py-3 border-0 d-flex justify-content-between align-items-center">
+                <h3 class="h6 fw-bold mb-0 text-warning-emphasis"><i class="bi bi-speedometer2"></i> RSI Extremes</h3>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle small">&le;30 or &ge;70</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush small">
+                    {% for item in oversold_rsi %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <a href="{% url 'stocks:stock_detail' item.listing.symbol %}" class="fw-bold text-decoration-none text-primary"
+                           hx-get="{% url 'stocks:stock_detail' item.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            {{ item.listing.symbol }}
+                        </a>
+                        <div>
+                            <span class="num-mono fw-bold text-gain">RSI {{ item.rsi_14|floatformat:1 }}</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">Oversold</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    {% for item in overbought_rsi %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                        <a href="{% url 'stocks:stock_detail' item.listing.symbol %}" class="fw-bold text-decoration-none text-primary"
+                           hx-get="{% url 'stocks:stock_detail' item.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            {{ item.listing.symbol }}
+                        </a>
+                        <div>
+                            <span class="num-mono fw-bold text-loss">RSI {{ item.rsi_14|floatformat:1 }}</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">Overbought</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    {% if not oversold_rsi and not overbought_rsi %}
+                    <li class="list-group-item text-muted text-center py-3">All monitored stocks in neutral RSI zone.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

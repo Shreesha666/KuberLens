@@ -16,3 +16,4 @@ class DataQualityError(MarketDataError):
 
 class ProviderUnavailableError(MarketDataError):
     """Raised when a requested provider is disabled, offline, or circuit-broken."""
+

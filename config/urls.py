@@ -11,6 +11,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls", namespace="accounts")),
     path("core/", include("apps.core.urls", namespace="core")),
+    path("stocks/", include("apps.stocks.urls", namespace="stocks")),
+    path("research/technical/", include("apps.technical_analysis.urls", namespace="technical_analysis")),
+    path("research/fundamental/", include("apps.fundamental_analysis.urls", namespace="fundamental_analysis")),
     path("settings/", include("apps.settings_app.urls", namespace="settings_app")),
     path("", include("apps.dashboard.urls", namespace="dashboard")),
 ]

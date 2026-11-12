@@ -227,6 +227,8 @@ class TestStockViews:
         assert "ema20" in data["candles"][-1]
         assert "ema9" in data["candles"][-1]
         assert "vwap" in data["candles"][-1]
+        assert "supertrend" in data["candles"][-1]
+        assert "sar" in data["candles"][-1]
         assert "rsi14" in data["candles"][-1]
         assert "stoch_k" in data["candles"][-1]
         assert "atr14" in data["candles"][-1]
@@ -235,6 +237,8 @@ class TestStockViews:
         assert "stop_loss" in data["levels"]
         assert "target_1" in data["levels"]
         assert "confluence_score" in data["levels"]
+        assert "fibonacci" in data
+        assert "level_618" in data["fibonacci"]
 
     def test_sector_analysis_view_full_and_htmx(self, seeded_stocks):
         client = Client()

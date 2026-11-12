@@ -242,3 +242,194 @@ class TechnicalIndicatorCalculator:
         TechnicalIndicatorSnapshot.objects.bulk_create(snapshots, batch_size=500)
         logger.info("Saved %d technical indicator snapshots for %s", len(snapshots), listing.symbol)
         return snapshots
+
+    @classmethod
+    def calculate_supertrend(
+        cls,
+        highs: Sequence[float],
+        lows: Sequence[float],
+        closes: Sequence[float],
+        period: int = 10,
+        multiplier: float = 3.0,
+    ) -> tuple[list[float | None], list[int | None]]:
+        """
+        Calculates SuperTrend indicator.
+        Returns:
+            (values, directions) where direction is 1 (bullish/green) or -1 (bearish/red).
+        """
+        n = len(closes)
+        if n == 0:
+            return [], []
+
+        tr = [float(highs[0] - lows[0])]
+        for i in range(1, n):
+            curr_h, curr_l, pc = float(highs[i]), float(lows[i]), float(closes[i - 1])
+            tr.append(max(curr_h - curr_l, abs(curr_h - pc), abs(curr_l - pc)))
+
+        atr = [tr[0]]
+        alpha = 1.0 / period
+        for i in range(1, n):
+            atr.append(alpha * tr[i] + (1 - alpha) * atr[-1])
+
+        st_vals = []
+        st_dirs = []
+        fub = 0.0
+        flb = 0.0
+        st = 0.0
+        direction = 1
+
+        for i in range(n):
+            c = float(closes[i])
+            hl2 = (float(highs[i]) + float(lows[i])) / 2.0
+            bub = hl2 + multiplier * atr[i]
+            blb = hl2 - multiplier * atr[i]
+
+            if i == 0:
+                fub = bub
+                flb = blb
+                direction = 1 if c >= hl2 else -1
+                st = flb if direction == 1 else fub
+            else:
+                fub = bub if (bub < fub or float(closes[i - 1]) > fub) else fub
+                flb = blb if (blb > flb or float(closes[i - 1]) < flb) else flb
+
+                prev_dir = direction
+                if prev_dir == -1:
+                    if c > fub:
+                        direction = 1
+                        st = flb
+                    else:
+                        direction = -1
+                        st = fub
+                else:
+                    if c < flb:
+                        direction = -1
+                        st = fub
+                    else:
+                        direction = 1
+                        st = flb
+
+            st_vals.append(round(st, 2))
+            st_dirs.append(direction)
+
+        return st_vals, st_dirs
+
+    @classmethod
+    def calculate_parabolic_sar(
+        cls,
+        highs: Sequence[float],
+        lows: Sequence[float],
+        closes: Sequence[float],
+        af_start: float = 0.02,
+        af_step: float = 0.02,
+        af_max: float = 0.20,
+    ) -> tuple[list[float | None], list[bool | None]]:
+        """
+        Calculates Parabolic SAR (Stop and Reverse).
+        Returns:
+            (sar_values, is_long_flags)
+        """
+        n = len(closes)
+        if n == 0:
+            return [], []
+
+        sar = [0.0] * n
+        is_long = [True] * n
+
+        h0, l0, c0 = float(highs[0]), float(lows[0]), float(closes[0])
+        if c0 >= (h0 + l0) / 2.0:
+            is_long[0] = True
+            sar[0] = l0
+            ep = h0
+        else:
+            is_long[0] = False
+            sar[0] = h0
+            ep = l0
+        af = af_start
+
+        for i in range(1, n):
+            curr_h, curr_l = float(highs[i]), float(lows[i])
+            prev_sar = sar[i - 1]
+            if is_long[i - 1]:
+                curr_sar = prev_sar + af * (ep - prev_sar)
+                curr_sar = min(curr_sar, float(lows[i - 1]))
+                if i >= 2:
+                    curr_sar = min(curr_sar, float(lows[i - 2]))
+
+                if curr_l < curr_sar:
+                    is_long[i] = False
+                    sar[i] = ep
+                    ep = curr_l
+                    af = af_start
+                else:
+                    is_long[i] = True
+                    sar[i] = curr_sar
+                    if curr_h > ep:
+                        ep = curr_h
+                        af = min(af + af_step, af_max)
+            else:
+                curr_sar = prev_sar - af * (prev_sar - ep)
+                curr_sar = max(curr_sar, float(highs[i - 1]))
+                if i >= 2:
+                    curr_sar = max(curr_sar, float(highs[i - 2]))
+
+                if curr_h > curr_sar:
+                    is_long[i] = True
+                    sar[i] = ep
+                    ep = curr_h
+                    af = af_start
+                else:
+                    is_long[i] = False
+                    sar[i] = curr_sar
+                    if curr_l < ep:
+                        ep = curr_l
+                        af = min(af + af_step, af_max)
+
+            sar[i] = round(sar[i], 2)
+        sar[0] = round(sar[0], 2)
+
+        return sar, is_long
+
+    @classmethod
+    def calculate_fibonacci_levels(
+        cls,
+        highs: Sequence[float],
+        lows: Sequence[float],
+    ) -> dict[str, float]:
+        """
+        Calculates standard institutional Fibonacci retracement levels from swing high and swing low.
+        """
+        if not highs or not lows:
+            return {}
+
+        swing_high = float(max(highs))
+        swing_low = float(min(lows))
+        diff = swing_high - swing_low
+
+        if diff <= 0:
+            return {
+                "swing_high": round(swing_high, 2),
+                "swing_low": round(swing_low, 2),
+                "diff": 0.0,
+                "level_0": round(swing_high, 2),
+                "level_236": round(swing_high, 2),
+                "level_382": round(swing_high, 2),
+                "level_500": round(swing_high, 2),
+                "level_618": round(swing_high, 2),
+                "level_786": round(swing_high, 2),
+                "level_100": round(swing_low, 2),
+            }
+
+        return {
+            "swing_high": round(swing_high, 2),
+            "swing_low": round(swing_low, 2),
+            "diff": round(diff, 2),
+            "level_0": round(swing_high, 2),
+            "level_236": round(swing_high - (0.236 * diff), 2),
+            "level_382": round(swing_high - (0.382 * diff), 2),
+            "level_500": round(swing_high - (0.500 * diff), 2),
+            "level_618": round(swing_high - (0.618 * diff), 2),
+            "level_786": round(swing_high - (0.786 * diff), 2),
+            "level_100": round(swing_low, 2),
+        }
+

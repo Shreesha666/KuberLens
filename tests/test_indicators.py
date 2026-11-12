@@ -136,6 +136,48 @@ class TestTechnicalIndicatorMath:
             assert row["bollinger_upper"] >= row["bollinger_middle"]
             assert row["bollinger_middle"] >= row["bollinger_lower"]
 
+    def test_supertrend_calculation(self):
+        highs = [105, 107, 108, 106, 109, 112, 110, 104, 102, 100, 98, 97]
+        lows = [100, 102, 104, 103, 105, 108, 107, 100, 98, 95, 93, 92]
+        closes = [104, 106, 107, 104, 108, 111, 108, 101, 99, 96, 94, 93]
+
+        vals, dirs = TechnicalIndicatorCalculator.calculate_supertrend(highs, lows, closes, period=5, multiplier=2.0)
+        assert len(vals) == len(closes)
+        assert len(dirs) == len(closes)
+        # Early bars with strong closes produce bullish direction (1)
+        assert dirs[0] == 1
+        # Late bars with sharp drops produce bearish direction (-1)
+        assert dirs[-1] == -1
+        assert all(v > 0 for v in vals)
+
+    def test_parabolic_sar_calculation(self):
+        highs = [100, 102, 105, 108, 112, 115, 110, 105, 100, 95]
+        lows = [95, 97, 100, 104, 107, 110, 104, 100, 94, 90]
+        closes = [99, 101, 104, 107, 111, 114, 105, 101, 95, 91]
+
+        sar_vals, is_longs = TechnicalIndicatorCalculator.calculate_parabolic_sar(highs, lows, closes)
+        assert len(sar_vals) == len(closes)
+        assert len(is_longs) == len(closes)
+        # In uptrend, SAR is below prices and is_long is True
+        assert is_longs[1] is True
+        assert sar_vals[1] <= lows[1]
+        # In subsequent downtrend, SAR reverses and is_long becomes False
+        assert is_longs[-1] is False
+        assert sar_vals[-1] >= highs[-1]
+
+    def test_fibonacci_retracements(self):
+        highs = [100.0, 150.0, 200.0]
+        lows = [80.0, 120.0, 100.0]
+
+        fib = TechnicalIndicatorCalculator.calculate_fibonacci_levels(highs, lows)
+        assert fib["swing_high"] == 200.0
+        assert fib["swing_low"] == 80.0
+        assert fib["diff"] == 120.0
+        assert fib["level_0"] == 200.0
+        assert fib["level_500"] == 140.0  # 200 - 0.5 * 120
+        assert fib["level_618"] == round(200.0 - 0.618 * 120.0, 2)
+        assert fib["level_100"] == 80.0
+
 
 @pytest.mark.django_db
 class TestTechnicalSnapshotRecalculation:

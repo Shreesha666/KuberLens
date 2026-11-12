@@ -295,10 +295,18 @@ class StockChartDataView(View):
             except Exception as e:
                 logger.warning("Could not compute technical indicators on the fly: %s", e)
 
+        # Precompute advanced overlays: SuperTrend, Parabolic SAR, and Fibonacci
+        all_highs = [float(c.high) for c in candles]
+        all_lows = [float(c.low) for c in candles]
+        all_closes = [float(c.close) for c in candles]
+        st_vals, st_dirs = TechnicalIndicatorCalculator.calculate_supertrend(all_highs, all_lows, all_closes)
+        sar_vals, sar_longs = TechnicalIndicatorCalculator.calculate_parabolic_sar(all_highs, all_lows, all_closes)
+        fib_levels = TechnicalIndicatorCalculator.calculate_fibonacci_levels(all_highs, all_lows)
+
         data = []
         cum_pv = 0.0
         cum_vol = 0
-        for c in candles:
+        for idx, c in enumerate(candles):
             date_str = c.timestamp.date().isoformat()
             snap = snapshots.get(date_str)
             vol = int(c.volume)
@@ -321,6 +329,10 @@ class StockChartDataView(View):
                 "ema20": float(snap.ema_20) if snap and snap.ema_20 is not None else None,
                 "ema50": float(snap.ema_50) if snap and snap.ema_50 is not None else None,
                 "vwap": vwap,
+                "supertrend": st_vals[idx] if idx < len(st_vals) else None,
+                "supertrend_dir": st_dirs[idx] if idx < len(st_dirs) else None,
+                "sar": sar_vals[idx] if idx < len(sar_vals) else None,
+                "sar_is_long": sar_longs[idx] if idx < len(sar_longs) else None,
                 "bb_upper": float(snap.bollinger_upper) if snap and snap.bollinger_upper is not None else None,
                 "bb_middle": float(snap.bollinger_middle) if snap and snap.bollinger_middle is not None else None,
                 "bb_lower": float(snap.bollinger_lower) if snap and snap.bollinger_lower is not None else None,
@@ -367,6 +379,7 @@ class StockChartDataView(View):
             "exchange": listing.exchange.code,
             "candles": data,
             "levels": levels,
+            "fibonacci": fib_levels,
         })
 
 

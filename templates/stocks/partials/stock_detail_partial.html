@@ -320,6 +320,24 @@
                                 </label>
                             </div>
                         </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-supertrend" data-indicator="supertrend">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-supertrend">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background: linear-gradient(135deg, #089981 50%, #f23645 50%);"></span>
+                                    SuperTrend (10, 3)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-sar" data-indicator="sar">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-sar">
+                                    <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #f59e0b; border: 1px dotted #b45309;"></span>
+                                    Parabolic SAR (0.02, 0.2)
+                                </label>
+                            </div>
+                        </li>
                         <li><hr class="dropdown-divider my-1"></li>
                         <li class="dropdown-header text-uppercase small fw-bold">Volatility & Channels</li>
                         <li>
@@ -337,6 +355,15 @@
                                 <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-donchian">
                                     <span class="d-inline-block" style="width: 10px; height: 2px; background-color: #089981;"></span>
                                     Donchian Channels (20D H/L)
+                                </label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check form-switch small py-1">
+                                <input class="form-check-input indicator-toggle" type="checkbox" id="toggle-fibonacci" data-indicator="fibonacci">
+                                <label class="form-check-label d-flex align-items-center gap-1.5" for="toggle-fibonacci">
+                                    <span class="d-inline-block" style="width: 10px; height: 3px; background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981, #f59e0b);"></span>
+                                    Fibonacci Retracements
                                 </label>
                             </div>
                         </li>
@@ -403,6 +430,8 @@
             <span id="legend-ema9-wrap" class="d-none text-muted">EMA9 <strong id="legend-ema9" style="color: #06b6d4;">-</strong></span>
             <span id="legend-ema20-wrap" class="d-none text-muted">EMA20 <strong id="legend-ema20" style="color: #8b5cf6;">-</strong></span>
             <span id="legend-vwap-wrap" class="d-none text-muted">VWAP <strong id="legend-vwap" style="color: #eab308;">-</strong></span>
+            <span id="legend-supertrend-wrap" class="d-none text-muted">ST <strong id="legend-supertrend" style="color: #089981;">-</strong></span>
+            <span id="legend-sar-wrap" class="d-none text-muted">SAR <strong id="legend-sar" style="color: #f59e0b;">-</strong></span>
         </div>
 
         <!-- Main TradingView Chart Container -->

@@ -40,6 +40,9 @@ class TradingViewStockChart {
         this.ema20Series = null;
         this.ema50Series = null;
         this.vwapSeries = null;
+        this.supertrendBullSeries = null;
+        this.supertrendBearSeries = null;
+        this.sarSeries = null;
 
         // Volatility & Channel Overlays
         this.bbUpperSeries = null;
@@ -47,12 +50,14 @@ class TradingViewStockChart {
         this.donchianUpperSeries = null;
         this.donchianLowerSeries = null;
 
-        // Price lines (Trade Levels)
+        // Price lines (Trade Levels & Fibonacci)
         this.priceLines = [];
+        this.fibPriceLines = [];
 
         // Cached Data
         this.rawCandles = [];
         this.levels = null;
+        this.fibonacci = null;
         this.currentDays = 180;
         this.currentChartType = 'candlestick';
 
@@ -65,6 +70,9 @@ class TradingViewStockChart {
             ema20: false,
             ema50: false,
             vwap: false,
+            supertrend: false,
+            sar: false,
+            fibonacci: false,
             bb: false,
             donchian: false,
             rsi: false,
@@ -103,6 +111,9 @@ class TradingViewStockChart {
             ema20Color: '#8b5cf6',    // Violet (Swing Momentum)
             ema50Color: '#ec4899',    // Pink (Medium Trend)
             vwapColor: '#eab308',     // Gold (Volume-Weighted Average)
+            supertrendBull: '#089981',// Emerald Bull
+            supertrendBear: '#f23645',// Crimson Bear
+            sarColor: '#f59e0b',      // Amber SAR
             bbColor: 'rgba(139, 92, 246, 0.65)',
         };
     }
@@ -256,6 +267,38 @@ class TradingViewStockChart {
             priceLineVisible: false,
         });
 
+        this.supertrendBullSeries = this.chart.addLineSeries({
+            color: colors.supertrendBull,
+            lineWidth: 2,
+            title: 'SuperTrend Bull',
+            crosshairMarkerVisible: true,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        this.supertrendBearSeries = this.chart.addLineSeries({
+            color: colors.supertrendBear,
+            lineWidth: 2,
+            title: 'SuperTrend Bear',
+            crosshairMarkerVisible: true,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
+        this.sarSeries = this.chart.addLineSeries({
+            color: colors.sarColor,
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            pointMarkersVisible: true,
+            title: 'Parabolic SAR',
+            crosshairMarkerVisible: true,
+            visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
+        });
+
         // 4. Volatility & Channel Overlays
         this.bbUpperSeries = this.chart.addLineSeries({
             color: colors.bbColor,
@@ -332,6 +375,7 @@ class TradingViewStockChart {
             .then(json => {
                 this.rawCandles = json.candles || [];
                 this.levels = json.levels || null;
+                this.fibonacci = json.fibonacci || null;
                 this.populateSeries();
             })
             .catch(err => {
@@ -351,6 +395,9 @@ class TradingViewStockChart {
         const ema20Data = [];
         const ema50Data = [];
         const vwapData = [];
+        const stBullData = [];
+        const stBearData = [];
+        const sarData = [];
         const bbUpperData = [];
         const bbLowerData = [];
         const donchianUpperData = [];
@@ -381,6 +428,21 @@ class TradingViewStockChart {
             if (c.ema20 !== null && c.ema20 !== undefined) ema20Data.push({ time, value: c.ema20 });
             if (c.ema50 !== null && c.ema50 !== undefined) ema50Data.push({ time, value: c.ema50 });
             if (c.vwap !== null && c.vwap !== undefined) vwapData.push({ time, value: c.vwap });
+
+            // SuperTrend (Clean segmented lines using whitespace breaks)
+            if (c.supertrend !== null && c.supertrend !== undefined) {
+                if (c.supertrend_dir === 1) {
+                    stBullData.push({ time, value: c.supertrend });
+                    stBearData.push({ time });
+                } else {
+                    stBearData.push({ time, value: c.supertrend });
+                    stBullData.push({ time });
+                }
+            }
+
+            // Parabolic SAR
+            if (c.sar !== null && c.sar !== undefined) sarData.push({ time, value: c.sar });
+
             if (c.bb_upper !== null && c.bb_upper !== undefined) bbUpperData.push({ time, value: c.bb_upper });
             if (c.bb_lower !== null && c.bb_lower !== undefined) bbLowerData.push({ time, value: c.bb_lower });
             if (c.resistance !== null && c.resistance !== undefined) donchianUpperData.push({ time, value: c.resistance });
@@ -413,6 +475,9 @@ class TradingViewStockChart {
         this.ema20Series.setData(ema20Data);
         this.ema50Series.setData(ema50Data);
         this.vwapSeries.setData(vwapData);
+        this.supertrendBullSeries.setData(stBullData);
+        this.supertrendBearSeries.setData(stBearData);
+        this.sarSeries.setData(sarData);
         this.bbUpperSeries.setData(bbUpperData);
         this.bbLowerSeries.setData(bbLowerData);
         this.donchianUpperSeries.setData(donchianUpperData);
@@ -426,6 +491,9 @@ class TradingViewStockChart {
         this.ema20Series.applyOptions({ visible: this.indicatorState.ema20 });
         this.ema50Series.applyOptions({ visible: this.indicatorState.ema50 });
         this.vwapSeries.applyOptions({ visible: this.indicatorState.vwap });
+        this.supertrendBullSeries.applyOptions({ visible: this.indicatorState.supertrend });
+        this.supertrendBearSeries.applyOptions({ visible: this.indicatorState.supertrend });
+        this.sarSeries.applyOptions({ visible: this.indicatorState.sar });
         this.bbUpperSeries.applyOptions({ visible: this.indicatorState.bb });
         this.bbLowerSeries.applyOptions({ visible: this.indicatorState.bb });
         this.donchianUpperSeries.applyOptions({ visible: this.indicatorState.donchian });
@@ -433,6 +501,9 @@ class TradingViewStockChart {
 
         // Trade Levels (SL, T1, T2)
         this.renderTradeLevels();
+
+        // Fibonacci Retracements
+        this.renderFibonacciLevels();
 
         // Cached Data for Sub-Panes
         this.cachedSubPaneData = {
@@ -499,6 +570,63 @@ class TradingViewStockChart {
                 axisLabelVisible: true,
                 title: 'T2',
             }));
+        }
+    }
+
+    renderFibonacciLevels() {
+        for (const pl of this.fibPriceLines) {
+            try { this.candlestickSeries.removePriceLine(pl); } catch (e) {}
+        }
+        this.fibPriceLines = [];
+
+        if (!this.indicatorState.fibonacci) return;
+
+        let fib = this.fibonacci;
+        if (!fib && this.rawCandles.length > 0) {
+            let high = -Infinity;
+            let low = Infinity;
+            for (const c of this.rawCandles) {
+                if (c.high > high) high = c.high;
+                if (c.low < low) low = c.low;
+            }
+            const diff = high - low;
+            if (diff > 0) {
+                fib = {
+                    level_0: high,
+                    level_236: +(high - (0.236 * diff)).toFixed(2),
+                    level_382: +(high - (0.382 * diff)).toFixed(2),
+                    level_500: +(high - (0.500 * diff)).toFixed(2),
+                    level_618: +(high - (0.618 * diff)).toFixed(2),
+                    level_786: +(high - (0.786 * diff)).toFixed(2),
+                    level_100: low,
+                };
+            }
+        }
+
+        if (!fib) return;
+
+        const fibDefs = [
+            { key: 'level_0', title: 'Fib 0.0%', color: '#94a3b8', lineStyle: LightweightCharts.LineStyle.Solid },
+            { key: 'level_236', title: 'Fib 23.6%', color: '#06b6d4', lineStyle: LightweightCharts.LineStyle.Dashed },
+            { key: 'level_382', title: 'Fib 38.2%', color: '#8b5cf6', lineStyle: LightweightCharts.LineStyle.Dashed },
+            { key: 'level_500', title: 'Fib 50.0%', color: '#f59e0b', lineStyle: LightweightCharts.LineStyle.Dashed },
+            { key: 'level_618', title: 'Fib 61.8% (Golden)', color: '#10b981', lineStyle: LightweightCharts.LineStyle.Solid },
+            { key: 'level_786', title: 'Fib 78.6%', color: '#ec4899', lineStyle: LightweightCharts.LineStyle.Dashed },
+            { key: 'level_100', title: 'Fib 100.0%', color: '#94a3b8', lineStyle: LightweightCharts.LineStyle.Solid },
+        ];
+
+        for (const def of fibDefs) {
+            const val = fib[def.key];
+            if (val !== undefined && val !== null && val > 0) {
+                this.fibPriceLines.push(this.candlestickSeries.createPriceLine({
+                    price: parseFloat(val),
+                    color: def.color,
+                    lineWidth: def.lineStyle === LightweightCharts.LineStyle.Solid ? 1.5 : 1,
+                    lineStyle: def.lineStyle,
+                    axisLabelVisible: true,
+                    title: def.title,
+                }));
+            }
         }
     }
 
@@ -724,6 +852,12 @@ class TradingViewStockChart {
         updateTag('legend-ema9-wrap', 'legend-ema9', candle.ema9, this.indicatorState.ema9);
         updateTag('legend-ema20-wrap', 'legend-ema20', candle.ema20, this.indicatorState.ema20);
         updateTag('legend-vwap-wrap', 'legend-vwap', candle.vwap, this.indicatorState.vwap);
+        updateTag('legend-supertrend-wrap', 'legend-supertrend', candle.supertrend, this.indicatorState.supertrend);
+        const stEl = document.getElementById('legend-supertrend');
+        if (stEl && candle.supertrend_dir) {
+            stEl.style.color = candle.supertrend_dir === 1 ? '#089981' : '#f23645';
+        }
+        updateTag('legend-sar-wrap', 'legend-sar', candle.sar, this.indicatorState.sar);
     }
 
     bindToolbarEvents() {
@@ -776,6 +910,17 @@ class TradingViewStockChart {
                 if (ind === 'ema20' && this.ema20Series) this.ema20Series.applyOptions({ visible: checked });
                 if (ind === 'ema50' && this.ema50Series) this.ema50Series.applyOptions({ visible: checked });
                 if (ind === 'vwap' && this.vwapSeries) this.vwapSeries.applyOptions({ visible: checked });
+
+                if (ind === 'supertrend') {
+                    if (this.supertrendBullSeries) this.supertrendBullSeries.applyOptions({ visible: checked });
+                    if (this.supertrendBearSeries) this.supertrendBearSeries.applyOptions({ visible: checked });
+                }
+                if (ind === 'sar' && this.sarSeries) {
+                    this.sarSeries.applyOptions({ visible: checked });
+                }
+                if (ind === 'fibonacci') {
+                    this.renderFibonacciLevels();
+                }
 
                 if (ind === 'bb') {
                     if (this.bbUpperSeries) this.bbUpperSeries.applyOptions({ visible: checked });
@@ -877,6 +1022,10 @@ class TradingViewStockChart {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;
         }
+        for (const pl of this.fibPriceLines) {
+            try { this.candlestickSeries.removePriceLine(pl); } catch (e) {}
+        }
+        this.fibPriceLines = [];
         if (this.chart) { this.chart.remove(); this.chart = null; }
         if (this.rsiChart) { this.rsiChart.remove(); this.rsiChart = null; }
         if (this.macdChart) { this.macdChart.remove(); this.macdChart = null; }

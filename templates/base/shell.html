@@ -13,6 +13,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Platform Financial Theme -->
     <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+    <!-- Local HTMX JS (Zero CDN Dependency) -->
+    <script src="{% static 'django_htmx/htmx.min.js' %}"></script>
+    <!-- Candlestick & Volume Charting Engine -->
+    <script src="{% static 'js/charting.js' %}"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
@@ -43,12 +47,8 @@
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <!-- HTMX JS -->
-    <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrgwNQK4IZEDEkO39GZFeS72VCqxcnSAn76hwnt6bQU1" crossorigin="anonymous"></script>
     <!-- Application Navigation & UX Script -->
     <script src="{% static 'js/app.js' %}"></script>
-    <!-- Candlestick & Volume Charting Engine -->
-    <script src="{% static 'js/charting.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

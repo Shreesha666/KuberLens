@@ -31,21 +31,34 @@ class FinancialCandlestickChart {
     }
 
     resize() {
-        const rect = this.canvas.parentElement.getBoundingClientRect();
+        if (!this.canvas || !this.ctx) return;
+        const parent = this.canvas.parentElement;
+        const rect = parent ? parent.getBoundingClientRect() : null;
         const dpr = window.devicePixelRatio || 1;
-        this.width = rect.width;
-        this.height = Math.max(320, rect.height || 360);
+
+        let computedW = rect ? rect.width : 0;
+        if (!computedW && parent) computedW = parent.clientWidth;
+        if (!computedW) computedW = this.canvas.clientWidth || 800;
+
+        let computedH = rect ? rect.height : 0;
+        if (!computedH && parent) computedH = parent.clientHeight;
+        if (!computedH) computedH = 360;
+        computedH = Math.max(320, computedH);
+
+        this.width = computedW;
+        this.height = computedH;
         this.canvas.width = this.width * dpr;
         this.canvas.height = this.height * dpr;
         this.canvas.style.width = `${this.width}px`;
         this.canvas.style.height = `${this.height}px`;
-        this.ctx.scale(dpr, dpr);
+
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         this.render();
     }
 
     setData(candles) {
         this.candles = candles || [];
-        this.render();
+        this.resize();
     }
 
     initEvents() {
@@ -66,14 +79,21 @@ class FinancialCandlestickChart {
     }
 
     render() {
-        if (!this.ctx || !this.candles || this.candles.length === 0) return;
-
+        if (!this.ctx) return;
         const ctx = this.ctx;
         const w = this.width;
         const h = this.height;
         const opt = this.options;
 
         ctx.clearRect(0, 0, w, h);
+
+        if (!this.candles || this.candles.length === 0) {
+            ctx.fillStyle = opt.textColor;
+            ctx.font = '13px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('No historical price candles available for chart rendering.', w / 2, h / 2);
+            return;
+        }
 
         const chartW = w - opt.paddingLeft - opt.paddingRight;
         const chartH = h - opt.paddingTop - opt.paddingBottom;
@@ -238,15 +258,24 @@ class FinancialCandlestickChart {
     }
 }
 
-// Global initialization helper for HTMX dynamic swaps
+// Global initialization helper for HTMX dynamic swaps and direct loads
 window.initStockChart = function(canvasId, dataUrl) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        setTimeout(() => window.initStockChart(canvasId, dataUrl), 50);
+        return;
+    }
     fetch(dataUrl)
         .then(res => res.json())
         .then(json => {
             const chart = new FinancialCandlestickChart(canvasId);
-            if (json.candles) {
-                chart.setData(json.candles);
-            }
+            chart.setData(json.candles || []);
+            canvas._stockChartInstance = chart;
         })
-        .catch(err => console.error("Failed to load chart data:", err));
+        .catch(err => {
+            console.error("Failed to load chart data:", err);
+            const chart = new FinancialCandlestickChart(canvasId);
+            chart.setData([]);
+        });
 };
+

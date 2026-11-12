@@ -4,6 +4,7 @@ Development settings for Indian Stock Market Research & Intelligence Platform.
 from .base import *
 
 DEBUG = True
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
 
 # Database: Uses DATABASE_URL if configured; supports PostgreSQL or SQLite fallback
 DATABASES = {

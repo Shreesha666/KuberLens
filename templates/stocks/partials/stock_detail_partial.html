@@ -403,7 +403,20 @@
 </div>
 
 <script>
-    if (window.initStockChart) {
-        window.initStockChart('stock-chart-canvas', '{% url "stocks:stock_chart_data" listing.symbol %}');
-    }
+    (function() {
+        const dataUrl = '{% url "stocks:stock_chart_data" listing.symbol %}';
+        function mount() {
+            if (typeof window.initStockChart === 'function') {
+                window.initStockChart('stock-chart-canvas', dataUrl);
+            } else {
+                setTimeout(mount, 40);
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', mount);
+        } else {
+            mount();
+        }
+    })();
 </script>
+

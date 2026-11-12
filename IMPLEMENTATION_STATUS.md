@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform  
 **Document Purpose:** Living tracker of modules, phases, and components  
 **Last Updated:** 2026-11-12  
-**Current Overall State:** Phase 5 Completed & Validated &bull; Ready for Phase 6 Approval
+**Current Overall State:** Phase 6 Completed & Validated &bull; Ready for Phase 7 Approval
 
 ---
 
@@ -28,7 +28,7 @@
 | **Phase 3** | Instruments & Stock Research Engine | 🟢 **COMPLETED** | 2026-11-12 | Autocomplete search, Stock profiles, Canvas candlestick chart, Technical & Fundamental engines, 63 tests passing |
 | **Phase 4** | Portfolio & Holdings Analysis | 🟢 **COMPLETED** | 2026-11-12 | Immutable ledger, FIFO lot matching, Capital charges, Corporate actions, Dual recommendations, 80 tests passing |
 | **Phase 5** | Screener & Watchlists | 🟢 **COMPLETED** | 2026-11-12 | Multi-variable scanner over pre-calculated snapshots, Custom user lists, One-click presets, CSV export, 98 tests passing |
-| **Phase 6** | Swing Trading & Risk Management | ⚪ **NOT STARTED** | Follows Phase 5 | 1-8 week setups, position sizing engine, Trade Journal |
+| **Phase 6** | Swing Trading & Risk Management | 🟢 **COMPLETED** | 2026-11-12 | 4 Quantitative swing setups, mathematical position sizing engine, Trade Journal with checklist, 118 tests passing |
 | **Phase 7** | AI Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 6 | Investor, Swing, and Risk AI agents consuming structured data with prompt versions |
 | **Phase 8** | News, Corporate Events & Alerts | ⚪ **NOT STARTED** | Follows Phase 7 | In-app/email alerts, Corporate actions (Bonus/Split/Div), Filings feed |
 | **Phase 9** | Strategy Backtesting & ML Engine | ⚪ **NOT STARTED** | Follows Phase 8 | Historical strategy simulator, Regime & trend classification without lookahead |
@@ -54,7 +54,7 @@
 | `holdings` | Transaction ledger (source of truth), FIFO lot matcher, derived holding | 🟢 **COMPLETED** | `HoldingTransaction` (immutable ledger with reversals), `Holding` (derived snapshot), `LotAllocation` (closed lots audit trail), `HoldingListView` (`/portfolio/holdings/`), `HoldingDetailView` (`/portfolio/holdings/<symbol>/`), `HoldingTransactionCreateView` |
 | `screener` | Multi-filter screening engine over snapshots, saved screening queries | 🟢 **COMPLETED** | `ScreenerConfiguration`, `ScreenerResult`, `ScreenerView` (`/screener/`), `ScreenerExportView` (`/screener/export/`), `ScreenerDeleteConfigView`, `seed_screener_and_watchlists` |
 | `watchlists` | User-defined watchlists, quick quote monitoring | 🟢 **COMPLETED** | `Watchlist`, `WatchlistItem`, `WatchlistListView` (`/watchlists/`), `WatchlistCreateView`, `WatchlistDeleteView`, `WatchlistItemAddView`, `WatchlistItemDeleteView`, `WatchlistQuickAddView` |
-| `trading` | Swing trade setups, risk management, trade journal, log entries | ⚪ **NOT STARTED** | Phase 6 Scope |
+| `trading` | Swing trade setups, risk management, trade journal, log entries | 🟢 **COMPLETED** | `TradeSetup`, `TradeJournal`, `SwingScanner`, `RiskCalculator`, `SwingScannerView` (`/trading/`), `TradeJournalListView` (`/trading/journal/`), `scan_swing_setups` |
 | `ai_analysis` | Investor AI, Swing AI, Risk AI structured research opinions | ⚪ **NOT STARTED** | Phase 7 Scope |
 | `ml_engine` | Machine learning models (regime detection, stock ranking) | ⚪ **NOT STARTED** | Phase 9 Scope |
 | `news` | Financial news, corporate filings, earnings announcements | ⚪ **NOT STARTED** | Phase 8 Scope |

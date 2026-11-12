@@ -16,6 +16,8 @@ urlpatterns = [
     path("research/fundamental/", include("apps.fundamental_analysis.urls", namespace="fundamental_analysis")),
     path("portfolio/holdings/", include("apps.holdings.urls", namespace="holdings")),
     path("portfolio/", include("apps.portfolio.urls", namespace="portfolio")),
+    path("screener/", include("apps.screener.urls", namespace="screener")),
+    path("watchlists/", include("apps.watchlists.urls", namespace="watchlists")),
     path("settings/", include("apps.settings_app.urls", namespace="settings_app")),
     path("", include("apps.dashboard.urls", namespace="dashboard")),
 ]

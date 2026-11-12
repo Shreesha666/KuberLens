@@ -201,6 +201,7 @@ Before writing application code, the environment and workspace scaffolding must 
 
 ### Phase 5: Stock Screener & Watchlists
 
+- **Status:** 🟢 **COMPLETED (2026-11-12)** &bull; 98 tests passing (84% overall coverage)
 - **Objective:** Develop a dynamic multi-variable stock screener supporting technical and fundamental criteria against pre-calculated snapshots, alongside customizable user watchlists.
 - **Django Apps Involved:** `screener`, `watchlists`, `stocks`
 - **Files to Create or Modify:**

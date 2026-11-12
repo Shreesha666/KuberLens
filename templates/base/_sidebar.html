@@ -25,8 +25,8 @@
            hx-get="{% url 'fundamental_analysis:overview' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-bar-chart-steps"></i> Fundamental Analysis
         </a>
-        <a href="{% url 'dashboard:placeholder' 'screener' %}" class="nav-link {% if active_nav == 'screener' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'screener' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'screener:index' %}" class="nav-link {% if active_nav == 'screener' %}active{% endif %}"
+           hx-get="{% url 'screener:index' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-funnel"></i> Stock Screener
         </a>
         <a href="{% url 'dashboard:placeholder' 'sector_analysis' %}" class="nav-link {% if active_nav == 'sector_analysis' %}active{% endif %}"
@@ -48,8 +48,8 @@
            hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-collection"></i> My Holdings
         </a>
-        <a href="{% url 'dashboard:placeholder' 'watchlists' %}" class="nav-link {% if active_nav == 'watchlists' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'watchlists' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'watchlists:list' %}" class="nav-link {% if active_nav == 'watchlists' %}active{% endif %}"
+           hx-get="{% url 'watchlists:list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-star"></i> Watchlists
         </a>
         <a href="{% url 'dashboard:placeholder' 'investment_journal' %}" class="nav-link {% if active_nav == 'investment_journal' %}active{% endif %}"

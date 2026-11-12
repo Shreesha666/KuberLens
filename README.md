@@ -78,7 +78,7 @@ python manage.py create_dev_user
 - **Username:** `admin`
 - **Password:** `Admin@12345`
 
-### 6. Seed Instruments, Stock Research & Portfolio Data
+### 6. Seed Instruments, Stock Research, Portfolio & Screener Data
 ```bash
 # Seed benchmark exchanges and top equities
 python manage.py seed_instruments
@@ -88,6 +88,9 @@ python manage.py seed_stock_research
 
 # Seed sample demo portfolio with multi-lot buys, partial sells, dividends, and FIFO reconciliation
 python manage.py seed_portfolio
+
+# Seed system screener presets and default tracking watchlists
+python manage.py seed_screener_and_watchlists
 ```
 
 ### 7. (Optional) Sync Quotes or Historical Candles via CLI
@@ -110,6 +113,8 @@ Open [http://localhost:8000](http://localhost:8000) in your web browser.
 - **Fundamental Analysis Hub:** [http://localhost:8000/research/fundamental/](http://localhost:8000/research/fundamental/)
 - **Portfolio Overview:** [http://localhost:8000/portfolio/](http://localhost:8000/portfolio/)
 - **My Holdings & FIFO Lots:** [http://localhost:8000/portfolio/holdings/](http://localhost:8000/portfolio/holdings/)
+- **Stock Screener:** [http://localhost:8000/screener/](http://localhost:8000/screener/)
+- **My Watchlists:** [http://localhost:8000/watchlists/](http://localhost:8000/watchlists/)
 - **Data Sources Health:** [http://localhost:8000/settings/data-sources/](http://localhost:8000/settings/data-sources/)
 
 ---
@@ -140,7 +145,6 @@ python manage.py check --deploy --settings=config.settings.production
 
 ## 5. Upcoming Phases
 
-- **Phase 5:** Stock Screener & Custom Watchlists
 - **Phase 6:** Swing Trading & Risk Management Engine
 - **Phase 7:** AI Stock Research Engine
 

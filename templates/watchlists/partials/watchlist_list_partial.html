@@ -1,0 +1,221 @@
+<!-- Watchlists Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none" hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Watchlists</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-body mb-0">My Stock Watchlists</h1>
+        <p class="text-muted small mb-0">Track prospective setups, breakout candidates, and core investment targets</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#newWatchlistModal">
+            <i class="bi bi-folder-plus"></i> New Watchlist
+        </button>
+    </div>
+</div>
+
+<!-- Watchlist Tabs / Switcher -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <ul class="nav nav-pills small">
+            {% for wl in watchlists %}
+            <li class="nav-item">
+                <a class="nav-link {% if active_watchlist.id == wl.id %}active{% endif %} d-flex align-items-center gap-2"
+                   href="{% url 'watchlists:list' %}?watchlist_id={{ wl.id }}"
+                   hx-get="{% url 'watchlists:list' %}?watchlist_id={{ wl.id }}"
+                   hx-target="#main-content" hx-push-url="true">
+                    <span>{{ wl.name }}</span>
+                    <span class="badge {% if active_watchlist.id == wl.id %}bg-white text-primary{% else %}bg-secondary-subtle text-body{% endif %}">
+                        {{ wl.items.count }}
+                    </span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% if watchlists|length > 1 %}
+        <form method="post" action="{% url 'watchlists:delete_watchlist' active_watchlist.id %}" hx-post="{% url 'watchlists:delete_watchlist' active_watchlist.id %}" hx-target="#main-content" hx-confirm="Delete watchlist '{{ active_watchlist.name }}' and all its entries?">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" title="Delete current watchlist">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Stock Quick Form -->
+<div class="card border-0 shadow-sm mb-4 border-start border-4 border-primary">
+    <div class="card-body p-3">
+        <form method="post" action="{% url 'watchlists:add_item' active_watchlist.id %}" hx-post="{% url 'watchlists:add_item' active_watchlist.id %}" hx-target="#main-content">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Add Symbol to "{{ active_watchlist.name }}"</label>
+                    <input type="text" name="symbol" class="form-control form-control-sm text-uppercase fw-bold" placeholder="e.g. RELIANCE, TCS" required>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Target Price (₹)</label>
+                    <input type="number" step="0.05" name="target_price" class="form-control form-control-sm" placeholder="Optional">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Stop Loss (₹)</label>
+                    <input type="number" step="0.05" name="stop_loss" class="form-control form-control-sm" placeholder="Optional">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Thesis / Notes</label>
+                    <input type="text" name="notes" class="form-control form-control-sm" placeholder="e.g. Wait for 200 EMA pullback">
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-plus-circle"></i> Add Stock
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Watchlist Items Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-body">{{ active_watchlist.name }} ({{ items|length }})</h5>
+            <small class="text-muted">{{ active_watchlist.description|default:"Active tracking and price monitoring" }}</small>
+        </div>
+    </div>
+    <div class="card-body px-0 py-2">
+        {% if items %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Stock</th>
+                        <th>Sector</th>
+                        <th class="text-end">Current LTP</th>
+                        <th class="text-end">Added Price</th>
+                        <th class="text-end">Chg Since Added</th>
+                        <th class="text-end">Target Level</th>
+                        <th class="text-end">Stop Loss</th>
+                        <th>Technical Trend</th>
+                        <th>Thesis & Notes</th>
+                        <th class="text-center pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url 'stocks:stock_detail' item.listing.symbol %}" class="text-decoration-none fw-bold text-body"
+                               hx-get="{% url 'stocks:stock_detail' item.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                {{ item.listing.symbol }}
+                            </a>
+                            <div class="text-muted small">{{ item.listing.instrument.display_name|truncatechars:18 }}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border small">{{ item.listing.instrument.sector }}</span>
+                        </td>
+                        <td class="text-end num-mono fw-bold">
+                            {% if item.quote %}
+                            ₹{{ item.quote.price|floatformat:2 }}
+                            <div class="small num-mono {% if item.quote.change >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                                {% if item.quote.change >= 0 %}+{% endif %}{{ item.quote.change_percent|floatformat:2 }}%
+                            </div>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-end num-mono text-muted">
+                            ₹{{ item.added_price|floatformat:2 }}
+                        </td>
+                        <td class="text-end num-mono fw-semibold {% if item.gain_since_added >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                            <div>{% if item.gain_since_added >= 0 %}+{% endif %}₹{{ item.gain_since_added|floatformat:2 }}</div>
+                            <small class="d-block" style="font-size: 0.72rem;">
+                                {% if item.gain_since_added >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ item.gain_pct_since_added|floatformat:2 }}%
+                            </small>
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if item.target_price %}
+                            <span class="text-gain fw-semibold">₹{{ item.target_price|floatformat:2 }}</span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if item.stop_loss %}
+                            <span class="text-loss fw-semibold">₹{{ item.stop_loss|floatformat:2 }}</span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            {% if item.tech %}
+                            <span class="badge {% if item.tech.trend_signal == 'BULLISH' %}bg-success-subtle text-success border border-success-subtle{% elif item.tech.trend_signal == 'BEARISH' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %}">
+                                {{ item.tech.trend_signal }}
+                            </span>
+                            {% if item.tech.rsi_14 %}
+                            <div class="small text-muted mt-1" style="font-size: 0.72rem;">RSI: {{ item.tech.rsi_14|floatformat:1 }}</div>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted" style="max-width: 180px;">
+                            {{ item.notes|default:"-" }}
+                        </td>
+                        <td class="text-center pe-4">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'stocks:stock_detail' item.listing.symbol %}" class="btn btn-outline-secondary"
+                                   hx-get="{% url 'stocks:stock_detail' item.listing.symbol %}" hx-target="#main-content" hx-push-url="true" title="Research Profile">
+                                    <i class="bi bi-graph-up"></i>
+                                </a>
+                                <form method="post" action="{% url 'watchlists:delete_item' item.id %}" hx-post="{% url 'watchlists:delete_item' item.id %}" hx-target="#main-content" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger" title="Remove from watchlist">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-star fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            <h5 class="fw-bold text-body">No Stocks in this Watchlist</h5>
+            <p class="text-muted small mb-3">Add stocks above to begin tracking live price movements and setup targets.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Create New Watchlist -->
+<div class="modal fade" id="newWatchlistModal" tabindex="-1" aria-labelledby="newWatchlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'watchlists:add_watchlist' %}" hx-post="{% url 'watchlists:add_watchlist' %}" hx-target="#main-content">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="newWatchlistModalLabel">Create New Watchlist</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Watchlist Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Swing Breakout Candidates" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="e.g. Momentum pullbacks near 50-day moving average"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Create Watchlist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

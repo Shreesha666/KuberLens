@@ -161,3 +161,58 @@ class TestPortfolioViews:
         resp = client.get(reverse("portfolio:overview"))
         assert resp.status_code == 302
         assert "/accounts/login/" in resp["Location"]
+
+    def test_portfolio_import_view_get_full_and_htmx(self, view_setup):
+        client = view_setup["client"]
+        url = reverse("portfolio:import_holdings")
+
+        resp_full = client.get(url)
+        assert resp_full.status_code == 200
+        assert "portfolio/import_holdings.html" in [t.name for t in resp_full.templates]
+        assert "Import Holdings from Broker / CSV" in resp_full.content.decode()
+
+        resp_htmx = client.get(url, HTTP_HX_REQUEST="true")
+        assert resp_htmx.status_code == 200
+        assert "portfolio/partials/import_holdings_partial.html" in [t.name for t in resp_htmx.templates]
+
+    def test_portfolio_import_view_post_pasted_csv(self, view_setup):
+        client = view_setup["client"]
+        portfolio = view_setup["portfolio"]
+        url = reverse("portfolio:import_holdings")
+
+        raw_csv = (
+            '"Instrument","Qty.","Avg. cost","LTP"\n'
+            '"TCS",50,3500.00,3800.00\n'
+            '"HDFCBANK",100,1600.00,1750.00\n'
+        )
+
+        resp = client.post(url, data={"csv_text": raw_csv, "clear_existing": "on"})
+        assert resp.status_code == 302
+        assert resp["Location"] == reverse("portfolio:overview")
+
+        from apps.holdings.models import Holding
+        holdings = list(Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0).order_by("listing__symbol"))
+        assert len(holdings) == 2
+        symbols = [h.listing.symbol for h in holdings]
+        assert "HDFCBANK" in symbols
+        assert "TCS" in symbols
+
+    def test_portfolio_import_view_post_file(self, view_setup):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        client = view_setup["client"]
+        url = reverse("portfolio:import_holdings")
+
+        file_content = b'"Symbol","Quantity","Avg Price","LTP"\n"WIPRO",200,450.00,520.00\n'
+        uploaded_file = SimpleUploadedFile("holdings.csv", file_content, content_type="text/csv")
+
+        resp = client.post(url, data={"csv_file": uploaded_file})
+        assert resp.status_code == 302
+        assert resp["Location"] == reverse("portfolio:overview")
+
+    def test_portfolio_import_view_empty_data_shows_error(self, view_setup):
+        client = view_setup["client"]
+        url = reverse("portfolio:import_holdings")
+
+        resp = client.post(url, data={"csv_text": ""})
+        assert resp.status_code == 200
+        assert "Please provide CSV data" in resp.content.decode()

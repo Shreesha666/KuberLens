@@ -10,6 +10,10 @@
         <h1 class="h3 fw-bold text-body mb-0">My Equity Holdings & Positions</h1>
     </div>
     <div class="d-flex gap-2">
+        <a href="{% url 'portfolio:import_holdings' %}" class="btn btn-outline-secondary"
+           hx-get="{% url 'portfolio:import_holdings' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-file-earmark-arrow-up"></i> Import CSV
+        </a>
         <a href="{% url 'portfolio:overview' %}" class="btn btn-outline-secondary"
            hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-wallet2"></i> Portfolio Overview

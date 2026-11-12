@@ -107,3 +107,75 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
 
         context["concentration_warnings"] = concentration_warnings
         return context
+
+
+class PortfolioImportView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
+    """
+    UI interface for importing stock holdings via CSV file upload or direct text paste.
+    Supports broker exports (Zerodha Kite, Groww, Upstox, or standard CSV format).
+    """
+    template_name = "portfolio/import_holdings.html"
+    partial_template_name = "portfolio/partials/import_holdings_partial.html"
+    active_nav = "portfolio_overview"
+
+    def get_portfolio(self):
+        portfolio, _ = Portfolio.objects.get_or_create(
+            user=self.request.user,
+            is_default=True,
+            defaults={"name": "My Equity Portfolio", "currency": "INR"},
+        )
+        return portfolio
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["portfolio"] = self.get_portfolio()
+        context["page_title"] = "Import Holdings - CSV & Broker Export"
+        return context
+
+    def post(self, request, *args, **kwargs):
+        from django.contrib import messages
+        from django.http import HttpResponseRedirect
+        from django.shortcuts import redirect
+        from django.urls import reverse
+
+        from services.portfolio.importer import PortfolioCSVImporter
+
+        portfolio = self.get_portfolio()
+        csv_text = request.POST.get("csv_text", "").strip()
+        clear_existing = request.POST.get("clear_existing") == "on"
+
+        # Check uploaded file
+        if "csv_file" in request.FILES:
+            uploaded = request.FILES["csv_file"]
+            try:
+                csv_text = uploaded.read().decode("utf-8", errors="replace").strip()
+            except Exception as e:
+                messages.error(request, f"Failed to read uploaded file: {e}")
+                return self.get(request, *args, **kwargs)
+
+        if not csv_text:
+            messages.error(request, "Please provide CSV data by uploading a file or pasting rows into the text area.")
+            return self.get(request, *args, **kwargs)
+
+        try:
+            result = PortfolioCSVImporter.parse_and_import(
+                portfolio=portfolio,
+                content=csv_text,
+                clear_existing=clear_existing,
+            )
+            count = result["imported_count"]
+            tot_inv = result["total_invested"]
+            messages.success(
+                request,
+                f"Successfully imported {count} holdings (Total Capital: ₹{tot_inv:,.2f}) into '{portfolio.name}'.",
+            )
+        except Exception as e:
+            messages.error(request, f"Import error: {e}")
+            return self.get(request, *args, **kwargs)
+
+        redirect_url = reverse("portfolio:overview")
+        if request.htmx:
+            resp = HttpResponseRedirect(redirect_url)
+            resp["HX-Redirect"] = redirect_url
+            return resp
+        return redirect(redirect_url)

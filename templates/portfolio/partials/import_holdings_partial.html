@@ -1,0 +1,125 @@
+<!-- Import Holdings Header & Breadcrumb -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a href="{% url 'portfolio:overview' %}" class="text-decoration-none" hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">Portfolio</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Import Holdings</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-body mb-0">Import Holdings from Broker / CSV</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'portfolio:overview' %}" class="btn btn-outline-secondary"
+           hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-arrow-left"></i> Back to Portfolio
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Main Import Form Card -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold mb-1 text-body">Upload CSV or Paste Raw Holdings Data</h5>
+                <p class="text-muted small mb-0">Upload a CSV file exported from Zerodha, Groww, Upstox, or paste holding rows directly.</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'portfolio:import_holdings' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Option 1: File Upload -->
+                    <div class="mb-4">
+                        <label for="csvFileInput" class="form-label fw-semibold text-body small">
+                            <i class="bi bi-file-earmark-arrow-up text-primary me-1"></i> Option 1: Upload CSV File
+                        </label>
+                        <input class="form-control" type="file" id="csvFileInput" name="csv_file" accept=".csv, .txt">
+                        <div class="form-text small">Accepted formats: <code>.csv</code>, <code>.txt</code></div>
+                    </div>
+
+                    <div class="d-flex align-items-center my-3 text-muted">
+                        <hr class="flex-grow-1 my-0">
+                        <span class="px-3 small fw-bold text-uppercase">OR</span>
+                        <hr class="flex-grow-1 my-0">
+                    </div>
+
+                    <!-- Option 2: Direct Paste -->
+                    <div class="mb-4">
+                        <label for="csvTextInput" class="form-label fw-semibold text-body small">
+                            <i class="bi bi-clipboard text-primary me-1"></i> Option 2: Paste Raw CSV Rows
+                        </label>
+                        <textarea class="form-control font-monospace small" id="csvTextInput" name="csv_text" rows="8"
+                                  placeholder='"Instrument","Qty.","Avg. cost","LTP"&#10;"BANKINDIA",100,135.7,150.6&#10;"COALINDIA",43,392.3,406.3&#10;"RENUKA",1225,51.46,18.85'></textarea>
+                        <div class="form-text small">You can paste directly from Excel, Google Sheets, or your broker's exported table.</div>
+                    </div>
+
+                    <!-- Settings & Clear Option -->
+                    <div class="form-check p-3 rounded bg-light border mb-4">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" name="clear_existing" id="clearExistingCheckbox">
+                        <label class="form-check-label text-body small fw-semibold" for="clearExistingCheckbox">
+                            Replace / Clear existing holdings in this portfolio
+                        </label>
+                        <div class="text-muted small ms-4">
+                            Check this if you want to replace all previous positions with the newly imported portfolio. If unchecked, new positions will be merged.
+                        </div>
+                    </div>
+
+                    <!-- Submit Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'portfolio:overview' %}" class="btn btn-outline-secondary"
+                           hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-cloud-arrow-up"></i> Import & Reconcile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supported Format Guide -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold mb-1 text-body">Supported Headers</h5>
+                <p class="text-muted small mb-0">Automatic column detection</p>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex flex-column gap-3 small">
+                    <div>
+                        <span class="fw-bold text-body d-block">1. Stock / Instrument Column</span>
+                        <span class="text-muted">Detected as: <code>Instrument</code>, <code>Symbol</code>, <code>Stock</code>, <code>Scrip</code>, <code>TradingSymbol</code></span>
+                    </div>
+
+                    <div>
+                        <span class="fw-bold text-body d-block">2. Quantity Column</span>
+                        <span class="text-muted">Detected as: <code>Qty.</code>, <code>Qty</code>, <code>Quantity</code>, <code>Shares</code></span>
+                    </div>
+
+                    <div>
+                        <span class="fw-bold text-body d-block">3. Average Buy Price</span>
+                        <span class="text-muted">Detected as: <code>Avg. cost</code>, <code>Avg Price</code>, <code>Buy Price</code>, <code>Rate</code></span>
+                    </div>
+
+                    <div>
+                        <span class="fw-bold text-body d-block">4. Market Price / LTP (Optional)</span>
+                        <span class="text-muted">Detected as: <code>LTP</code>, <code>Current Price</code>, <code>Close</code>, <code>CMP</code></span>
+                    </div>
+
+                    <div class="p-3 rounded bg-info bg-opacity-10 border border-info border-opacity-25 mt-2">
+                        <div class="d-flex align-items-center gap-2 mb-1 text-info-emphasis fw-bold">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Zerodha Kite Ready</span>
+                        </div>
+                        <p class="mb-0 text-body" style="font-size: 0.8rem;">
+                            Directly compatible with Zerodha Kite's downloadable Holdings CSV or table copy-paste.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

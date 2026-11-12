@@ -33,6 +33,16 @@
 
         <!-- Main Content Area -->
         <main id="main-wrapper" class="flex-grow-1">
+            {% if messages %}
+            <div class="container-fluid px-4 pt-3" id="django-messages-container">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}primary{% endif %} alert-dismissible fade show shadow-sm small" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
             <div id="main-content">
                 {% block content %}
                 <!-- Dynamic module partials are swapped here via HTMX -->

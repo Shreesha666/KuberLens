@@ -158,3 +158,4 @@ class StockAIAnalysis(AuditedModel):
 
     def __str__(self) -> str:
         return f"{self.listing.symbol} ({self.get_role_display()}): {self.get_overall_view_display()}"
+

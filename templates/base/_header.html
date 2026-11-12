@@ -51,15 +51,16 @@
         </span>
 
         <!-- Notifications Trigger -->
-        <button class="btn btn-outline-secondary btn-sm position-relative rounded-circle p-2" type="button" aria-label="Notifications"
-                hx-get="{% url 'dashboard:placeholder' 'notifications' %}" hx-target="#main-content" hx-push-url="true">
+        <a class="btn btn-outline-secondary btn-sm position-relative rounded-circle p-2" aria-label="Notifications"
+           href="{% url 'notifications:list' %}"
+           hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-bell"></i>
             {% if unread_notifications_count > 0 %}
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                 {{ unread_notifications_count }}
             </span>
             {% endif %}
-        </button>
+        </a>
 
         <!-- User Profile Menu -->
         <div class="dropdown">

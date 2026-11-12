@@ -59,3 +59,4 @@ class AIProviderBase(ABC):
         :return: AIAnalysisResultDTO
         """
         pass
+

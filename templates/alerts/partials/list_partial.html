@@ -1,0 +1,178 @@
+<!-- Alert Rules List Partial -->
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white"><i class="bi bi-bell"></i> Phase 8</span>
+                <h1 class="h3 fw-bold mb-0 text-dark">Price & Portfolio Alerts</h1>
+            </div>
+            <p class="text-muted small mb-0">
+                Automated threshold monitoring across live quotes, technical breakout indicators, and portfolio risk limits.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
+                <i class="bi bi-plus-circle me-1"></i> New Alert Rule
+            </button>
+            <form method="post" action="{% url 'alerts:evaluate' %}"
+                  hx-post="{% url 'alerts:evaluate' %}"
+                  hx-target="#main-content"
+                  hx-push-url="true"
+                  class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Check Alerts Now
+                </button>
+            </form>
+            <a href="{% url 'notifications:list' %}" class="btn btn-outline-secondary btn-sm"
+               hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-inbox me-1"></i> Notifications
+            </a>
+        </div>
+    </div>
+
+    <!-- Create Alert Collapsible Card -->
+    <div class="collapse mb-4" id="createAlertCollapse">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white py-2">
+                <h6 class="fw-bold mb-0 small"><i class="bi bi-bell-fill me-1"></i> Create Real-Time Alert Rule</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'alerts:create' %}"
+                      hx-post="{% url 'alerts:create' %}"
+                      hx-target="#main-content"
+                      hx-push-url="true">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold">Symbol (e.g. RELIANCE, TCS)</label>
+                            <input type="text" name="symbol" class="form-control text-uppercase" placeholder="Stock symbol (leave empty for portfolio)...">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold">Alert Condition / Trigger</label>
+                            <select name="alert_type" class="form-select" required>
+                                {% for val, label in alert_types %}
+                                <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-semibold">Threshold / Target Value</label>
+                            <input type="number" step="any" name="target_value" class="form-control" placeholder="Target price (₹), %, or RSI..." required>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label class="form-label small fw-semibold">User Notes (Optional)</label>
+                            <input type="text" name="notes" class="form-control" placeholder="e.g. Key support breakdown, trim position, swing breakout...">
+                        </div>
+                        <div class="col-12 col-md-4 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="is_market_hours_only" id="mktHoursOnly" checked>
+                                <label class="form-check-label small" for="mktHoursOnly">Evaluate Market Hours Only</label>
+                            </div>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-primary btn-sm px-4">
+                                Save Alert Rule
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Rules Table -->
+    {% if alerts %}
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Status</th>
+                        <th>Target Stock</th>
+                        <th>Condition</th>
+                        <th>Target Threshold</th>
+                        <th>Notes</th>
+                        <th>Triggered</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alert in alerts %}
+                    <tr>
+                        <td style="width: 100px;">
+                            <form method="post" action="{% url 'alerts:toggle' alert.id %}"
+                                  hx-post="{% url 'alerts:toggle' alert.id %}"
+                                  hx-target="#main-content"
+                                  hx-push-url="true"
+                                  class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if alert.is_active %}btn-success text-white{% else %}btn-secondary{% endif %} py-0 px-2" title="Click to toggle status">
+                                    {% if alert.is_active %}Active{% else %}Paused{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            {% if alert.listing %}
+                            <a href="{% url 'stocks:stock_detail' alert.listing.symbol %}"
+                               hx-get="{% url 'stocks:stock_detail' alert.listing.symbol %}"
+                               hx-target="#main-content"
+                               hx-push-url="true"
+                               class="fw-bold text-primary text-decoration-none">
+                                {{ alert.listing.symbol }}
+                            </a>
+                            <span class="text-muted small">({{ alert.listing.instrument.name }})</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-muted">Portfolio-Wide</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ alert.get_alert_type_display }}</span>
+                        </td>
+                        <td>
+                            <code class="fw-bold fs-6">₹{{ alert.target_value|floatformat:2 }}</code>
+                        </td>
+                        <td class="small text-muted">{{ alert.notes|default:"—" }}</td>
+                        <td class="small text-muted">
+                            {% if alert.trigger_count > 0 %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis">{{ alert.trigger_count }}x</span>
+                            <div class="small">{{ alert.last_triggered_at|date:"d M H:i" }}</div>
+                            {% else %}
+                            <span>Never</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'alerts:delete' alert.id %}"
+                                  hx-post="{% url 'alerts:delete' alert.id %}"
+                                  hx-target="#main-content"
+                                  hx-push-url="true"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Delete this alert rule?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card border text-center p-5">
+        <div class="text-muted mb-3"><i class="bi bi-bell-slash fs-1"></i></div>
+        <h5 class="fw-bold">No Active Alert Rules</h5>
+        <p class="text-muted small">Create price breakout, RSI indicator, or portfolio drawdown alerts to stay ahead of market moves.</p>
+        <div>
+            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
+                <i class="bi bi-plus-circle me-1"></i> Create Your First Alert
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+

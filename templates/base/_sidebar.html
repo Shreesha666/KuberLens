@@ -33,8 +33,8 @@
            hx-get="{% url 'dashboard:placeholder' 'sector_analysis' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-pie-chart"></i> Sector Analysis
         </a>
-        <a href="{% url 'dashboard:placeholder' 'news_events' %}" class="nav-link {% if active_nav == 'news_events' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'news_events' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'news:feed' %}" class="nav-link {% if active_nav == 'market_news' or active_nav == 'news_events' %}active{% endif %}"
+           hx-get="{% url 'news:feed' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-newspaper"></i> News & Events
         </a>
 
@@ -90,8 +90,8 @@
            hx-get="{% url 'dashboard:placeholder' 'ml_predictions' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-cpu"></i> ML Predictions
         </a>
-        <a href="{% url 'dashboard:placeholder' 'alerts_notifications' %}" class="nav-link {% if active_nav == 'alerts_notifications' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'alerts_notifications' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'alerts:list' %}" class="nav-link {% if active_nav == 'alerts_notifications' or active_nav == 'notifications' %}active{% endif %}"
+           hx-get="{% url 'alerts:list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-bell"></i> Alerts & Notifications
         </a>
 

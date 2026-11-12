@@ -25,3 +25,4 @@ def get_ai_provider(provider_type: str | None = None) -> AIProviderBase:
 
     # Default fallback
     return StructuredRuleFallbackProvider()
+

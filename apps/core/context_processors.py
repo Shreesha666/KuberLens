@@ -5,9 +5,15 @@ def shell_context(request):
     (Header, Ticker, Data Freshness status, and Navigation categories).
     """
     current_theme = "light"
+    unread_notifs = 0
     if hasattr(request, "user") and request.user.is_authenticated:
         pref = getattr(request.user, "preference", None) or request.user.get_preference()
         current_theme = pref.theme
+        try:
+            from apps.notifications.models import Notification
+            unread_notifs = Notification.objects.filter(user=request.user, is_read=False).count()
+        except Exception:
+            unread_notifs = 0
 
     return {
         "platform_title": "Indian Stock Intelligence",
@@ -46,5 +52,5 @@ def shell_context(request):
             "label": "Settled EOD (NSE)",
             "css_class": "badge-soft-success",
         },
-        "unread_notifications_count": 0,
+        "unread_notifications_count": unread_notifs,
     }

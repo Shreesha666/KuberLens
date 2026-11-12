@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform  
 **Document Purpose:** Living tracker of modules, phases, and components  
 **Last Updated:** 2026-11-12  
-**Current Overall State:** Phase 7 Completed & Validated &bull; Ready for Phase 8 Approval
+**Current Overall State:** Phase 8 Completed & Validated &bull; Ready for Phase 9 Approval
 
 ---
 
@@ -30,7 +30,7 @@
 | **Phase 5** | Screener & Watchlists | 🟢 **COMPLETED** | 2026-11-12 | Multi-variable scanner over pre-calculated snapshots, Custom user lists, One-click presets, CSV export, 98 tests passing |
 | **Phase 6** | Swing Trading & Risk Management | 🟢 **COMPLETED** | 2026-11-12 | 4 Quantitative swing setups, mathematical position sizing engine, Trade Journal with checklist, 118 tests passing |
 | **Phase 7** | AI Stock Research Engine | 🟢 **COMPLETED** | 2026-11-12 | Investor, Swing, and Risk AI personas, Provider abstraction (Gemini + Deterministic Fallback), Missing data audit, 128 tests passing |
-| **Phase 8** | News, Corporate Events & Alerts | ⚪ **NOT STARTED** | Follows Phase 7 | In-app/email alerts, Corporate actions (Bonus/Split/Div), Filings feed |
+| **Phase 8** | News, Corporate Events & Alerts | 🟢 **COMPLETED** | 2026-11-12 | In-app alerts, Corporate actions calendar (Bonus/Split/Div), Filings feed, Deduplication cooldowns, 138 tests passing |
 | **Phase 9** | Strategy Backtesting & ML Engine | ⚪ **NOT STARTED** | Follows Phase 8 | Historical strategy simulator, Regime & trend classification without lookahead |
 | **Phase 10** | F&O Preparation & Zerodha Kite Integration | ⚪ **NOT STARTED** | Optional / Future | Optional read-only broker sync with Fernet encrypted token store |
 | **Phase 11** | Production Hardening, Audit & Deployment | ⚪ **NOT STARTED** | Final Milestone | Security audits, query optimizations, Docker/production rollout |
@@ -57,12 +57,12 @@
 | `trading` | Swing trade setups, risk management, trade journal, log entries | 🟢 **COMPLETED** | `TradeSetup`, `TradeJournal`, `SwingScanner`, `RiskCalculator`, `SwingScannerView` (`/trading/`), `TradeJournalListView` (`/trading/journal/`), `scan_swing_setups` |
 | `ai_analysis` | Investor AI, Swing AI, Risk AI structured research opinions | 🟢 **COMPLETED** | `StockAIAnalysis` model (AuditedModel, 16 Master Spec attributes), `AIResearchHubView` (`/research/ai/`), `AIStockDetailTabPartialView` (`/research/ai/stock/<symbol>/`), `GeminiAIProvider`, `StructuredRuleFallbackProvider`, `AIResearchService` with missing information detection |
 | `ml_engine` | Machine learning models (regime detection, stock ranking) | ⚪ **NOT STARTED** | Phase 9 Scope |
-| `news` | Financial news, corporate filings, earnings announcements | ⚪ **NOT STARTED** | Phase 8 Scope |
-| `alerts` | Price, indicator, and portfolio threshold alert triggers | ⚪ **NOT STARTED** | Phase 8 Scope |
+| `news` | Financial news, corporate filings, earnings announcements | 🟢 **COMPLETED** | `NewsArticle`, `CorporateEvent`, `NewsFeedView` (`/news/`), `CorporateEventsCalendarView` (`/news/calendar/`), `seed_news_and_events` command (102 articles, 40 events) |
+| `alerts` | Price, indicator, and portfolio threshold alert triggers | 🟢 **COMPLETED** | `AlertRule`, `AlertEvaluator` engine (with cooldown deduplication and market-hours guard), `AlertListView` (`/alerts/`), `AlertCreateView`, `AlertToggleActiveView`, `AlertDeleteView`, `AlertRunEvaluationView` |
 | `backtesting` | Historical strategy engine, slippage/brokerage calculation | ⚪ **NOT STARTED** | Phase 9 Scope |
 | `brokers` | Broker connection management (Zerodha Kite adapter stub) | ⚪ **NOT STARTED** | Phase 10 Scope |
 | `reports` | PDF/CSV generation of portfolio tear-sheets and stock memos | ⚪ **NOT STARTED** | Phase 11 Scope |
-| `notifications` | In-app notification center and alert delivery dispatch | ⚪ **NOT STARTED** | Phase 8 Scope |
+| `notifications` | In-app notification center and alert delivery dispatch | 🟢 **COMPLETED** | `Notification`, `NotificationListView` (`/notifications/`), `NotificationMarkReadView`, `NotificationMarkAllReadView`, `NotificationClearAllView`, dynamic header unread badge |
 
 ---
 

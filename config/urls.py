@@ -20,6 +20,9 @@ urlpatterns = [
     path("screener/", include("apps.screener.urls", namespace="screener")),
     path("watchlists/", include("apps.watchlists.urls", namespace="watchlists")),
     path("trading/", include("apps.trading.urls", namespace="trading")),
+    path("news/", include("apps.news.urls", namespace="news")),
+    path("alerts/", include("apps.alerts.urls", namespace="alerts")),
+    path("notifications/", include("apps.notifications.urls", namespace="notifications")),
     path("settings/", include("apps.settings_app.urls", namespace="settings_app")),
     path("", include("apps.dashboard.urls", namespace="dashboard")),
 ]

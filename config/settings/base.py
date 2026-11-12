@@ -58,6 +58,9 @@ LOCAL_APPS = [
     "apps.watchlists",
     "apps.trading",
     "apps.ai_analysis",
+    "apps.news",
+    "apps.alerts",
+    "apps.notifications",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

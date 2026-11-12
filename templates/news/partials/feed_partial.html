@@ -1,0 +1,175 @@
+<!-- News Feed Partial -->
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white"><i class="bi bi-newspaper"></i> Phase 8</span>
+                <h1 class="h3 fw-bold mb-0 text-dark">News & Corporate Events</h1>
+            </div>
+            <p class="text-muted small mb-0">
+                Verified exchange announcements, quarterly filings, corporate actions, and sector intelligence.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'news:feed' %}" class="btn btn-primary btn-sm"
+               hx-get="{% url 'news:feed' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-card-text me-1"></i> News Feed
+            </a>
+            <a href="{% url 'news:calendar' %}" class="btn btn-outline-secondary btn-sm"
+               hx-get="{% url 'news:calendar' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-calendar3 me-1"></i> Corporate Calendar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <form method="get" action="{% url 'news:feed' %}"
+                  hx-get="{% url 'news:feed' %}"
+                  hx-target="#main-content"
+                  hx-push-url="true"
+                  class="row g-2 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="search" name="q" class="form-control" placeholder="Search headlines, filings, or symbols..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <select name="category" class="form-select text-truncate">
+                        <option value="">All News Categories</option>
+                        {% for cat_val, cat_label in categories %}
+                        <option value="{{ cat_val }}" {% if selected_category == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="sentiment" class="form-select">
+                        <option value="">All Sentiments</option>
+                        {% for sent_val, sent_label in sentiments %}
+                        <option value="{{ sent_val }}" {% if selected_sentiment == sent_val %}selected{% endif %}>{{ sent_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-funnel me-1"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Articles Feed List -->
+    {% if articles %}
+    <div class="row g-3">
+        {% for article in articles %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            {% if article.listing %}
+                            <a href="{% url 'stocks:stock_detail' article.listing.symbol %}"
+                               hx-get="{% url 'stocks:stock_detail' article.listing.symbol %}"
+                               hx-target="#main-content"
+                               hx-push-url="true"
+                               class="badge bg-primary-subtle text-primary fw-bold text-decoration-none">
+                                {{ article.listing.symbol }}
+                            </a>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-muted">Macro / Economy</span>
+                            {% endif %}
+
+                            <span class="badge bg-light text-dark border">{{ article.get_category_display }}</span>
+
+                            {% if article.sentiment == 'BULLISH' %}
+                            <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-arrow-up-circle me-1"></i>Bullish</span>
+                            {% elif article.sentiment == 'BEARISH' %}
+                            <span class="badge bg-danger-subtle text-danger-emphasis"><i class="bi bi-arrow-down-circle me-1"></i>Bearish</span>
+                            {% else %}
+                            <span class="badge bg-light text-muted border">Neutral</span>
+                            {% endif %}
+
+                            {% if article.is_ai_summary %}
+                            <span class="badge bg-info-subtle text-info-emphasis" title="Synthesized by AI"><i class="bi bi-robot me-1"></i>AI Summary</span>
+                            {% else %}
+                            <span class="badge bg-light text-muted border"><i class="bi bi-file-earmark-check me-1"></i>Filing Fact</span>
+                            {% endif %}
+                        </div>
+                        <div class="small text-muted">
+                            <span class="fw-semibold text-secondary">{{ article.source }}</span> &bull; {{ article.published_at|date:"d M Y, H:i" }}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mb-2 text-dark">
+                        {% if article.url %}
+                        <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="text-dark text-decoration-none hover-primary">
+                            {{ article.headline }} <i class="bi bi-box-arrow-up-right text-muted small fs-6"></i>
+                        </a>
+                        {% else %}
+                        {{ article.headline }}
+                        {% endif %}
+                    </h5>
+
+                    <p class="text-muted small mb-0">{{ article.summary }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination Bar -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mt-4 pt-3 border-top">
+        <div class="small text-muted">
+            Showing <strong>{{ page_obj.start_index }}</strong> to <strong>{{ page_obj.end_index }}</strong> of <strong>{{ total_count }}</strong> items (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
+        </div>
+        <nav aria-label="News page navigation">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="{% url 'news:feed' %}?page={{ page_obj.previous_page_number }}&category={{ selected_category }}&sentiment={{ selected_sentiment }}&q={{ search_query }}"
+                       hx-get="{% url 'news:feed' %}?page={{ page_obj.previous_page_number }}&category={{ selected_category }}&sentiment={{ selected_sentiment }}&q={{ search_query }}"
+                       hx-target="#main-content" hx-push-url="true" aria-label="Previous">&laquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="{% url 'news:feed' %}?page={{ page_obj.next_page_number }}&category={{ selected_category }}&sentiment={{ selected_sentiment }}&q={{ search_query }}"
+                       hx-get="{% url 'news:feed' %}?page={{ page_obj.next_page_number }}&category={{ selected_category }}&sentiment={{ selected_sentiment }}&q={{ search_query }}"
+                       hx-target="#main-content" hx-push-url="true" aria-label="Next">&raquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="card border text-center p-5">
+        <div class="text-muted mb-3"><i class="bi bi-newspaper fs-1"></i></div>
+        <h5 class="fw-bold">No News Articles Found</h5>
+        <p class="text-muted small">Try clearing your search query or selecting "All News Categories".</p>
+        <div>
+            <a href="{% url 'news:feed' %}" class="btn btn-outline-primary btn-sm"
+               hx-get="{% url 'news:feed' %}" hx-target="#main-content" hx-push-url="true">
+                Clear Filters
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+

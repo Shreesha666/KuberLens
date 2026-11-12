@@ -14,7 +14,7 @@
                 </ol>
             </nav>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;">
                     <i class="bi bi-cpu fs-6"></i>
                 </div>
                 <h2 class="h3 fw-bold mb-0 text-body">Machine Learning &amp; Market Regime Engine</h2>
@@ -27,7 +27,7 @@
             <form method="post" action="{% url 'ml_engine:regenerate' %}"
                   hx-post="{% url 'ml_engine:regenerate' %}" hx-target="#main-content">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5">
+                <button type="submit" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 text-nowrap">
                     <i class="bi bi-arrow-repeat"></i> Recompute ML Predictions
                 </button>
             </form>
@@ -40,7 +40,7 @@
 
     <!-- Mandatory Regulatory Research Notice -->
     <div class="alert alert-warning border border-warning border-opacity-25 rounded-3 d-flex align-items-center mb-4 py-2 px-3" role="alert">
-        <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-5"></i>
+        <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-5 flex-shrink-0"></i>
         <div class="small text-body">
             <strong>Mandatory Regulatory Notice:</strong> Predictive research opinions are calculated strictly from historical statistical distributions and technical indicators. These models do not guarantee future returns and should not be construed as financial advice.
         </div>
@@ -49,7 +49,7 @@
     <!-- Market Regime Overview Cards -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-md-4">
-            <div class="stat-card h-100 border-start border-4 border-success">
+            <div class="stat-card h-100 accent-card-success">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="text-muted small text-uppercase fw-semibold">Trending Expansion</span>
                     <span class="badge bg-success bg-opacity-10 text-success">Bullish Drift</span>
@@ -63,7 +63,7 @@
         </div>
 
         <div class="col-12 col-md-4">
-            <div class="stat-card h-100 border-start border-4 border-info">
+            <div class="stat-card h-100 accent-card-info">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="text-muted small text-uppercase fw-semibold">Range Bound</span>
                     <span class="badge bg-info bg-opacity-10 text-info">Mean Reversion</span>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="col-12 col-md-4">
-            <div class="stat-card h-100 border-start border-4 border-warning">
+            <div class="stat-card h-100 accent-card-warning">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <span class="text-muted small text-uppercase fw-semibold">High Volatility</span>
                     <span class="badge bg-warning bg-opacity-10 text-warning">Turbulent / Breakout</span>
@@ -144,12 +144,12 @@
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr class="text-muted small border-secondary border-opacity-10 text-uppercase">
-                        <th style="min-width: 170px;">Stock</th>
-                        <th style="min-width: 180px;">Prediction Label</th>
-                        <th style="min-width: 170px;">Confidence Score</th>
-                        <th style="min-width: 140px;">Market Regime</th>
-                        <th>Feature Contributions</th>
-                        <th class="text-end" style="min-width: 140px;">Model &amp; Version</th>
+                        <th style="min-width: 140px;">Stock</th>
+                        <th style="min-width: 170px;">Prediction Label</th>
+                        <th style="min-width: 140px;">Confidence</th>
+                        <th style="min-width: 180px;">Market Regime</th>
+                        <th>Feature Metrics</th>
+                        <th class="text-end" style="min-width: 130px;">Model Version</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -160,25 +160,25 @@
                                hx-get="{% url 'stocks:stock_detail' p.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
                                 {{ p.listing.symbol }}
                             </a>
-                            <div class="text-muted small text-truncate" style="max-width: 200px; font-size: 0.75rem;">
+                            <div class="text-muted small text-truncate" style="max-width: 160px; font-size: 0.75rem;">
                                 {{ p.listing.instrument.display_name }}
                             </div>
                         </td>
                         <td>
                             {% if p.prediction_label == 'BULLISH_EXPANSION' %}
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 text-nowrap">
                                 <i class="bi bi-arrow-up-right me-1"></i>Bullish Expansion
                             </span>
                             {% elif p.prediction_label == 'BREAKOUT_CANDIDATE' %}
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 text-nowrap">
                                 <i class="bi bi-lightning-charge me-1"></i>Breakout Candidate
                             </span>
                             {% elif p.prediction_label == 'SIDEWAYS_CONSOLIDATION' %}
-                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 text-nowrap">
                                 <i class="bi bi-arrows-expand me-1"></i>Consolidation
                             </span>
                             {% else %}
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-nowrap">
                                 <i class="bi bi-arrow-down-right me-1"></i>Bearish Contraction
                             </span>
                             {% endif %}
@@ -190,7 +190,7 @@
                                          role="progressbar"
                                          style="width: {% widthratio p.confidence_score 1 100 %}%;"></div>
                                 </div>
-                                <span class="small fw-bold num-mono text-body" style="min-width: 38px;">
+                                <span class="small fw-bold num-mono text-body" style="min-width: 34px;">
                                     {% widthratio p.confidence_score 1 100 %}%
                                 </span>
                             </div>
@@ -199,13 +199,20 @@
                             <span class="badge bg-body-tertiary text-body border border-secondary border-opacity-10 fw-normal">
                                 {{ p.get_regime_classification_display }}
                             </span>
+                            {% if p.feature_contributions.regime_summary %}
+                            <div class="text-muted small text-truncate mt-1" style="max-width: 200px; font-size: 0.7rem;" title="{{ p.feature_contributions.regime_summary }}">
+                                {{ p.feature_contributions.regime_summary }}
+                            </div>
+                            {% endif %}
                         </td>
                         <td>
-                            <div class="d-flex flex-wrap gap-1" style="max-width: 320px;">
+                            <div class="d-flex flex-wrap gap-1" style="max-width: 260px;">
                                 {% for key, val in p.feature_contributions.items %}
+                                {% if key != 'regime_summary' %}
                                 <span class="badge bg-body-tertiary text-secondary border border-secondary border-opacity-10 font-monospace py-1" style="font-size: 0.6875rem;">
                                     {{ key }}: {{ val }}
                                 </span>
+                                {% endif %}
                                 {% empty %}
                                 <span class="text-muted small">Standard indicators</span>
                                 {% endfor %}

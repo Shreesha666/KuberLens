@@ -1,0 +1,256 @@
+{% load core_tags %}
+
+{% if analysis %}
+<div class="card border-0 shadow-sm mb-4">
+    <!-- Header with Badges and Actions -->
+    <div class="card-header bg-transparent py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h4 class="h5 fw-bold mb-0 text-dark">{{ analysis.listing.symbol }}</h4>
+                <span class="text-muted small">({{ analysis.listing.instrument.name }})</span>
+                <span class="badge bg-secondary-subtle text-muted">{{ analysis.listing.instrument.sector }}</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 small">
+                <span class="badge bg-primary-subtle text-primary fw-semibold">
+                    <i class="bi bi-robot me-1"></i>{{ analysis.get_role_display }}
+                </span>
+                <span class="badge {% if analysis.overall_view == 'BUY_CANDIDATE' %}bg-success text-white{% elif analysis.overall_view == 'EXIT' %}bg-danger text-white{% elif analysis.overall_view == 'REDUCE' or analysis.overall_view == 'AVOID' %}bg-warning-subtle text-warning-emphasis{% elif analysis.overall_view == 'HOLD' %}bg-info-subtle text-info-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %} fw-bold px-2 py-1">
+                    {{ analysis.get_overall_view_display }}
+                </span>
+                <span class="badge bg-light text-dark border">
+                    Confidence: <strong>{{ analysis.get_confidence_level_display }}</strong>
+                </span>
+                <span class="text-muted">
+                    Freshness: <span class="badge bg-light text-muted border">{{ analysis.data_freshness|default:"EOD" }}</span>
+                </span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small d-none d-md-inline" title="Model & Prompt Version">
+                <code>{{ analysis.model_name }}</code> &bull; <code>{{ analysis.prompt_version }}</code>
+            </span>
+            <a href="{% url 'ai_analysis:hub' %}?symbol={{ analysis.listing.symbol }}&role={{ analysis.role }}&force=true"
+               hx-get="{% url 'ai_analysis:hub' %}?symbol={{ analysis.listing.symbol }}&role={{ analysis.role }}&force=true"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="btn btn-outline-secondary btn-sm"
+               title="Regenerate with fresh snapshot">
+                <i class="bi bi-arrow-clockwise"></i> Re-Analyze
+            </a>
+            <a href="{% url 'stocks:stock_detail' analysis.listing.symbol %}"
+               hx-get="{% url 'stocks:stock_detail' analysis.listing.symbol %}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="btn btn-primary btn-sm">
+                View Stock Profile <i class="bi bi-box-arrow-up-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        <!-- Executive Summary -->
+        <div class="p-3 bg-light bg-opacity-75 rounded border mb-4">
+            <h6 class="fw-bold mb-2 text-primary d-flex align-items-center gap-2">
+                <i class="bi bi-chat-left-quote"></i> Executive Research Synthesis
+            </h6>
+            <p class="mb-0 text-dark lead fs-6">{{ analysis.summary }}</p>
+        </div>
+
+        <!-- Two Column Key Drivers: Strengths vs Risks -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card h-100 border-success-subtle bg-success bg-opacity-10 shadow-none">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold text-success mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill"></i> Positive Factors & Catalysts
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                            {% for factor in analysis.positive_factors %}
+                            <li class="d-flex align-items-start gap-2 mb-2 small text-dark">
+                                <i class="bi bi-plus-circle text-success mt-1"></i>
+                                <span>{{ factor }}</span>
+                            </li>
+                            {% empty %}
+                            <li class="text-muted small">No distinct catalysts flagged.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 border-danger-subtle bg-danger bg-opacity-10 shadow-none">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold text-danger mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Headwinds & Negative Factors
+                        </h6>
+                        <ul class="list-unstyled mb-0">
+                            {% for factor in analysis.negative_factors %}
+                            <li class="d-flex align-items-start gap-2 mb-2 small text-dark">
+                                <i class="bi bi-dash-circle text-danger mt-1"></i>
+                                <span>{{ factor }}</span>
+                            </li>
+                            {% empty %}
+                            <li class="text-muted small">No specific headwinds identified.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical & Fundamental Structured Details -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="p-3 border rounded">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-activity text-primary"></i> Technical Structure
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-6">
+                            <span class="text-muted d-block">Trend Signal</span>
+                            <span class="fw-bold {% if analysis.technical_analysis.trend == 'BULLISH' %}text-success{% elif analysis.technical_analysis.trend == 'BEARISH' %}text-danger{% else %}text-muted{% endif %}">
+                                {{ analysis.technical_analysis.trend|default:"NEUTRAL" }}
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block">14-Period RSI</span>
+                            <span class="fw-bold num-mono">{{ analysis.technical_analysis.rsi_14|floatformat:1|default:"—" }}</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted d-block">SMA 20</span>
+                            <span class="num-mono">{{ analysis.technical_analysis.sma_20|floatformat:1|default:"—" }}</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted d-block">SMA 50</span>
+                            <span class="num-mono">{{ analysis.technical_analysis.sma_50|floatformat:1|default:"—" }}</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted d-block">SMA 200</span>
+                            <span class="num-mono">{{ analysis.technical_analysis.sma_200|floatformat:1|default:"—" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="p-3 border rounded">
+                    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart-steps text-success"></i> Fundamental Health & Valuation
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-6">
+                            <span class="text-muted d-block">Fundamental Score</span>
+                            <span class="fw-bold text-success">{{ analysis.fundamental_analysis.overall_score|default:50 }}/100</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block">Stock P/E vs Sector</span>
+                            <span class="fw-bold num-mono">
+                                {{ analysis.fundamental_analysis.pe_ratio|floatformat:1|default:"—" }}x
+                                {% if analysis.fundamental_analysis.sector_pe %}
+                                <span class="text-muted fw-normal">({{ analysis.fundamental_analysis.sector_pe|floatformat:1 }}x)</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block">Return on Equity (ROE)</span>
+                            <span class="num-mono">{{ analysis.fundamental_analysis.roe|floatformat:1|default:"—" }}%</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block">Debt to Equity</span>
+                            <span class="num-mono">{{ analysis.fundamental_analysis.debt_to_equity|floatformat:2|default:"—" }}x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dual Perspective Research: Existing Holder vs New Investor -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card h-100 border-info-subtle">
+                    <div class="card-header bg-info bg-opacity-10 py-2 border-0">
+                        <h6 class="fw-bold text-info-emphasis mb-0 small">
+                            <i class="bi bi-person-check me-1"></i> Existing Portfolio Holder View
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <p class="mb-0 small text-dark">{{ analysis.existing_holder_view }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 border-primary-subtle">
+                    <div class="card-header bg-primary bg-opacity-10 py-2 border-0">
+                        <h6 class="fw-bold text-primary mb-0 small">
+                            <i class="bi bi-wallet2 me-1"></i> Prospective New Investor View
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <p class="mb-0 small text-dark">{{ analysis.new_investor_view }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entry vs Invalidation Execution Triggers -->
+        <div class="p-3 border rounded bg-white mb-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <span class="text-muted small fw-semibold text-uppercase d-block mb-1">
+                        <i class="bi bi-box-arrow-in-right text-success me-1"></i> Validated Entry Conditions
+                    </span>
+                    <p class="small text-dark mb-0">{{ analysis.entry_conditions|default:"Standard disciplined limit entry aligned with risk profile." }}</p>
+                </div>
+                <div class="col-md-6">
+                    <span class="text-muted small fw-semibold text-uppercase d-block mb-1">
+                        <i class="bi bi-shield-slash text-danger me-1"></i> Invalidation / Exit Conditions
+                    </span>
+                    <p class="small text-dark mb-0">{{ analysis.invalidation_conditions|default:"Breakdown of key moving averages or fundamental rating downgrade." }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Assessment Detail -->
+        <div class="mb-4">
+            <h6 class="fw-bold mb-2 text-danger d-flex align-items-center gap-2 small text-uppercase">
+                <i class="bi bi-shield-exclamation"></i> Capital Risk Assessment
+            </h6>
+            <p class="small text-muted mb-0">{{ analysis.risk_assessment }}</p>
+        </div>
+
+        <!-- Missing / Unverified Information Callout (Master Spec Acceptance Criteria) -->
+        {% if analysis.missing_information %}
+        <div class="alert alert-warning border-warning-subtle py-2 px-3 mb-3">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-exclamation-octagon text-warning-emphasis"></i>
+                <strong class="small text-warning-emphasis">Identified Missing or Unverified Information:</strong>
+            </div>
+            <ul class="mb-0 ps-3 small text-muted">
+                {% for item in analysis.missing_information %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Data Sources & Audit Disclaimer -->
+        <div class="pt-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-2 small text-muted">
+            <div>
+                <span class="fw-semibold">Data Sources:</span>
+                {% for src in analysis.data_sources_and_assumptions %}
+                    <span class="badge bg-light text-muted border me-1">{{ src }}</span>
+                {% endfor %}
+            </div>
+            <div>
+                <span>Generated: {{ analysis.created_at|date:"Y-m-d H:i" }} UTC</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card border text-center p-5">
+    <div class="text-muted mb-3"><i class="bi bi-robot fs-1"></i></div>
+    <h5 class="fw-bold">No AI Research Generated Yet</h5>
+    <p class="text-muted small">Select a stock symbol and AI persona above to generate structured equity research.</p>
+</div>
+{% endif %}

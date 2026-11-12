@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform  
 **Document Purpose:** Living tracker of modules, phases, and components  
 **Last Updated:** 2026-11-12  
-**Current Overall State:** Phase 6 Completed & Validated &bull; Ready for Phase 7 Approval
+**Current Overall State:** Phase 7 Completed & Validated &bull; Ready for Phase 8 Approval
 
 ---
 
@@ -29,7 +29,7 @@
 | **Phase 4** | Portfolio & Holdings Analysis | 🟢 **COMPLETED** | 2026-11-12 | Immutable ledger, FIFO lot matching, Capital charges, Corporate actions, Dual recommendations, 80 tests passing |
 | **Phase 5** | Screener & Watchlists | 🟢 **COMPLETED** | 2026-11-12 | Multi-variable scanner over pre-calculated snapshots, Custom user lists, One-click presets, CSV export, 98 tests passing |
 | **Phase 6** | Swing Trading & Risk Management | 🟢 **COMPLETED** | 2026-11-12 | 4 Quantitative swing setups, mathematical position sizing engine, Trade Journal with checklist, 118 tests passing |
-| **Phase 7** | AI Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 6 | Investor, Swing, and Risk AI agents consuming structured data with prompt versions |
+| **Phase 7** | AI Stock Research Engine | 🟢 **COMPLETED** | 2026-11-12 | Investor, Swing, and Risk AI personas, Provider abstraction (Gemini + Deterministic Fallback), Missing data audit, 128 tests passing |
 | **Phase 8** | News, Corporate Events & Alerts | ⚪ **NOT STARTED** | Follows Phase 7 | In-app/email alerts, Corporate actions (Bonus/Split/Div), Filings feed |
 | **Phase 9** | Strategy Backtesting & ML Engine | ⚪ **NOT STARTED** | Follows Phase 8 | Historical strategy simulator, Regime & trend classification without lookahead |
 | **Phase 10** | F&O Preparation & Zerodha Kite Integration | ⚪ **NOT STARTED** | Optional / Future | Optional read-only broker sync with Fernet encrypted token store |
@@ -55,7 +55,7 @@
 | `screener` | Multi-filter screening engine over snapshots, saved screening queries | 🟢 **COMPLETED** | `ScreenerConfiguration`, `ScreenerResult`, `ScreenerView` (`/screener/`), `ScreenerExportView` (`/screener/export/`), `ScreenerDeleteConfigView`, `seed_screener_and_watchlists` |
 | `watchlists` | User-defined watchlists, quick quote monitoring | 🟢 **COMPLETED** | `Watchlist`, `WatchlistItem`, `WatchlistListView` (`/watchlists/`), `WatchlistCreateView`, `WatchlistDeleteView`, `WatchlistItemAddView`, `WatchlistItemDeleteView`, `WatchlistQuickAddView` |
 | `trading` | Swing trade setups, risk management, trade journal, log entries | 🟢 **COMPLETED** | `TradeSetup`, `TradeJournal`, `SwingScanner`, `RiskCalculator`, `SwingScannerView` (`/trading/`), `TradeJournalListView` (`/trading/journal/`), `scan_swing_setups` |
-| `ai_analysis` | Investor AI, Swing AI, Risk AI structured research opinions | ⚪ **NOT STARTED** | Phase 7 Scope |
+| `ai_analysis` | Investor AI, Swing AI, Risk AI structured research opinions | 🟢 **COMPLETED** | `StockAIAnalysis` model (AuditedModel, 16 Master Spec attributes), `AIResearchHubView` (`/research/ai/`), `AIStockDetailTabPartialView` (`/research/ai/stock/<symbol>/`), `GeminiAIProvider`, `StructuredRuleFallbackProvider`, `AIResearchService` with missing information detection |
 | `ml_engine` | Machine learning models (regime detection, stock ranking) | ⚪ **NOT STARTED** | Phase 9 Scope |
 | `news` | Financial news, corporate filings, earnings announcements | ⚪ **NOT STARTED** | Phase 8 Scope |
 | `alerts` | Price, indicator, and portfolio threshold alert triggers | ⚪ **NOT STARTED** | Phase 8 Scope |
@@ -78,6 +78,8 @@
 | **Fundamental Analyzer Engine** | `services/fundamentals/analyzer.py` | 🟢 **COMPLETED** | 5-Factor scoring (Growth, Profitability, Solvency, Valuation, Ownership), Sector-relative P/E, Dynamic positive & risk drivers |
 | **Interactive Canvas Chart** | `static/js/charting.js` | 🟢 **COMPLETED** | Standalone HTML5 Canvas candlestick and volume chart with SMA 20/50 overlays, crosshair, and hover tooltips (zero external CDN dependency) |
 | **Global Autocomplete Search** | `apps/stocks/views.py` | 🟢 **COMPLETED** | Instant header search by symbol, company legal name, display name, and ISIN via HTMX dropdown |
+| **AI Research Service** | `services/ai/researcher.py` | 🟢 **COMPLETED** | Structured context compiler, explicit missing information detection, role prompt versioning (`v1.0`), and 4-hour caching |
+| **AI Provider Abstraction** | `integrations/ai_providers/` | 🟢 **COMPLETED** | Abstract base, REST-based `GeminiAIProvider`, and deterministic non-hallucinating `StructuredRuleFallbackProvider` |
 
 ---
 

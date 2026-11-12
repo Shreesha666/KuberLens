@@ -78,8 +78,8 @@
 
         <!-- INTELLIGENCE -->
         <div class="nav-section-title">Intelligence</div>
-        <a href="{% url 'dashboard:placeholder' 'ai_stock_research' %}" class="nav-link {% if active_nav == 'ai_stock_research' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'ai_stock_research' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'ai_analysis:hub' %}" class="nav-link {% if active_nav == 'ai_stock_research' %}active{% endif %}"
+           hx-get="{% url 'ai_analysis:hub' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-robot"></i> AI Stock Research
         </a>
         <a href="{% url 'dashboard:placeholder' 'ai_recommendations' %}" class="nav-link {% if active_nav == 'ai_recommendations' %}active{% endif %}"

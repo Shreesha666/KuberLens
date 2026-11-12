@@ -114,6 +114,14 @@
                     <i class="bi bi-people text-info"></i> Sector Peers
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="ai-research-tab" data-bs-toggle="tab" data-bs-target="#ai-research-pane" type="button" role="tab"
+                        hx-get="{% url 'ai_analysis:stock_tab_partial' listing.symbol %}"
+                        hx-target="#ai-research-pane-content"
+                        hx-trigger="click once">
+                    <i class="bi bi-robot text-primary"></i> AI Research Brief
+                </button>
+            </li>
         </ul>
     </div>
     <div class="card-body p-4 tab-content">
@@ -397,6 +405,16 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- 4. AI RESEARCH TAB -->
+        <div class="tab-pane fade" id="ai-research-pane" role="tabpanel">
+            <div id="ai-research-pane-content" class="py-2">
+                <div class="text-center py-4 text-muted">
+                    <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+                    <div>Loading AI Research Brief...</div>
+                </div>
             </div>
         </div>
     </div>

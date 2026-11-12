@@ -14,6 +14,7 @@ urlpatterns = [
     path("stocks/", include("apps.stocks.urls", namespace="stocks")),
     path("research/technical/", include("apps.technical_analysis.urls", namespace="technical_analysis")),
     path("research/fundamental/", include("apps.fundamental_analysis.urls", namespace="fundamental_analysis")),
+    path("research/ai/", include("apps.ai_analysis.urls", namespace="ai_analysis")),
     path("portfolio/holdings/", include("apps.holdings.urls", namespace="holdings")),
     path("portfolio/", include("apps.portfolio.urls", namespace="portfolio")),
     path("screener/", include("apps.screener.urls", namespace="screener")),

@@ -1,6 +1,7 @@
 """
 Base Django settings for Indian Stock Market Research & Intelligence Platform.
 """
+import os
 from pathlib import Path
 
 import environ
@@ -56,6 +57,7 @@ LOCAL_APPS = [
     "apps.screener",
     "apps.watchlists",
     "apps.trading",
+    "apps.ai_analysis",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -208,3 +210,9 @@ LOGGING = {
         },
     },
 }
+
+# AI Research & Intelligence Settings (Master Spec Section 17)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "fallback")  # "gemini" or "fallback"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+

@@ -18,7 +18,7 @@ class FinancialCandlestickChart {
             gridColor: 'rgba(100, 116, 139, 0.12)',
             textColor: '#64748b',
             font: '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            paddingRight: 65,
+            paddingRight: 78,
             paddingBottom: 25,
             paddingTop: 15,
             paddingLeft: 10,
@@ -103,17 +103,22 @@ class FinancialCandlestickChart {
         const priceH = chartH - volumeH;
 
         // Determine price min & max
-        let minPrice = Infinity;
-        let maxPrice = -Infinity;
+        let candleMin = Infinity;
+        let candleMax = -Infinity;
         let maxVol = 0;
 
         for (const c of this.candles) {
-            if (c.low < minPrice) minPrice = c.low;
-            if (c.high > maxPrice) maxPrice = c.high;
-            if (c.sma20 && c.sma20 < minPrice) minPrice = c.sma20;
-            if (c.sma20 && c.sma20 > maxPrice) maxPrice = c.sma20;
+            if (c.low < candleMin) candleMin = c.low;
+            if (c.high > candleMax) candleMax = c.high;
+            if (c.sma20 && c.sma20 < candleMin) candleMin = c.sma20;
+            if (c.sma20 && c.sma20 > candleMax) candleMax = c.sma20;
+            if (c.sma50 && c.sma50 < candleMin) candleMin = c.sma50;
+            if (c.sma50 && c.sma50 > candleMax) candleMax = c.sma50;
             if (c.volume > maxVol) maxVol = c.volume;
         }
+
+        let minPrice = candleMin;
+        let maxPrice = candleMax;
 
         if (this.levels) {
             if (this.levels.stop_loss && this.levels.stop_loss > 0) {
@@ -123,14 +128,17 @@ class FinancialCandlestickChart {
                 maxPrice = Math.max(maxPrice, this.levels.target_1);
             }
             if (this.levels.target_2 && this.levels.target_2 > 0) {
-                maxPrice = Math.max(maxPrice, this.levels.target_2);
+                // If T2 is within 25% of candleMax, accommodate it; otherwise cap to prevent crushing candles
+                if (this.levels.target_2 <= candleMax * 1.25) {
+                    maxPrice = Math.max(maxPrice, this.levels.target_2);
+                }
             }
         }
 
-        const pricePad = (maxPrice - minPrice) * 0.05 || 1;
-        minPrice -= pricePad;
-        maxPrice += pricePad;
-        const priceRange = maxPrice - minPrice;
+        const basePad = (candleMax - candleMin) * 0.04 || 1;
+        if (minPrice === candleMin) minPrice -= basePad;
+        if (maxPrice === candleMax) maxPrice += basePad;
+        const priceRange = Math.max(1, maxPrice - minPrice);
 
         // Scales
         const n = this.candles.length;
@@ -139,6 +147,19 @@ class FinancialCandlestickChart {
 
         const getY = (val) => opt.paddingTop + priceH - ((val - minPrice) / priceRange) * priceH;
         const getVolY = (vol) => opt.paddingTop + chartH - (maxVol > 0 ? (vol / maxVol) * volumeH : 0);
+
+        // Pre-compute level Y positions to prevent text collisions with standard grid labels
+        const levelYPositions = [];
+        if (this.levels) {
+            const registerY = (val) => {
+                if (val && val >= minPrice && val <= maxPrice) {
+                    levelYPositions.push(getY(val));
+                }
+            };
+            registerY(this.levels.stop_loss);
+            registerY(this.levels.target_1);
+            registerY(this.levels.target_2);
+        }
 
         // Grid Lines (Price Axis)
         ctx.strokeStyle = opt.gridColor;
@@ -155,8 +176,13 @@ class FinancialCandlestickChart {
             ctx.lineTo(w - opt.paddingRight, y);
             ctx.stroke();
 
-            ctx.textAlign = 'left';
-            ctx.fillText(`₹${p.toFixed(1)}`, w - opt.paddingRight + 6, y + 3);
+            // Only print price text if it does not collide with a trade level badge
+            const collides = levelYPositions.some(ly => Math.abs(ly - y) < 14);
+            if (!collides) {
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`₹${p.toFixed(1)}`, w - opt.paddingRight + 6, y);
+            }
         }
 
         // Draw Volume Bars
@@ -223,34 +249,51 @@ class FinancialCandlestickChart {
 
         // Draw Key Institutional Trade Levels (Stop Loss, T1, T2)
         if (this.levels) {
+            // Anchor trade projection ray to recent trading cycle (~25 sessions or start of chart if shorter)
+            const projectionSpan = Math.min(n, 25);
+            const rayStartX = opt.paddingLeft + (n - projectionSpan) * candleStep + candleStep / 2;
+            const rayEndX = w - opt.paddingRight;
+
             const drawTargetLevel = (val, label, color) => {
                 if (!val || val < minPrice || val > maxPrice) return;
                 const y = getY(val);
                 ctx.save();
                 ctx.strokeStyle = color;
-                ctx.lineWidth = 1.4;
+                ctx.lineWidth = 1.5;
                 ctx.setLineDash([5, 4]);
                 ctx.beginPath();
-                ctx.moveTo(opt.paddingLeft, y);
-                ctx.lineTo(w - opt.paddingRight, y);
+                ctx.moveTo(rayStartX, y);
+                ctx.lineTo(rayEndX, y);
                 ctx.stroke();
 
-                // Axis Tag on the Right
+                // Anchor bullet indicator at projection origin
                 ctx.setLineDash([]);
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                ctx.roundRect(w - opt.paddingRight + 2, y - 8, opt.paddingRight - 4, 16, 3);
+                ctx.arc(rayStartX, y, 2.5, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Axis Tag on the Right - crisp rounded badge
+                const tagW = opt.paddingRight - 6;
+                const tagH = 17;
+                const tagX = w - opt.paddingRight + 3;
+                const tagY = y - tagH / 2;
+
+                ctx.beginPath();
+                ctx.roundRect(tagX, tagY, tagW, tagH, 3);
+                ctx.fill();
+
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 9px monospace';
-                ctx.textAlign = 'left';
-                ctx.fillText(label, w - opt.paddingRight + 5, y + 4);
+                ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, tagX + tagW / 2, tagY + tagH / 2);
                 ctx.restore();
             };
 
             if (this.levels.stop_loss) drawTargetLevel(this.levels.stop_loss, `SL ₹${this.levels.stop_loss}`, '#dc2626');
             if (this.levels.target_1) drawTargetLevel(this.levels.target_1, `T1 ₹${this.levels.target_1}`, '#059669');
-            if (this.levels.target_2) drawTargetLevel(this.levels.target_2, `T2 ₹${this.levels.target_2}`, '#10b981');
+            if (this.levels.target_2) drawTargetLevel(this.levels.target_2, `T2 ₹${this.levels.target_2}`, '#0d9488');
         }
 
         // Date Axis (X Labels)

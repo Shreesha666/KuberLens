@@ -678,18 +678,22 @@ class TradingViewStockChart {
     }
 
     bindToolbarEvents() {
-        // 1. Timeframe Pills (Zerodha Kite style)
+        // 1. Timeframe Range Selector (TradingView Bottom Bar: 1D 5D 1M 3M 6M YTD 1Y 5Y All)
         const tfGroup = document.getElementById('chart-timeframe-group');
         if (tfGroup) {
             tfGroup.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.onclick = () => {
-                    tfGroup.querySelectorAll('.timeframe-btn').forEach(b => {
-                        b.classList.remove('active', 'btn-primary', 'text-white', 'fw-bold');
-                        b.classList.add('btn-link', 'text-muted');
-                    });
-                    btn.classList.add('active', 'btn-primary', 'text-white', 'fw-bold');
-                    btn.classList.remove('btn-link', 'text-muted');
-                    const days = parseInt(btn.getAttribute('data-days'), 10);
+                    tfGroup.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const rawVal = btn.getAttribute('data-days');
+                    let days = 180;
+                    if (rawVal === 'ytd') {
+                        const now = new Date();
+                        const startOfYear = new Date(now.getFullYear(), 0, 1);
+                        days = Math.max(1, Math.ceil((now - startOfYear) / (1000 * 60 * 60 * 24)));
+                    } else {
+                        days = parseInt(rawVal, 10);
+                    }
                     this.loadData(days);
                 };
             });

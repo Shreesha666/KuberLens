@@ -67,6 +67,7 @@ Before writing application code, the environment and workspace scaffolding must 
 
 ### Phase 2: Market Data Providers, Trading Calendar & Historical Storage
 
+- **Status:** 🟢 **COMPLETED (2026-11-12)** &bull; 43 tests passing (81% overall coverage)
 - **Objective:** Create the provider-independent market data integration layer, implement Jugaad-Data (primary NSE) and Yahoo Finance (secondary fallback) adapters, integrate the Indian Exchange Trading Calendar, implement the two-dimensional status model (`source_type` & `freshness_status`), and store raw immutable historical candles in PostgreSQL with critical compound indexes.
 - **Django Apps Involved:** `instruments`, `market`, `settings_app`, `integrations/market_data`, `services/market_data`, `services/calendar`
 - **Files to Create or Modify:**

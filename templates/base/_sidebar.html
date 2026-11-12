@@ -97,8 +97,8 @@
 
         <!-- SYSTEM -->
         <div class="nav-section-title">System</div>
-        <a href="{% url 'dashboard:placeholder' 'data_sources' %}" class="nav-link {% if active_nav == 'data_sources' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'data_sources' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'settings_app:data_sources' %}" class="nav-link {% if active_nav == 'data_sources' %}active{% endif %}"
+           hx-get="{% url 'settings_app:data_sources' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-database-check"></i> Data Sources
         </a>
         <a href="{% url 'dashboard:placeholder' 'broker_connections' %}" class="nav-link {% if active_nav == 'broker_connections' %}active{% endif %}"

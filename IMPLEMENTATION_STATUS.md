@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform  
 **Document Purpose:** Living tracker of modules, phases, and components  
 **Last Updated:** 2026-11-12  
-**Current Overall State:** Phase 1 Completed & Validated &bull; Ready for Phase 2 Approval
+**Current Overall State:** Phase 2 Completed & Validated &bull; Ready for Phase 3 Approval
 
 ---
 
@@ -23,9 +23,9 @@
 | Phase | Description | Status | Target Completion | Notes |
 |---|---|:---:|---|---|
 | **Phase 0** | Architecture Review & Refinement 2.1 | 🟢 **COMPLETED** | 2026-11-12 | 2D Market Data status, Immutable ledger, Operations runbook & test matrix |
-| **Phase 1** | Django Foundation, Ops & Dynamic UI Shell | 🟢 **COMPLETED** | 2026-11-12 | Django 5.1, CustomUser (UUID), `django-htmx`, Shell, 16 automated tests passed |
-| **Phase 2** | Market Data Providers & Historical Storage | ⚪ **NOT STARTED** | Follows Phase 1 | Awaiting user approval. Jugaad-Data & Yahoo adapters, Exchange Calendar |
-| **Phase 3** | Instruments & Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 2 | Canonical Instrument & ExchangeListing, Raw vs Derived indicator snapshots |
+| **Phase 1** | Django Foundation, Ops & Dynamic UI Shell | 🟢 **COMPLETED** | 2026-11-12 | Django 5.1, CustomUser (UUID), `django-htmx`, Shell, Light Theme default |
+| **Phase 2** | Market Data Providers & Historical Storage | 🟢 **COMPLETED** | 2026-11-12 | Jugaad-Data & Yahoo adapters, ExchangeCalendar, MarketDataService, 43 tests passing |
+| **Phase 3** | Instruments & Stock Research Engine | ⚪ **NOT STARTED** | Follows Phase 2 | Awaiting approval. Stock profiles, interactive charts, raw vs derived indicators |
 | **Phase 4** | Portfolio & Holdings Analysis | ⚪ **NOT STARTED** | Follows Phase 3 | Immutable ledger, FIFO lot matching, Capital charges, Corporate actions |
 | **Phase 5** | Screener & Watchlists | ⚪ **NOT STARTED** | Follows Phase 4 | Multi-variable scanner over pre-calculated snapshots, Custom user lists |
 | **Phase 6** | Swing Trading & Risk Management | ⚪ **NOT STARTED** | Follows Phase 5 | 1-8 week setups, position sizing engine, Trade Journal |
@@ -42,10 +42,11 @@
 | Django App | Scope / Responsibility | Status | Implemented Components |
 |---|---|:---:|---|
 | `core` | Base models, auditing, custom tags, HTMX mixins, encryption helpers, health check | 🟢 **COMPLETED** | `AuditedModel`, `HTMXResponseMixin`, `encrypt_value`/`decrypt_value`, `HealthCheckView`, `core_tags` |
-| `accounts` | User authentication, session management, user preferences | 🟢 **COMPLETED** | `CustomUser`, `UserPreference`, `LoginView`, `LogoutView`, `ProfileView`, `create_dev_user` |
+| `accounts` | User authentication, session management, user preferences | 🟢 **COMPLETED** | `CustomUser`, `UserPreference` (Light theme default), `LoginView`, `LogoutView`, `ProfileView`, `create_dev_user` |
 | `dashboard` | Executive summary, market indices ticker, portfolio summary cards | 🟢 **COMPLETED** | `DashboardView`, `MarketOverviewView`, `ModulePlaceholderView`, responsive layout |
-| `market` | Index tracking, advance/decline stats, ExchangeCalendar session state | ⚪ **NOT STARTED** | Phase 2 Scope |
-| `instruments` | Canonical `Instrument` (ISIN), `ExchangeListing` (NSE/BSE symbols) | ⚪ **NOT STARTED** | Phase 2 Scope |
+| `instruments` | Canonical `Instrument` (ISIN), `ExchangeListing` (NSE/BSE symbols) | 🟢 **COMPLETED** | `Exchange`, `Instrument`, `ExchangeListing`, `seed_instruments` management command (top 10 benchmark stocks) |
+| `market` | Index tracking, advance/decline stats, quotes, candles, logs | 🟢 **COMPLETED** | `DataProvider`, `MarketQuote` (2D status), `HistoricalCandle`, `DataRefreshLog`, `DataQualityIssue`, Celery tasks (`ingest_daily_bhavcopy_task`, `monitor_provider_health_task`), `import_market_data` command |
+| `settings_app` | Data source provider health, API keys, cache controls | 🟢 **COMPLETED** | `DataSourcesView`, `/settings/data-sources/` route with HTMX dual-mode rendering and provider health table |
 | `stocks` | Stock profiles, search autocomplete, quotes, historical charts | ⚪ **NOT STARTED** | Phase 3 Scope |
 | `technical_analysis` | SMA, EMA, RSI, MACD, Bollinger, Snapshots with calculation version | ⚪ **NOT STARTED** | Phase 3 Scope |
 | `fundamental_analysis` | P/E, P/B, ROE, ROCE, Debt/Equity, Snapshots with calculation version | ⚪ **NOT STARTED** | Phase 3 Scope |
@@ -62,21 +63,19 @@
 | `brokers` | Broker connection management (Zerodha Kite adapter stub) | ⚪ **NOT STARTED** | Phase 10 Scope |
 | `reports` | PDF/CSV generation of portfolio tear-sheets and stock memos | ⚪ **NOT STARTED** | Phase 11 Scope |
 | `notifications` | In-app notification center and alert delivery dispatch | ⚪ **NOT STARTED** | Phase 8 Scope |
-| `settings_app` | Data source provider health, API keys, cache controls | ⚪ **NOT STARTED** | Phase 2 Scope |
 
 ---
 
-## 4. UI Shell & HTMX Navigation Status
+## 4. Market Data & Service Architecture (Phase 2 Deliverables)
 
-| UI Component | Purpose | Status | Notes |
+| Component | Path | Status | Details |
 |---|---|:---:|---|
-| `base/shell.html` | Unified HTML Shell with Persistent Header & Sidebar | 🟢 **COMPLETED** | Fully mounted with `#main-content` dynamic target |
-| `base/_header.html` | Top bar with indices ticker, quick search, notifications | 🟢 **COMPLETED** | Verified dynamic context, data freshness badge |
-| `base/_sidebar.html` | Collapsible sidebar with active navigation highlights | 🟢 **COMPLETED** | All 20+ routes configured with `hx-get` and push-url |
-| Dynamic HTMX Routing | `django-htmx` middleware & dual-template switching | 🟢 **COMPLETED** | `HTMXResponseMixin` verified in tests |
-| History Restoration | Preserves DOM & active sidebar on back/forward | 🟢 **COMPLETED** | Handled via `htmx:historyRestore` in `app.js` |
-| Global Progress Bar | Visual indicator during HTMX dynamic content swaps | 🟢 **COMPLETED** | Tied to `htmx:configRequest` and `afterRequest` |
-| Responsive Financial Theme | Dark financial dashboard palette with green/red conventions | 🟢 **COMPLETED** | Tested on desktop and mobile viewports |
+| **ExchangeCalendar** | `services/calendar/exchange_calendar.py` | 🟢 **COMPLETED** | NSE/BSE holidays (2024–2027), trading hours (09:15–15:30 IST), Diwali Muhurat session timings |
+| **MarketDataNormalizer** | `integrations/market_data/normalizer.py` | 🟢 **COMPLETED** | Validates OHLC rules ($L \le O \le H$, $L \le C \le H$, $V \ge 0$, $P > 0$) |
+| **Jugaad-Data Provider** | `integrations/market_data/providers/jugaad/` | 🟢 **COMPLETED** | NSE direct feed (`source_type=DIRECT`), Bhavcopy EOD ingestion, polite rate limiting |
+| **Yahoo Finance Provider** | `integrations/market_data/providers/yahoo/` | 🟢 **COMPLETED** | Secondary fallback, explicitly labeled `source_type=DELAYED` (15m delay) |
+| **Provider Registry & Health** | `integrations/market_data/registry.py`, `health.py` | 🟢 **COMPLETED** | Dynamic provider resolution, circuit breaker state tracking |
+| **MarketDataService** | `services/market_data/service.py` | 🟢 **COMPLETED** | Caching, transparent failover from Jugaad to Yahoo, historical candle backfill |
 
 ---
 
@@ -86,8 +85,10 @@
 |---|---|:---:|:---:|:---:|
 | **Core Utilities & Encryption** | `tests/test_core.py` | 6 | 🟢 PASSED | 88% |
 | **Authentication & Accounts** | `tests/test_accounts.py` | 5 | 🟢 PASSED | 95% |
+| **Exchange Trading Calendar** | `tests/test_calendar.py` | 8 | 🟢 PASSED | 86% |
+| **Market Data, Providers & Tasks** | `tests/test_market_data.py` | 19 | 🟢 PASSED | 85% |
 | **Navigation & HTMX Swapping** | `tests/test_navigation.py` | 5 | 🟢 PASSED | 100% |
-| **TOTAL** | — | **16** | **16 / 16 PASSED** | **93% Overall** |
+| **TOTAL** | — | **43** | **43 / 43 PASSED** | **81% Overall** |
 
 ---
 
@@ -95,4 +96,4 @@
 
 | ID | Date Logged | Description | Severity | Mitigation / Resolution |
 |---|---|---|:---:|---|
-| *None* | 2026-11-12 | Phase 1 execution successfully verified. | Low | Ready to begin Phase 2 upon user approval. |
+| *None* | 2026-11-12 | Phase 2 execution successfully completed and verified. | Low | Ready to begin Phase 3 upon user approval. |

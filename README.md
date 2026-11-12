@@ -78,11 +78,26 @@ python manage.py create_dev_user
 - **Username:** `admin`
 - **Password:** `Admin@12345`
 
-### 6. Start Development Server
+### 6. Seed Instruments & Exchange Listings
+```bash
+python manage.py seed_instruments
+```
+
+### 7. (Optional) Sync Quotes or Historical Candles via CLI
+```bash
+# Sync live/delayed quote for RELIANCE
+python manage.py import_market_data --symbol RELIANCE --exchange NSE
+
+# Backfill 30 days of daily historical candles
+python manage.py import_market_data --symbol RELIANCE --exchange NSE --history --days 30
+```
+
+### 8. Start Development Server
 ```bash
 python manage.py runserver 8000
 ```
-Open [http://localhost:8000](http://localhost:8000) in your web browser.
+Open [http://localhost:8000](http://localhost:8000) in your web browser.  
+Visit [http://localhost:8000/settings/data-sources/](http://localhost:8000/settings/data-sources/) to monitor provider health and metrics.
 
 ---
 
@@ -93,9 +108,9 @@ Open [http://localhost:8000](http://localhost:8000) in your web browser.
 pytest
 ```
 
-### Run Tests with Coverage Analysis
+### Run Tests with Full Coverage Analysis
 ```bash
-pytest --cov=apps --cov-report=term-missing
+pytest --cov=apps --cov=services --cov=integrations --cov-report=term-missing
 ```
 
 ### Run Linter Checks
@@ -112,8 +127,7 @@ python manage.py check --deploy --settings=config.settings.production
 
 ## 5. Upcoming Phases
 
-- **Phase 2:** Market Data Ingestion (Jugaad-Data, Yahoo Finance, NSE Bhavcopy, Exchange Trading Calendar) — *Awaiting User Approval*
-- **Phase 3:** Stock Research & Interactive Candlestick Charts
+- **Phase 3:** Stock Research Engine, Autocomplete Search, Technical & Fundamental Snapshots (Raw vs Derived)
 - **Phase 4:** Portfolio Accounting (FIFO Lot Matching & Capital Charges)
 - **Phase 5:** Stock Screener & Custom Watchlists
 

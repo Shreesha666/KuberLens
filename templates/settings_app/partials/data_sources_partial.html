@@ -1,0 +1,180 @@
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 fw-bold mb-1">Market Data Sources & Health</h2>
+            <p class="text-muted small mb-0">Provider priority, live health status, measured latency, and refresh audit logs.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                    hx-get="{% url 'settings_app:data_sources' %}" hx-target="#main-content">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Status
+            </button>
+        </div>
+    </div>
+
+    <!-- Provider Health Table -->
+    <div class="stat-card mb-4">
+        <h5 class="fw-semibold mb-3">Configured Market Data Providers</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-muted small border-secondary border-opacity-25">
+                        <th>PRIORITY</th>
+                        <th>PROVIDER</th>
+                        <th>CODE</th>
+                        <th>TIER / ROLE</th>
+                        <th>HEALTH STATUS</th>
+                        <th>LATENCY</th>
+                        <th>LAST SUCCESS</th>
+                        <th>STATE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in providers %}
+                    <tr>
+                        <td class="num-mono fw-bold text-center" style="width: 60px;">#{{ p.priority }}</td>
+                        <td>
+                            <span class="fw-semibold">{{ p.name }}</span>
+                            {% if p.code == 'JUGAAD' %}
+                            <div class="small text-muted">Primary Indian NSE Equities, Bhavcopy & Indices</div>
+                            {% elif p.code == 'YAHOO' %}
+                            <div class="small text-muted">Secondary Comparative OHLCV & 15m Delayed Fallback</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary bg-opacity-25 text-body num-mono">{{ p.code }}</span></td>
+                        <td>
+                            {% if p.priority == 1 %}
+                            <span class="badge badge-soft-success">Primary Direct</span>
+                            {% else %}
+                            <span class="badge badge-soft-warning">Secondary (Delayed 15m)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.health_status == 'HEALTHY' %}
+                            <span class="badge badge-soft-success d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-check-circle-fill"></i> Healthy
+                            </span>
+                            {% elif p.health_status == 'DEGRADED' %}
+                            <span class="badge badge-soft-warning d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Degraded
+                            </span>
+                            {% else %}
+                            <span class="badge badge-soft-danger d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-x-circle-fill"></i> Offline
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="num-mono">
+                            {% if p.measured_latency_ms %}
+                            {{ p.measured_latency_ms }} ms
+                            {% else %}
+                            <span class="text-muted">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">
+                            {% if p.last_successful_request %}
+                            {{ p.last_successful_request|date:"Y-m-d H:i" }}
+                            {% else %}
+                            <span class="text-muted">Not polled yet</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.is_enabled %}
+                            <span class="badge bg-success">Enabled</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Disabled</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No market data providers found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Logs and Quality Issues -->
+    <div class="row g-4">
+        <!-- Ingestion Logs -->
+        <div class="col-12 col-lg-6">
+            <div class="stat-card h-100">
+                <h5 class="fw-semibold mb-3">Recent Ingestion Logs</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small border-secondary border-opacity-25">
+                                <th>TIME</th>
+                                <th>PROVIDER</th>
+                                <th>TYPE</th>
+                                <th class="text-end">RECORDS</th>
+                                <th class="text-center">STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logs %}
+                            <tr>
+                                <td class="small text-muted">{{ log.started_at|date:"M d, H:i" }}</td>
+                                <td><span class="badge bg-secondary bg-opacity-25 text-body">{{ log.provider.code }}</span></td>
+                                <td class="small">{{ log.data_type }}</td>
+                                <td class="text-end num-mono">{{ log.records_ingested }}</td>
+                                <td class="text-center">
+                                    {% if log.status == 'SUCCESS' %}
+                                    <span class="badge badge-soft-success">Success</span>
+                                    {% else %}
+                                    <span class="badge badge-soft-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">No refresh runs recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Quality Monitor -->
+        <div class="col-12 col-lg-6">
+            <div class="stat-card h-100">
+                <h5 class="fw-semibold mb-3">Data Quality & Sanity Monitor</h5>
+                <p class="text-muted small">Logs provider discrepancies, invalid OHLC geometries, and rate-limiting incidents.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small border-secondary border-opacity-25">
+                                <th>DETECTED</th>
+                                <th>SYMBOL</th>
+                                <th>ISSUE</th>
+                                <th>SEVERITY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for issue in quality_issues %}
+                            <tr>
+                                <td class="small text-muted">{{ issue.detected_at|date:"M d, H:i" }}</td>
+                                <td class="fw-semibold">{{ issue.listing.symbol|default:"GLOBAL" }}</td>
+                                <td class="small">{{ issue.get_issue_type_display }}</td>
+                                <td>
+                                    <span class="badge {% if issue.severity == 'CRITICAL' %}badge-soft-danger{% elif issue.severity == 'HIGH' %}badge-soft-warning{% else %}badge-soft-info{% endif %}">
+                                        {{ issue.severity }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted small">Zero data quality issues flagged. Data pipeline healthy.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

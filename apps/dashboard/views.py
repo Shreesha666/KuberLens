@@ -55,8 +55,8 @@ class DashboardView(HTMXResponseMixin, TemplateView):
         day_pnl = Decimal("0.00")
         for h in holdings:
             quote = MarketQuote.objects.filter(listing=h.listing).first()
-            if quote and quote.day_change is not None:
-                day_pnl += Decimal(str(quote.day_change)) * h.total_quantity
+            if quote and getattr(quote, "change", None) is not None:
+                day_pnl += Decimal(str(quote.change)) * h.total_quantity
         day_pnl_pct = (
             round((day_pnl / current_val * 100), 2)
             if current_val > 0

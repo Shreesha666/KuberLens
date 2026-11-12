@@ -109,9 +109,9 @@
            hx-get="{% url 'brokers:settings' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-link-45deg"></i> Broker Connections
         </a>
-        <a href="{% url 'dashboard:placeholder' 'reports' %}" class="nav-link {% if active_nav == 'reports' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'reports' %}" hx-target="#main-content" hx-push-url="true">
-            <i class="bi bi-file-earmark-bar-graph"></i> Reports
+        <a href="{% url 'reports:center' %}" class="nav-link {% if active_nav == 'reports' %}active{% endif %}"
+           hx-get="{% url 'reports:center' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-file-earmark-bar-graph"></i> Reports &amp; Exports
         </a>
         <a href="{% url 'accounts:profile' %}" class="nav-link {% if active_nav == 'settings' %}active{% endif %}"
            hx-get="{% url 'accounts:profile' %}" hx-target="#main-content" hx-push-url="true">

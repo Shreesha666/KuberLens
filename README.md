@@ -1,53 +1,239 @@
 # Indian Stock Market Research & Intelligence Platform
 
-A personal stock market research, technical analysis, portfolio intelligence, and decision-support platform designed specifically for the Indian equity markets (NSE and BSE).
+[![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-5.1-success.svg)](https://www.djangoproject.com/)
+[![HTMX](https://img.shields.io/badge/UI-HTMX%20%2B%20Bootstrap%205-purple.svg)](https://htmx.org/)
+[![Tests](https://img.shields.io/badge/Tests-183%20Passed%20(100%25)-brightgreen.svg)](tests/)
+[![Code Style](https://img.shields.io/badge/Linter-Ruff%20Clean-black.svg)](https://github.com/astral-sh/ruff)
+[![Architecture](https://img.shields.io/badge/Architecture-Django%20Modular%20Monolith-orange.svg)](ARCHITECTURE.md)
+
+An institutional-grade personal stock market research, technical analysis, portfolio intelligence, quantitative swing trading, and decision-support platform engineered specifically for the Indian equity markets (**National Stock Exchange (NSE)** and **Bombay Stock Exchange (BSE)**).
 
 ---
 
-## 1. Project Overview & Architecture
+## Table of Contents
 
-The platform is engineered as a **Django Modular Monolith** adhering to clean architecture principles:
-- **Presentation Layer:** Unified persistent HTML shell with Bootstrap 5 and HTMX (`django-htmx`). Dynamic `#main-content` swapping with browser URL push and history restoration.
-- **Backend & Domain Services:** Python 3.12+ and Django 5.1 with pure service layers separating business calculations from views and ORM queries.
-- **Data Integrity:** Decoupled canonical asset identity (`Instrument`) from exchange listings (`ExchangeListing`), raw market data separated from derived versioned indicators, and an immutable transaction ledger for portfolio accounting.
-- **Security:** Authenticated symmetric encryption (Fernet / AES-128-CBC + HMAC-SHA256) for stored broker credentials with out-of-band master key management.
-
-Authoritative specification reference: [`MASTER_SPECIFICATION_DJANGO.md`](MASTER_SPECIFICATION_DJANGO.md)  
-System architecture reference: [`ARCHITECTURE.md`](ARCHITECTURE.md)
-
----
-
-## 2. Phase 1 Implementation Status
-
-Phase 1 (Django Foundation, Operations & Dynamic UI Shell) is **🟢 COMPLETED** and validated:
-- [x] Django modular monolith project structure with split settings (`base.py`, `development.py`, `production.py`).
-- [x] Custom user model (`accounts.CustomUser` with UUID primary key) initialized before first database migration.
-- [x] User preferences model (`accounts.UserPreference`) with theme and alerting controls.
-- [x] Persistent HTML shell (`templates/base/shell.html`) with header ticker, breadcrumbs, and responsive sidebar.
-- [x] Dual-mode dynamic navigation powered by `django-htmx`:
-  - Full-page shell rendering on direct URL load and refresh.
-  - Efficient partial-template swapping on HTMX navigation.
-  - Client-side history restoration (`htmx:historyRestore`) updating DOM and active sidebar class.
-- [x] Platform security: Symmetric Fernet encryption utilities for credential protection.
-- [x] Operational runbook scripts: Automated PostgreSQL backup (`scripts/backup_db.sh`) and restoration (`scripts/restore_db.sh`).
-- [x] Service health check endpoint (`/core/health/`) and custom 404/500 error pages.
-- [x] Automated test suite: 16 passing unit and integration tests covering navigation, authentication, encryption, and template tags.
+1. [Architecture & Design Principles](#1-architecture--design-principles)
+2. [Key Capabilities & Modules](#2-key-capabilities--modules)
+3. [Company Logo Integration (api.dharun.dev)](#3-company-logo-integration-apidharundev)
+4. [Dual-Perspective Recommendation Framework](#4-dual-perspective-recommendation-framework)
+5. [Interactive HTML5 Canvas Charting](#5-interactive-html5-canvas-charting)
+6. [Technology Stack](#6-technology-stack)
+7. [Environment Variables & Configuration](#7-environment-variables--configuration)
+8. [Local Development Quickstart](#8-local-development-quickstart)
+9. [Platform Navigation & URL Directory](#9-platform-navigation--url-directory)
+10. [Automated Testing & Code Quality](#10-automated-testing--code-quality)
+11. [Operations, Backup & Docker Runbook](#11-operations-backup--docker-runbook)
 
 ---
 
-## 3. Local Development Quickstart
+## 1. Architecture & Design Principles
 
-### Prerequisites
-- Python 3.12+ or 3.13
-- Git
+The platform is designed as a **Django Modular Monolith** adhering to clean domain-driven architecture and strict separation of concerns:
+
+- **Presentation Layer (Dynamic UI Shell):** Built with `django-htmx` and Bootstrap 5. Provides single-page application (SPA) responsiveness through dynamic partial swapping (`#main-content`) with browser URL push, back/forward history restoration (`htmx:historyRestore`), and full fallback HTML rendering on direct page loads and refreshes.
+- **Canonical Asset Separation:** Canonical company/asset identity (`Instrument` uniquely identified by international ISIN) is strictly decoupled from exchange trading symbols (`ExchangeListing` for NSE and BSE).
+- **Immutable Financial Ledger:** Portfolio accounting operates on an append-only transaction ledger (`HoldingTransaction`). Current holding states and lots are deterministically derived via pure FIFO accounting.
+- **Pure Service Layers:** Domain calculations (FIFO lot matching, technical indicators, fundamental health scores, ATR risk parameters, regime classifiers) live in isolated service layers under `services/`, free of view logic and HTTP side-effects.
+- **Credential Protection at Rest:** Symmetric authenticated encryption (**Fernet / AES-128-CBC + HMAC-SHA256**) for all external broker secrets and access tokens.
+- **2D Market Data State Machine:** Quotes maintain distinct state representations (live trading session snapshot vs. official exchange Bhavcopy End-of-Day settlement).
+
+---
+
+## 2. Key Capabilities & Modules
+
+### 📈 Market Overview & Intelligence Dashboard
+- Real-time market indices ticker (**NIFTY 50**, **SENSEX**, **NIFTY BANK**) with intraday change and percentage drift.
+- Market breadth metrics (advance/decline ratios, 52-week highs/lows distribution).
+- Active trading session detection backed by an Indian exchange holiday calendar (accounting for Muhurat trading, national holidays, and weekend closures).
+
+### 🔍 Stock Research & Institutional Profiles
+- **Global Instant Autocomplete:** Fast header search supporting NSE/BSE ticker symbols, company legal names, display names, and ISIN numbers.
+- **Interactive Candlestick & Volume Chart:** High-performance HTML5 canvas chart with SMA 20/50 overlays, volume bars, hover crosshairs, and tactical level projection rays.
+- **Technical Indicator Engine:** Wilder's RSI (14), MACD (12, 26, 9), Bollinger Bands (20, 2σ), Average True Range (ATR 14), Stochastic RSI, Moving Averages (SMA 20/50/100/200, EMA 9/20/50), and On-Balance Volume (OBV).
+- **Fundamental Health Scoring:** 5-factor composite fundamental framework evaluating Profitability, Balance Sheet Solvency, Valuation vs. Sector Median, Growth, and Shareholding Quality.
+
+### 💼 Portfolio Intelligence & FIFO Accounting
+- **Automated FIFO Lot Matching:** Deterministic allocation of sell orders against earliest active buy lots.
+- **Capital Charge Capitalization:** Buy brokerages, STT, and exchange turnover charges are capitalized into lot acquisition costs; sell charges reduce net realized capital gains.
+- **Corporate Action Redistribution:** Non-dilutive adjustments for bonus issues, stock splits, and cash dividends across open historical lots without ledger corruption.
+- **Concentration & Risk Guardrails:** Real-time portfolio concentration tracking with automatic alerts when any single equity exposure exceeds safe allocation thresholds.
+
+### 🎯 Quantitative Swing Trading & Risk Hub
+- **4 Quantitative Setup Scanners:**
+  1. *SMA Pullback in Trend:* Bullish trending stocks retracing to key moving averages with declining volume.
+  2. *Oversold Mean-Reversion:* Strong fundamental equities with RSI < 35 testing lower Bollinger bands.
+  3. *Volatility Breakout Expansion:* Consolidation squeezes expanding with surging volume.
+  4. *Volume Climax Absorption:* High-volume institutional accumulation wicks at support.
+- **Mathematical Position Sizer:** Calculates exact share quantities based on maximum percentage account risk, entry price, and Chandelier volatility stop loss.
+- **SEBI-Aligned Trade Journal:** Mandatory pre-trade psychology checklist, execution trade log, planned vs. actual R-multiples, and post-trade emotional discipline reviews.
+
+### 🤖 Machine Learning & Market Regime Engine
+- Time-series statistical regime classifier: categorizes market environments into **Trending Expansion (Bullish Drift)**, **Range-Bound (Mean Reversion)**, or **High Volatility (Turbulent Expansion)**.
+- ML ranking engine predicting short-term directional probabilities from multi-factor feature contributions with zero chronological look-ahead bias.
+
+### 📊 Strategy Backtesting Engine
+- Chronological event-driven simulation with realistic Indian market constraints.
+- Integrated slippage modeling (10 bps) and statutory Indian transaction taxes (STT, GST, SEBI turnover fees).
+- Visual equity curves and institutional performance KPIs: CAGR, Sharpe Ratio, Maximum Drawdown, Win Rate, and Profit Factor.
+
+### 🔗 Broker Integration & F&O Derivatives Master
+- Read-only **Zerodha Kite Connect v3** API adapter for automated portfolio holdings synchronization.
+- Fernet-encrypted token and API key storage with manual disconnect controls.
+- Derivative contracts master tracking active NSE futures and options series.
+
+### 🔔 News, Alerts & Report Generation
+- Multi-variable threshold alerts (price crossovers, RSI oversold/overbought, portfolio stop-loss breaches) with cooldown deduplication.
+- In-app notification center with dynamic unread indicator.
+- Institutional report generation: printable PDF/HTML tear-sheets and CSV ledger exports.
+
+---
+
+## 3. Company Logo Integration (`api.dharun.dev`)
+
+The platform integrates high-resolution vector brand logos directly from [`https://api.dharun.dev/`](https://api.dharun.dev/) to enhance visual clarity across the stock directory, individual equity research profiles, portfolio holdings, and recommendation summaries.
+
+### Architecture & Service Design
+- **Local Proxy & Stream Endpoint:** Logos are served through the authenticated internal route `/stocks/<symbol>/logo/` implemented by `StockLogoProxyView`. This eliminates client-side CORS hurdles, protects API credentials, and enables server-side caching.
+- **Multi-Tier Caching:**
+  - **Server Cache:** `CompanyLogoService` (`services/logos/service.py`) caches fetched SVGs in Redis/local cache for **7 days** (`CACHE_TIMEOUT = 604800s`).
+  - **Browser Cache:** The proxy response emits `Cache-Control: public, max-age=604800, immutable` headers for instant client-side rendering.
+- **Deterministic SVG Monogram Fallback:**
+  If the third-party API is temporarily unreachable, rate-limited, or lacks a logo for an unlisted ticker, the service dynamically generates a crisp SVG monogram badge using a deterministic color palette derived from the symbol's SHA-256 hash. The application never renders broken images.
+- **Template Tag Helper:**
+  Any template can render an optimized stock logo using the `stock_logo` tag:
+  ```html
+  {% load core_tags %}
+
+  <!-- Standard 36px circular brand logo -->
+  {% stock_logo listing size=36 class="rounded-circle shadow-sm" %}
+
+  <!-- Large 52px header profile logo -->
+  {% stock_logo listing size=52 class="rounded-3 border" %}
+  ```
+
+### Logo Configuration
+Add your API key and URL in `.env`:
+```env
+DHARUN_LOGO_API_URL=https://api.dharun.dev/v1/logos
+DHARUN_API_KEY=your_dharun_api_key_here
+```
+
+---
+
+## 4. Dual-Perspective Recommendation Framework
+
+Standard financial platforms offer a single static "Buy/Sell" rating that misleads investors depending on their current exposure. This platform implements a **Dual-Perspective Recommendation Engine** (`services/recommendations/evaluator.py`) evaluating two independent operational strategies:
+
+```
+                      ┌────────────────────────────────────────┐
+                      │        Institutional Analysis          │
+                      │  Technical + Fundamental + Confluence  │
+                      └───────────────────┬────────────────────┘
+                                          │
+                  ┌───────────────────────┴───────────────────────┐
+                  ▼                                               ▼
+   ┌─────────────────────────────┐                 ┌─────────────────────────────┐
+   │  Existing Holder Strategy   │                 │  New Prospective Investor   │
+   ├─────────────────────────────┤                 ├─────────────────────────────┤
+   │ • Capital Preservation      │                 │ • Tactical Entry Price Zone │
+   │ • Partial Profit Trimming   │                 │ • Chandelier ATR Stop Loss  │
+   │ • Trailing Stop Adjustment  │                 │ • Structural Targets (T1/T2)│
+   │ • Anti-Averaging Down Guard │                 │ • Minimum 2.0x Risk/Reward  │
+   │ • Dividend Yield Strategy   │                 │ • Confluence Score (0-100%) │
+   └─────────────────────────────┘                 └─────────────────────────────┘
+```
+
+### 1. Existing Holder Strategy (Portfolio Preservation)
+- **Trim & Take Partial Profits:** Triggers when an equity reaches extreme overbought levels (RSI > 75 or price > 20% above SMA 50) or achieves a massive unrealized gain, advising the investor to de-risk.
+- **Capital Preservation / Exit:** Identifies structural breakdowns below key multi-week moving averages (SMA 50 / SMA 200).
+- **Anti-Averaging-Down Safeguard:** Strictly forbids adding capital to a declining position if fundamental health scores (solvency, ROCE, margins) are deteriorating.
+
+### 2. New Prospective Investor (Quantitative Entry Criteria)
+- **4-Pillar Confluence Scoring (0–100%):** Synthesizes Technical Trend (30%), Fundamental Health (25%), Volatility/ATR Value (25%), and Market Regime Alignment (20%).
+- **Volatility-Adjusted Chandelier Stop Loss:** Calculated dynamically as $\text{Stop Loss} = \text{Structural Support} - (1.5 \times \text{ATR}_{14})$.
+- **Measured Structural Targets:**
+  - **Target 1 ($T_1$):** Nearest overhead swing resistance or $\text{Entry} + (1.5 \times \text{Risk})$.
+  - **Target 2 ($T_2$):** Fibonacci / expansion target or $\text{Entry} + (2.5 \times \text{Risk})$.
+- **Risk-to-Reward Filter:** Prospective BUY ratings require a minimum Risk-to-Reward ratio of **2.0:1**.
+
+---
+
+## 5. Interactive HTML5 Canvas Charting
+
+The interactive price chart (`static/js/charting.js`) is an institutional-grade, zero-dependency HTML5 Canvas charting engine designed for speed and clarity:
+
+- **Zero External Dependencies:** 100% pure client-side canvas implementation (no heavy charting bundles or CDN scripts).
+- **Dual Overlays:** Smoothly renders SMA 20 (Royal Blue) and SMA 50 (Amber) alongside daily OHLC candlesticks.
+- **Proportional Volume Histogram:** Semi-transparent green/red volume bars rendered below price action.
+- **Tactical Level Projection Rays:** Institutional trade levels (Stop Loss in Red, Target 1 in Emerald, Target 2 in Teal) render as **forward-looking projection rays** originating from the recent trading cycle (~25 sessions) towards the right price axis with anchor origin points.
+- **Collision-Free Price Axis:** Dynamic collision detection suppresses standard Y-axis grid numbers when an active Stop Loss or Target pill badge occupies the same vertical pixel space.
+- **Interactive Tooltip Crosshair:** Mousemove crosshair displaying exact date, Open, High, Low, and Close figures in a crisp floating pill.
+
+---
+
+## 6. Technology Stack
+
+| Layer | Component / Tool | Purpose |
+|---|---|---|
+| **Language** | Python 3.12 / 3.13 | High-performance modern Python runtime |
+| **Framework** | Django 5.1 (Modular Monolith) | Robust web foundation, ORM, and auth |
+| **Front-End** | Bootstrap 5 + HTMX (`django-htmx`) | Reactive, dynamic SPA-like UI without Node.js |
+| **Charting** | HTML5 2D Canvas Engine | Custom zero-dependency financial candlestick charts |
+| **Database** | PostgreSQL 16+ (or SQLite for dev) | ACID-compliant relational data and JSONB |
+| **Task Queue** | Celery 5.4 + Redis 7 | Asynchronous data ingestion and calculations |
+| **Market Data** | Jugaad-Data & Yahoo Finance | NSE Bhavcopy and historical candle feeds |
+| **Logo Provider** | `api.dharun.dev` | Official vector Indian equity brand logos |
+| **Security** | Fernet (Cryptography) | AES-128-CBC + HMAC credential encryption |
+| **Code Quality** | Pytest, Pytest-Django, Ruff | 183 automated tests, 100% pass, strict linting |
+
+---
+
+## 7. Environment Variables & Configuration
+
+Create a `.env` file in the project root based on `.env.example`:
+
+```env
+# Django Core
+DJANGO_SECRET_KEY=your_secure_random_key_here
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (PostgreSQL recommended; SQLite fallback if not set)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/stock_intelligence
+
+# Redis & Celery
+REDIS_URL=redis://localhost:6379/0
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# Field Encryption Key (Fernet 32-byte base64 key for broker secrets)
+FIELD_ENCRYPTION_KEY=YD6S9lYBUKY0Lvb-7nPCU5alx8INSUhwX3NjuSlaYX0=
+
+# Market Data Providers
+ENABLE_JUGAAD_DATA=True
+ENABLE_YAHOO_FINANCE=True
+MARKET_DATA_PROVIDER_PRIORITY=jugaad,yahoo
+
+# Company Logo API (api.dharun.dev)
+DHARUN_LOGO_API_URL=https://api.dharun.dev/v1/logos
+DHARUN_API_KEY=your_dharun_api_key_here
+
+# AI Research Provider (Optional: "gemini" or "fallback")
+AI_PROVIDER=fallback
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.0-flash
+```
+
+---
+
+## 8. Local Development Quickstart
 
 ### 1. Clone & Set Up Virtual Environment
 ```bash
-# Clone the repository
-git clone <repo_url>
+git clone <repository_url>
 cd stockmarket_analytics_django
 
-# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 ```
@@ -57,94 +243,153 @@ source .venv/bin/activate
 pip install -r requirements/local.txt
 ```
 
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
-```
-*(Default settings in `.env` are pre-configured for local development.)*
-
-### 4. Apply Database Migrations
+### 3. Run Database Migrations
 ```bash
 python manage.py migrate
 ```
 
-### 5. Create Default Development Superuser
-Run the included helper command to create a default administrator:
+### 4. Create Development Administrator
 ```bash
 python manage.py create_dev_user
 ```
-**Default Credentials:**
+*Default Credentials:*
 - **Username:** `admin`
 - **Password:** `Admin@12345`
 
-### 6. Seed Instruments, Stock Research, Portfolio & Screener Data
+### 5. Seed Demonstration & Market Universe Data
+Run the following idempotent management commands in order:
 ```bash
-# Seed benchmark exchanges and top equities
+# 1. Seed benchmark exchanges and top equity listings
 python manage.py seed_instruments
 
-# Seed historical candles, technical indicators, and fundamental snapshots
+# 2. Seed NIFTY Large & Midcap 250 universe (268 equity listings across all sectors)
+python manage.py seed_nifty250
+
+# 3. Seed historical candles, technical indicators, and fundamental snapshots
 python manage.py seed_stock_research
 
-# Seed sample demo portfolio with multi-lot buys, partial sells, dividends, and FIFO reconciliation
+# 4. Seed demo portfolio with FIFO multi-lot buys, partial sales, dividends, and cash balances
 python manage.py seed_portfolio
 
-# Seed system screener presets and default tracking watchlists
+# 5. Seed stock screener presets and default watchlists
 python manage.py seed_screener_and_watchlists
+
+# 6. Seed financial news articles and corporate actions calendar (splits, dividends, bonus)
+python manage.py seed_news_and_events
 ```
 
-### 7. (Optional) Sync Quotes or Historical Candles via CLI
+### 6. (Optional) Run Celery Background Workers
 ```bash
-# Sync live/delayed quote for RELIANCE
-python manage.py import_market_data --symbol RELIANCE --exchange NSE
+# Terminal 2: Run Celery Worker
+celery -A config worker --loglevel=info
 
-# Backfill 30 days of daily historical candles
-python manage.py import_market_data --symbol RELIANCE --exchange NSE --history --days 30
+# Terminal 3: Run Celery Beat (Periodic Market Data Ingestion)
+celery -A config beat --loglevel=info
 ```
 
-### 8. Start Development Server
+### 7. Start the Development Server
 ```bash
 python manage.py runserver 8000
 ```
-Open [http://localhost:8000](http://localhost:8000) in your web browser.  
-- **Stock Research Directory:** [http://localhost:8000/stocks/](http://localhost:8000/stocks/)
-- **Stock Profile (e.g. RELIANCE):** [http://localhost:8000/stocks/RELIANCE/](http://localhost:8000/stocks/RELIANCE/)
-- **Technical Analysis Hub:** [http://localhost:8000/research/technical/](http://localhost:8000/research/technical/)
-- **Fundamental Analysis Hub:** [http://localhost:8000/research/fundamental/](http://localhost:8000/research/fundamental/)
-- **Portfolio Overview:** [http://localhost:8000/portfolio/](http://localhost:8000/portfolio/)
-- **My Holdings & FIFO Lots:** [http://localhost:8000/portfolio/holdings/](http://localhost:8000/portfolio/holdings/)
-- **Stock Screener:** [http://localhost:8000/screener/](http://localhost:8000/screener/)
-- **My Watchlists:** [http://localhost:8000/watchlists/](http://localhost:8000/watchlists/)
-- **Data Sources Health:** [http://localhost:8000/settings/data-sources/](http://localhost:8000/settings/data-sources/)
+Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ---
 
-## 4. Running Tests and Quality Checks
+## 9. Platform Navigation & URL Directory
 
-### Run Automated Tests
+| Module | URL | Description |
+|---|---|---|
+| **Executive Dashboard** | [`/`](http://localhost:8000/) | Live indices ticker, portfolio summary, regime distribution |
+| **Stock Directory** | [`/stocks/`](http://localhost:8000/stocks/) | Searchable Indian equities directory with live quotes and logos |
+| **Stock Profile** | [`/stocks/<symbol>/`](http://localhost:8000/stocks/RELIANCE/) | Full institutional research, canvas chart, dual recommendations |
+| **Technical Analysis Hub** | [`/research/technical/`](http://localhost:8000/research/technical/) | Indicator snapshots, RSI oversold/overbought, moving average crosses |
+| **Fundamental Analysis Hub**| [`/research/fundamental/`](http://localhost:8000/research/fundamental/) | Valuation multiples, ROCE/ROE rankings, financial health scores |
+| **AI Recommendations** | [`/modules/ai_recommendations/`](http://localhost:8000/modules/ai_recommendations/) | Dual perspective recommendations & multi-factor trade setups |
+| **Portfolio Overview** | [`/portfolio/`](http://localhost:8000/portfolio/) | Net worth, asset allocation, sector exposure, risk distribution |
+| **Holdings & FIFO Lots** | [`/portfolio/holdings/`](http://localhost:8000/portfolio/holdings/) | Open holding lots, unrealized P&L, lot acquisition costs |
+| **Stock Screener** | [`/screener/`](http://localhost:8000/screener/) | Multi-variable quantitative equity scanner with CSV export |
+| **My Watchlists** | [`/watchlists/`](http://localhost:8000/watchlists/) | User watchlists with price targets, stop losses, and quick add |
+| **Swing Trade Scanner** | [`/trading/`](http://localhost:8000/trading/) | Quantitative swing setups (Pullback, Breakout, Climax) |
+| **Trade Journal** | [`/trading/journal/`](http://localhost:8000/trading/journal/) | SEBI-aligned pre-trade checklist, emotional discipline log |
+| **Position Sizer** | [`/trading/position-sizer/`](http://localhost:8000/trading/position-sizer/) | Volatility ATR mathematical position sizing calculator |
+| **ML & Market Regimes** | [`/ml/`](http://localhost:8000/ml/) | Market regime classification & statistical stock ranking |
+| **Strategy Backtesting** | [`/backtesting/`](http://localhost:8000/backtesting/) | Historical strategy simulation engine with slippage & fees |
+| **Broker Connections** | [`/brokers/`](http://localhost:8000/brokers/) | Zerodha Kite Connect credentials & holdings sync |
+| **F&O Derivatives** | [`/brokers/derivatives/`](http://localhost:8000/brokers/derivatives/) | NSE active Futures & Options contract master |
+| **News & Corporate Events**| [`/news/`](http://localhost:8000/news/) | Real-time news feed, corporate filings, earnings announcements |
+| **Alerts Engine** | [`/alerts/`](http://localhost:8000/alerts/) | Automated price, indicator, and stop-loss alert triggers |
+| **Reports Center** | [`/reports/`](http://localhost:8000/reports/) | Institutional printable PDF tear-sheets and CSV exports |
+
+---
+
+## 10. Automated Testing & Code Quality
+
+The platform enforces high test coverage and strict linting:
+
+### Run Complete Test Suite (183 Tests)
 ```bash
 pytest
 ```
 
-### Run Tests with Full Coverage Analysis
+### Run Tests with Line-by-Line Coverage Report
 ```bash
 pytest --cov=apps --cov=services --cov=integrations --cov-report=term-missing
 ```
 
-### Run Linter Checks
+### Run Linter Checks (Ruff)
 ```bash
 ruff check .
 ```
 
-### Verify Deployment Configuration
+### Test Suite Distribution
+- `tests/test_logos.py`: Logo proxy, cache TTL, and SVG monogram fallback tests.
+- `tests/test_recommendations.py`: Dual-perspective logic, ATR stop loss, and structural targets.
+- `tests/test_portfolio_accounting.py`: FIFO lot matching, corporate actions, and fee capitalization.
+- `tests/test_indicators.py`: Technical indicator mathematical precision vs. benchmarks.
+- `tests/test_fundamentals.py`: 5-factor scoring and valuation metrics.
+- `tests/test_stocks.py`: Autocomplete, research profiles, and chart data JSON APIs.
+- `tests/test_trading_views.py`: Swing scanner, position sizer, and trade journal checklists.
+- `tests/test_backtesting.py`: Chronological simulation engine and transaction costs.
+- `tests/test_ml_engine.py`: Regime classifier and feature score ranking.
+- `tests/test_brokers.py`: Fernet encrypted credentials, Kite client, and derivatives.
+
+---
+
+## 11. Operations, Backup & Docker Runbook
+
+### Automated PostgreSQL Backup & Restore
+Automated operational scripts are provided in `scripts/`:
+
+```bash
+# Backup database with timestamp and gzip compression
+./scripts/backup_db.sh
+
+# Restore from a backup archive
+./scripts/restore_db.sh backups/db_backup_20261112.sql.gz
+```
+
+### Production Deployment Security Audit
+Verify deployment security settings against Django's checklist:
 ```bash
 python manage.py check --deploy --settings=config.settings.production
 ```
 
+### Docker Containerization
+Run the full platform stack (Web + PostgreSQL + Redis + Celery Worker + Celery Beat) using Docker Compose:
+```bash
+# Build and run containers in detached mode
+docker-compose up -d --build
+
+# Run migrations inside container
+docker-compose exec web python manage.py migrate
+
+# Seed baseline data
+docker-compose exec web python manage.py seed_instruments
+docker-compose exec web python manage.py seed_stock_research
+```
+
 ---
 
-## 5. Upcoming Phases
+## License & Regulatory Disclaimer
 
-- **Phase 6:** Swing Trading & Risk Management Engine
-- **Phase 7:** AI Stock Research Engine
-
+**Mandatory Regulatory Notice:** This software is designed exclusively for personal research, educational analysis, and risk modeling. Predictive research opinions, trade level projections, and algorithmic signals are calculated strictly from historical distributions and mathematical formulas. These models do not guarantee future returns and should not be construed as investment advice.

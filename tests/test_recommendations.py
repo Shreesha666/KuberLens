@@ -175,3 +175,8 @@ class TestRecommendationEvaluator:
         assert result["new_investor"]["status"] == "FAVORABLE ENTRY"
         assert "₹" in result["new_investor"]["entry_zone"]
         assert "1 :" in result["new_investor"]["risk_reward"]
+        assert result["new_investor"]["confluence_score"] >= 75
+        assert len(result["new_investor"]["confluence_checks"]) == 4
+        assert "stop_loss_value" in result["new_investor"]
+        assert "target_1_value" in result["new_investor"]
+        assert "stop_loss_rationale" in result["new_investor"]

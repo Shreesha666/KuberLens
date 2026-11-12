@@ -151,9 +151,14 @@
                     <i class="bi bi-lightbulb text-info fs-5"></i>
                     <h5 class="fw-bold mb-0 text-body">New Prospective Investor</h5>
                 </div>
-                <span class="badge {% if recommendations.new_investor.status == 'FAVORABLE ENTRY' %}bg-success text-white{% elif recommendations.new_investor.status == 'AVOID / WAIT' %}bg-danger text-white{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
-                    {{ recommendations.new_investor.status }}
-                </span>
+                <div class="d-flex align-items-center gap-1.5">
+                    <span class="badge {% if recommendations.new_investor.confluence_score >= 75 %}bg-success text-white{% elif recommendations.new_investor.confluence_score >= 50 %}bg-primary text-white{% else %}bg-warning text-dark{% endif %} small">
+                        <i class="bi bi-shield-check"></i> {{ recommendations.new_investor.confluence_score }}% Confluence
+                    </span>
+                    <span class="badge {% if recommendations.new_investor.status == 'FAVORABLE ENTRY' %}bg-success text-white{% elif recommendations.new_investor.status == 'AVOID / WAIT' %}bg-danger text-white{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                        {{ recommendations.new_investor.status }}
+                    </span>
+                </div>
             </div>
             <div class="card-body px-4 py-2">
                 <div class="row g-3 mb-3 small">
@@ -162,12 +167,14 @@
                         <span class="fw-bold num-mono text-body">{{ recommendations.new_investor.entry_zone }}</span>
                     </div>
                     <div class="col-6 col-md-3">
-                        <span class="text-muted d-block">Stop Loss</span>
+                        <span class="text-muted d-block">Stop Loss (ATR)</span>
                         <span class="fw-bold num-mono text-loss">{{ recommendations.new_investor.stop_loss }}</span>
+                        <div class="text-muted" style="font-size: 0.7rem;">{{ recommendations.new_investor.stop_loss_rationale }}</div>
                     </div>
                     <div class="col-6 col-md-3">
                         <span class="text-muted d-block">Target Levels</span>
                         <span class="fw-bold num-mono text-gain">{{ recommendations.new_investor.target_levels|join:", " }}</span>
+                        <div class="text-muted" style="font-size: 0.7rem;">T1: Swing &bull; T2: Extension</div>
                     </div>
                     <div class="col-6 col-md-3">
                         <span class="text-muted d-block">Risk / Reward</span>
@@ -175,17 +182,31 @@
                     </div>
                 </div>
 
-                <div class="mb-2">
-                    <span class="text-muted small d-block mb-1 fw-semibold text-uppercase">Entry Conditions &amp; Confluence</span>
-                    <ul class="mb-0 ps-3 small text-muted">
-                        {% for cond in recommendations.new_investor.conditions %}
-                        <li class="mb-1">{{ cond }}</li>
+                <!-- Institutional 4-Pillar Confluence Checklist -->
+                <div class="mb-3">
+                    <span class="text-muted small d-block mb-1.5 fw-semibold text-uppercase">Institutional Confluence Verification</span>
+                    <div class="row g-2">
+                        {% for check in recommendations.new_investor.confluence_checks %}
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2 rounded bg-light border d-flex align-items-start gap-2 h-100">
+                                {% if check.passed %}
+                                <i class="bi bi-check-circle-fill text-success flex-shrink-0 mt-0.5"></i>
+                                {% else %}
+                                <i class="bi bi-dash-circle text-muted flex-shrink-0 mt-0.5"></i>
+                                {% endif %}
+                                <div style="font-size: 0.74rem;">
+                                    <span class="fw-semibold text-body d-block">{{ check.name }}</span>
+                                    <span class="text-muted">{{ check.detail }}</span>
+                                </div>
+                            </div>
+                        </div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 </div>
 
-                <div class="text-muted small pt-2 border-top" style="font-size: 0.75rem;">
-                    Time Horizon: <span class="fw-semibold text-body">{{ recommendations.new_investor.suitable_horizon }}</span>
+                <div class="text-muted small pt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
+                    <span>Time Horizon: <strong class="text-body">{{ recommendations.new_investor.suitable_horizon }}</strong></span>
+                    <span class="text-muted">Calculated with 0 Chronological Look-Ahead</span>
                 </div>
             </div>
         </div>
@@ -196,18 +217,30 @@
 
 <!-- Interactive Candlestick Chart Card -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-transparent d-flex align-items-center justify-content-between py-3 border-0">
+    <div class="card-header bg-transparent d-flex flex-wrap align-items-center justify-content-between py-3 border-0 gap-2">
         <div class="d-flex align-items-center gap-2">
             <h3 class="h5 fw-bold mb-0">Interactive Price & Volume Chart</h3>
             <span class="badge bg-secondary-subtle text-muted small">Daily OHLCV</span>
         </div>
-        <div class="d-flex align-items-center gap-3 small">
+        <div class="d-flex flex-wrap align-items-center gap-3 small">
             <span class="d-flex align-items-center gap-1">
                 <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background-color: #2563eb;"></span>
                 <span class="text-muted">SMA 20</span>
             </span>
             <span class="d-flex align-items-center gap-1">
                 <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background-color: #f59e0b;"></span>
+                <span class="text-muted">SMA 50</span>
+            </span>
+            <span class="d-flex align-items-center gap-1">
+                <span class="d-inline-block" style="width: 14px; height: 2px; border-top: 2px dashed #059669;"></span>
+                <span class="text-success fw-semibold">Targets (T1/T2)</span>
+            </span>
+            <span class="d-flex align-items-center gap-1">
+                <span class="d-inline-block" style="width: 14px; height: 2px; border-top: 2px dashed #dc2626;"></span>
+                <span class="text-danger fw-semibold">Stop Loss</span>
+            </span>
+        </div>
+    </div>
                 <span class="text-muted">SMA 50</span>
             </span>
         </div>

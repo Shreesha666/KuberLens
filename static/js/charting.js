@@ -9,6 +9,7 @@ class FinancialCandlestickChart {
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
         this.candles = [];
+        this.levels = null;
         this.options = {
             upColor: '#10b981',       // Emerald Green
             downColor: '#ef4444',     // Crimson Red
@@ -56,8 +57,9 @@ class FinancialCandlestickChart {
         this.render();
     }
 
-    setData(candles) {
+    setData(candles, levels = null) {
         this.candles = candles || [];
+        this.levels = levels;
         this.resize();
     }
 
@@ -111,6 +113,18 @@ class FinancialCandlestickChart {
             if (c.sma20 && c.sma20 < minPrice) minPrice = c.sma20;
             if (c.sma20 && c.sma20 > maxPrice) maxPrice = c.sma20;
             if (c.volume > maxVol) maxVol = c.volume;
+        }
+
+        if (this.levels) {
+            if (this.levels.stop_loss && this.levels.stop_loss > 0) {
+                minPrice = Math.min(minPrice, this.levels.stop_loss);
+            }
+            if (this.levels.target_1 && this.levels.target_1 > 0) {
+                maxPrice = Math.max(maxPrice, this.levels.target_1);
+            }
+            if (this.levels.target_2 && this.levels.target_2 > 0) {
+                maxPrice = Math.max(maxPrice, this.levels.target_2);
+            }
         }
 
         const pricePad = (maxPrice - minPrice) * 0.05 || 1;
@@ -207,6 +221,38 @@ class FinancialCandlestickChart {
         drawLine('sma20', opt.sma20Color);
         drawLine('sma50', opt.sma50Color);
 
+        // Draw Key Institutional Trade Levels (Stop Loss, T1, T2)
+        if (this.levels) {
+            const drawTargetLevel = (val, label, color) => {
+                if (!val || val < minPrice || val > maxPrice) return;
+                const y = getY(val);
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.4;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.moveTo(opt.paddingLeft, y);
+                ctx.lineTo(w - opt.paddingRight, y);
+                ctx.stroke();
+
+                // Axis Tag on the Right
+                ctx.setLineDash([]);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.roundRect(w - opt.paddingRight + 2, y - 8, opt.paddingRight - 4, 16, 3);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(label, w - opt.paddingRight + 5, y + 4);
+                ctx.restore();
+            };
+
+            if (this.levels.stop_loss) drawTargetLevel(this.levels.stop_loss, `SL ₹${this.levels.stop_loss}`, '#dc2626');
+            if (this.levels.target_1) drawTargetLevel(this.levels.target_1, `T1 ₹${this.levels.target_1}`, '#059669');
+            if (this.levels.target_2) drawTargetLevel(this.levels.target_2, `T2 ₹${this.levels.target_2}`, '#10b981');
+        }
+
         // Date Axis (X Labels)
         const labelInterval = Math.max(1, Math.floor(n / 6));
         ctx.textAlign = 'center';
@@ -269,7 +315,7 @@ window.initStockChart = function(canvasId, dataUrl) {
         .then(res => res.json())
         .then(json => {
             const chart = new FinancialCandlestickChart(canvasId);
-            chart.setData(json.candles || []);
+            chart.setData(json.candles || [], json.levels || null);
             canvas._stockChartInstance = chart;
         })
         .catch(err => {

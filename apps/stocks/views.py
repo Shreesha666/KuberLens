@@ -304,7 +304,36 @@ class StockChartDataView(View):
             }
             data.append(item)
 
-        return JsonResponse({"symbol": listing.symbol, "exchange": listing.exchange.code, "candles": data})
+        # Compute multi-factor levels overlay for chart visual annotations
+        tech_snap = (
+            TechnicalIndicatorSnapshot.objects.filter(listing=listing)
+            .order_by("-timestamp")
+            .first()
+        )
+        fund_snap = (
+            FundamentalSnapshot.objects.filter(instrument=listing.instrument)
+            .order_by("-calculated_at")
+            .first()
+        )
+        rec = RecommendationEvaluator.evaluate(
+            listing=listing,
+            technical=tech_snap,
+            fundamental=fund_snap,
+        )
+        levels = {
+            "stop_loss": rec["new_investor"]["stop_loss_value"],
+            "target_1": rec["new_investor"]["target_1_value"],
+            "target_2": rec["new_investor"]["target_2_value"],
+            "status": rec["new_investor"]["status"],
+            "confluence_score": rec["new_investor"]["confluence_score"],
+        }
+
+        return JsonResponse({
+            "symbol": listing.symbol,
+            "exchange": listing.exchange.code,
+            "candles": data,
+            "levels": levels,
+        })
 
 
 class SectorAnalysisView(HTMXResponseMixin, TemplateView):

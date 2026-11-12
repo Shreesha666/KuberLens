@@ -224,6 +224,10 @@ class TestStockViews:
         assert "open" in data["candles"][0]
         assert "close" in data["candles"][0]
         assert "sma20" in data["candles"][-1]
+        assert "levels" in data
+        assert "stop_loss" in data["levels"]
+        assert "target_1" in data["levels"]
+        assert "confluence_score" in data["levels"]
 
     def test_sector_analysis_view_full_and_htmx(self, seeded_stocks):
         client = Client()

@@ -7,10 +7,10 @@
         </button>
         <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center gap-2 text-body text-nowrap"
            hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                <i class="bi bi-graph-up-arrow fs-6"></i>
+            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;">
+                <i class="bi bi-graph-up-arrow" style="font-size: 0.85rem;"></i>
             </div>
-            <span class="fw-bold tracking-tight text-nowrap text-body" style="font-size: 0.95rem; letter-spacing: -0.01em;">INDIAN STOCK INTEL</span>
+            <span class="fw-bold tracking-tight text-nowrap text-body" style="font-size: 0.9rem; letter-spacing: -0.01em;">INDIAN STOCK INTEL</span>
         </a>
     </div>
 
@@ -27,7 +27,7 @@
             <div class="ticker-divider"></div>
 
             {% for item in market_ticker %}
-            <div class="ticker-item {% if forloop.counter > 2 %}d-none d-xxl-inline-flex{% endif %}">
+            <div class="ticker-item">
                 <span class="ticker-symbol">{{ item.symbol }}</span>
                 <span class="ticker-price num-mono">{{ item.price }}</span>
                 <span class="ticker-change num-mono {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}">
@@ -35,17 +35,17 @@
                 </span>
             </div>
             {% if not forloop.last %}
-            <div class="ticker-divider {% if forloop.counter >= 2 %}d-none d-xxl-block{% endif %}"></div>
+            <div class="ticker-divider"></div>
             {% endif %}
             {% endfor %}
         </div>
 
-        <!-- Right Controls: Global Search, Data Freshness, Notifications, User Menu -->
+        <!-- Right Controls: Global Search, Notifications, User Menu -->
         <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
             <!-- Global Search with HTMX Autocomplete Dropdown -->
             <div class="d-none d-md-block header-search-box" id="global-search-container">
                 <input type="search" class="header-search-input"
-                       name="q" placeholder="Search symbol, ISIN..." aria-label="Global Search"
+                       name="q" placeholder="Search symbol..." aria-label="Global Search"
                        hx-get="{% url 'stocks:stock_search' %}"
                        hx-trigger="keyup changed delay:250ms, search"
                        hx-target="#search-results"
@@ -54,19 +54,13 @@
                 <div id="search-results" class="position-absolute w-100 mt-1 shadow-sm rounded-3 z-3 bg-surface" style="top: 100%; left: 0;"></div>
             </div>
 
-            <!-- Data Freshness Indicator (Only on extra-wide screens to prevent laptop overflow) -->
-            <span class="badge {{ data_freshness.css_class }} d-none d-xxl-inline-flex align-items-center gap-1 py-1 px-2.5 rounded-pill flex-shrink-0 text-nowrap" style="font-weight: 500; font-size: 0.725rem;">
-                <i class="bi bi-shield-check"></i>
-                <span>{{ data_freshness.label }}</span>
-            </span>
-
             <!-- Notifications Trigger -->
             <a class="header-icon-btn" aria-label="Notifications"
                href="{% url 'notifications:list' %}"
                hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
                 <i class="bi bi-bell"></i>
                 {% if unread_notifications_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem; padding: 0.2em 0.45em;">
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.6rem; padding: 0.2em 0.4em;">
                     {{ unread_notifications_count }}
                 </span>
                 {% endif %}
@@ -78,16 +72,16 @@
                     <div class="header-user-avatar">
                         {% if user.is_authenticated %}{{ user.username|slice:":1"|upper }}{% else %}G{% endif %}
                     </div>
-                    <span class="d-none d-sm-inline text-truncate" style="max-width: 90px;">
+                    <span class="d-none d-sm-inline text-truncate" style="max-width: 80px;">
                         {% if user.is_authenticated %}{{ user.username }}{% else %}Guest{% endif %}
                     </span>
-                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.65rem;"></i>
+                    <i class="bi bi-chevron-down text-muted" style="font-size: 0.6rem;"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-secondary border-opacity-10 rounded-3 mt-1 py-1" style="min-width: 200px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-secondary border-opacity-10 rounded-3 mt-1 py-1" style="min-width: 190px;">
                     {% if user.is_authenticated %}
                     <li class="px-3 py-1.5">
                         <div class="small text-muted" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;">Signed in as</div>
-                        <div class="fw-bold text-truncate text-body" style="font-size: 0.85rem;">{{ user.username }}</div>
+                        <div class="fw-bold text-truncate text-body" style="font-size: 0.825rem;">{{ user.username }}</div>
                     </li>
                     <li><hr class="dropdown-divider my-1"></li>
                     <li>

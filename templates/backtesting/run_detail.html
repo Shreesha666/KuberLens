@@ -1,0 +1,10 @@
+{% extends "base/shell.html" %}
+
+{% block title %}Backtest Run Audit — {{ run.strategy.name }} ({{ run.listing.symbol }}) | Indian Stock Market Intel{% endblock %}
+
+{% block content %}
+<div id="main-content">
+    {% include "backtesting/partials/run_detail_partial.html" %}
+</div>
+{% endblock %}
+

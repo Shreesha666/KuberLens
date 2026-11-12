@@ -67,8 +67,8 @@
            hx-get="{% url 'trading:journal' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-journal-bookmark"></i> Trade Journal
         </a>
-        <a href="{% url 'dashboard:placeholder' 'strategy_backtesting' %}" class="nav-link {% if active_nav == 'strategy_backtesting' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'strategy_backtesting' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'backtesting:dashboard' %}" class="nav-link {% if active_nav == 'strategy_backtesting' %}active{% endif %}"
+           hx-get="{% url 'backtesting:dashboard' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-clock-history"></i> Strategy Backtesting
         </a>
         <a href="{% url 'dashboard:placeholder' 'risk_management' %}" class="nav-link {% if active_nav == 'risk_management' %}active{% endif %}"
@@ -86,8 +86,8 @@
            hx-get="{% url 'dashboard:placeholder' 'ai_recommendations' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-lightbulb"></i> AI Recommendations
         </a>
-        <a href="{% url 'dashboard:placeholder' 'ml_predictions' %}" class="nav-link {% if active_nav == 'ml_predictions' %}active{% endif %}"
-           hx-get="{% url 'dashboard:placeholder' 'ml_predictions' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'ml_engine:dashboard' %}" class="nav-link {% if active_nav == 'ml_predictions' %}active{% endif %}"
+           hx-get="{% url 'ml_engine:dashboard' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-cpu"></i> ML Predictions
         </a>
         <a href="{% url 'alerts:list' %}" class="nav-link {% if active_nav == 'alerts_notifications' or active_nav == 'notifications' %}active{% endif %}"

@@ -1,0 +1,136 @@
+<!-- Backtest Run Detail Audit Partial -->
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'backtesting:dashboard' %}"
+                   hx-get="{% url 'backtesting:dashboard' %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Back
+                </a>
+                <h1 class="h3 fw-bold mb-0 text-dark">{{ run.strategy.name }}</h1>
+                <span class="badge bg-primary">{{ run.listing.symbol }}</span>
+            </div>
+            <p class="text-muted small mb-0">
+                Audited simulation executed on {{ run.created_at|date:"d M Y, H:i" }} &bull; Window: {{ run.start_date|date:"d M Y" }} to {{ run.end_date|date:"d M Y" }}
+            </p>
+        </div>
+        <div>
+            <span class="badge {% if run.total_return_pct >= 0 %}bg-success{% else %}bg-danger{% endif %} fs-6 px-3 py-2">
+                {% if run.total_return_pct > 0 %}+{% endif %}{{ run.total_return_pct }}% Total Return
+            </span>
+        </div>
+    </div>
+
+    <!-- Metrics Overview Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Initial Capital</div>
+                <div class="h5 fw-bold text-dark mb-0">₹{{ run.initial_capital|floatformat:2 }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Final Capital</div>
+                <div class="h5 fw-bold {% if run.final_capital >= run.initial_capital %}text-success{% else %}text-danger{% endif %} mb-0">
+                    ₹{{ run.final_capital|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Annualized CAGR</div>
+                <div class="h5 fw-bold text-dark mb-0">{% if run.cagr_pct > 0 %}+{% endif %}{{ run.cagr_pct }}%</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Max Drawdown</div>
+                <div class="h5 fw-bold text-danger mb-0">{{ run.max_drawdown_pct }}%</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Win Rate</div>
+                <div class="h5 fw-bold text-primary mb-0">{{ run.win_rate_pct }}% ({{ run.winning_trades }}W / {{ run.losing_trades }}L)</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Profit Factor</div>
+                <div class="h5 fw-bold text-dark mb-0">{{ run.profit_factor }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Avg Holding Days</div>
+                <div class="h5 fw-bold text-dark mb-0">{{ run.avg_holding_days }} days</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small">Benchmark Return (B&amp;H)</div>
+                <div class="h5 fw-bold text-dark mb-0">{{ run.benchmark_return_pct|default:"0.00"|stringformat:"+f" }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trade Ledger -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title fw-bold mb-0 text-dark">
+                <i class="bi bi-receipt me-2 text-primary"></i>Complete Trade Execution Audit ({{ run.trades_log|length }} Trades)
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-muted text-uppercase">
+                            <th>#</th>
+                            <th>Entry Date</th>
+                            <th>Entry Fill</th>
+                            <th>Exit Date</th>
+                            <th>Exit Fill</th>
+                            <th>Exit Reason</th>
+                            <th class="text-end">Holding</th>
+                            <th class="text-end">Net P&amp;L (₹)</th>
+                            <th class="text-end">Net Return</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in run.trades_log %}
+                        <tr>
+                            <td class="text-muted small">{{ forloop.counter }}</td>
+                            <td class="fw-semibold">{{ trade.entry_date }}</td>
+                            <td>₹{{ trade.entry_price|floatformat:2 }}</td>
+                            <td class="fw-semibold">{{ trade.exit_date }}</td>
+                            <td>₹{{ trade.exit_price|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge {% if trade.exit_reason == 'TARGET_HIT' %}bg-success-subtle text-success{% elif trade.exit_reason == 'STOP_LOSS' %}bg-danger-subtle text-danger{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                    {{ trade.exit_reason }}
+                                </span>
+                            </td>
+                            <td class="text-end text-muted small">{{ trade.holding_days }} days</td>
+                            <td class="text-end fw-bold {% if trade.net_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                ₹{{ trade.net_pnl|floatformat:2 }}
+                            </td>
+                            <td class="text-end fw-bold {% if trade.pnl_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ trade.pnl_pct|floatformat:2 }}%
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">No trades executed.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

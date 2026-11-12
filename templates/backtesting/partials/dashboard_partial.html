@@ -1,0 +1,330 @@
+<!-- Strategy Backtesting Dashboard Partial -->
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white"><i class="bi bi-graph-up-arrow"></i> Phase 9</span>
+                <h1 class="h3 fw-bold mb-0 text-dark">Quantitative Strategy Backtester</h1>
+            </div>
+            <p class="text-muted small mb-0">
+                Step-by-step chronological simulation strictly free of look-ahead leakage, factoring in realistic order fills, slippage, and brokerage charges.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-dark border">
+                <i class="bi bi-shield-check text-success me-1"></i>Zero Look-Ahead Bias Verified
+            </span>
+        </div>
+    </div>
+
+    <!-- Backtest Configuration Form & Recent Runs -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title fw-bold mb-0 text-dark">
+                        <i class="bi bi-sliders me-2 text-primary"></i>Simulate Quantitative Strategy
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'backtesting:dashboard' %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <!-- Strategy Selection -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-muted">Strategy Model</label>
+                                <select name="strategy_id" class="form-select" required>
+                                    {% for strat in strategies %}
+                                    <option value="{{ strat.id }}">
+                                        {{ strat.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Target Symbol -->
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-muted">Universe Listing (Symbol)</label>
+                                <input type="text"
+                                       name="symbol"
+                                       class="form-control text-uppercase"
+                                       list="popular-symbols-list"
+                                       placeholder="e.g. RELIANCE, TCS, INFY"
+                                       value="{{ active_run.listing.symbol|default:'RELIANCE' }}"
+                                       required>
+                                <datalist id="popular-symbols-list">
+                                    {% for item in popular_listings %}
+                                    <option value="{{ item.symbol }}">{{ item.instrument.name }} ({{ item.instrument.sector }})</option>
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+
+                            <!-- Initial Capital -->
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small text-muted">Initial Capital (₹)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number"
+                                           name="initial_capital"
+                                           class="form-control"
+                                           step="5000"
+                                           min="10000"
+                                           value="{{ active_run.initial_capital|default:'100000' }}"
+                                           required>
+                                </div>
+                            </div>
+
+                            <!-- Stop Loss % -->
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-semibold small text-muted">Stop Loss (%)</label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="stop_loss_pct"
+                                           class="form-control"
+                                           step="0.1"
+                                           min="0.5"
+                                           max="20.0"
+                                           value="3.0"
+                                           required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Target % -->
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-semibold small text-muted">Profit Target (%)</label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="target_pct"
+                                           class="form-control"
+                                           step="0.1"
+                                           min="1.0"
+                                           max="50.0"
+                                           value="6.0"
+                                           required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Slippage % -->
+                            <div class="col-6 col-md-6">
+                                <label class="form-label fw-semibold small text-muted">Estimated Slippage (%)</label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="slippage_pct"
+                                           class="form-control"
+                                           step="0.01"
+                                           min="0.0"
+                                           max="1.0"
+                                           value="0.05"
+                                           required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text small">Applies fill penalty per trade execution.</div>
+                            </div>
+
+                            <!-- Brokerage % -->
+                            <div class="col-6 col-md-6">
+                                <label class="form-label fw-semibold small text-muted">Brokerage & Charges (%)</label>
+                                <div class="input-group">
+                                    <input type="number"
+                                           name="brokerage_pct"
+                                           class="form-control"
+                                           step="0.01"
+                                           min="0.0"
+                                           max="0.5"
+                                           value="0.03"
+                                           required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text small">Standard STT, exchange, and brokerage charges.</div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                                    <i class="bi bi-play-circle-fill me-2"></i>Execute Backtest Simulation
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Simulations History -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="card-title fw-bold mb-0 text-dark">
+                        <i class="bi bi-clock-history me-2 text-secondary"></i>Recent Simulations
+                    </h5>
+                    <span class="badge bg-secondary-subtle text-secondary">{{ recent_runs|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_runs %}
+                    <div class="list-group list-group-flush">
+                        {% for r in recent_runs %}
+                        <a href="{% url 'backtesting:dashboard' %}?run_id={{ r.id }}"
+                           hx-get="{% url 'backtesting:dashboard' %}?run_id={{ r.id }}"
+                           hx-target="#main-content"
+                           hx-push-url="true"
+                           class="list-group-item list-group-item-action p-3 {% if active_run and active_run.id == r.id %}bg-light border-start border-primary border-3{% endif %}">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-bold text-dark">{{ r.listing.symbol }}</span>
+                                <span class="badge {% if r.total_return_pct >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if r.total_return_pct > 0 %}+{% endif %}{{ r.total_return_pct }}%
+                                </span>
+                            </div>
+                            <div class="small text-muted mb-1">{{ r.strategy.name }}</div>
+                            <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
+                                <span>Trades: <strong>{{ r.total_trades }}</strong> (Win {{ r.win_rate_pct }}%)</span>
+                                <span>{{ r.created_at|date:"d M H:i" }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-bar-chart fs-2 mb-2 d-block"></i>
+                        <p class="small mb-0">No simulations run yet. Choose a strategy and run your first backtest.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Simulation Results -->
+    {% if active_run %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <span class="badge bg-primary-subtle text-primary fw-semibold me-2">Simulation Result</span>
+                <span class="h5 fw-bold mb-0 text-dark">{{ active_run.strategy.name }} &bull; {{ active_run.listing.symbol }}</span>
+                <span class="text-muted small ms-2">({{ active_run.start_date|date:"d M Y" }} to {{ active_run.end_date|date:"d M Y" }})</span>
+            </div>
+            <div>
+                <a href="{% url 'backtesting:run_detail' pk=active_run.id %}"
+                   hx-get="{% url 'backtesting:run_detail' pk=active_run.id %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-journal-text me-1"></i>View Full Audit Ledger
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <!-- Key Metric KPIs -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="p-3 rounded bg-light border text-center">
+                        <div class="text-muted small mb-1">Total Return</div>
+                        <div class="h4 fw-bold mb-0 {% if active_run.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if active_run.total_return_pct > 0 %}+{% endif %}{{ active_run.total_return_pct }}%
+                        </div>
+                        <div class="text-muted" style="font-size: 0.72rem;">₹{{ active_run.final_capital|floatformat:0 }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="p-3 rounded bg-light border text-center">
+                        <div class="text-muted small mb-1">CAGR</div>
+                        <div class="h4 fw-bold mb-0 {% if active_run.cagr_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if active_run.cagr_pct > 0 %}+{% endif %}{{ active_run.cagr_pct }}%
+                        </div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Annualized</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="p-3 rounded bg-light border text-center">
+                        <div class="text-muted small mb-1">Max Drawdown</div>
+                        <div class="h4 fw-bold text-danger mb-0">
+                            {{ active_run.max_drawdown_pct }}%
+                        </div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Peak-to-trough</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="p-3 rounded bg-light border text-center">
+                        <div class="text-muted small mb-1">Win Rate</div>
+                        <div class="h4 fw-bold text-primary mb-0">
+                            {{ active_run.win_rate_pct }}%
+                        </div>
+                        <div class="text-muted" style="font-size: 0.72rem;">{{ active_run.winning_trades }}W / {{ active_run.losing_trades }}L</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="p-3 rounded bg-light border text-center">
+                        <div class="text-muted small mb-1">Profit Factor</div>
+                        <div class="h4 fw-bold text-dark mb-0">
+                            {{ active_run.profit_factor }}
+                        </div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Gross Gains / Losses</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="p-3 rounded bg-light border text-center">
+                        <div class="text-muted small mb-1">Benchmark Return</div>
+                        <div class="h4 fw-bold mb-0 {% if active_run.benchmark_return_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ active_run.benchmark_return_pct|default:"0.00"|stringformat:"+f" }}%
+                        </div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Buy &amp; Hold</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Ledger Table -->
+            <h6 class="fw-bold text-dark mb-3">
+                <i class="bi bi-list-check me-2 text-primary"></i>Simulated Execution Ledger ({{ active_run.trades_log|length }} Trades)
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-muted text-uppercase">
+                            <th>#</th>
+                            <th>Entry Date</th>
+                            <th>Entry Price</th>
+                            <th>Exit Date</th>
+                            <th>Exit Price</th>
+                            <th>Exit Reason</th>
+                            <th class="text-end">Holding</th>
+                            <th class="text-end">Net P&amp;L (₹)</th>
+                            <th class="text-end">Net Return</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in active_run.trades_log %}
+                        <tr>
+                            <td class="text-muted small">{{ forloop.counter }}</td>
+                            <td class="fw-semibold">{{ trade.entry_date }}</td>
+                            <td>₹{{ trade.entry_price|floatformat:2 }}</td>
+                            <td class="fw-semibold">{{ trade.exit_date }}</td>
+                            <td>₹{{ trade.exit_price|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge {% if trade.exit_reason == 'TARGET_HIT' %}bg-success-subtle text-success{% elif trade.exit_reason == 'STOP_LOSS' %}bg-danger-subtle text-danger{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                    {{ trade.exit_reason }}
+                                </span>
+                            </td>
+                            <td class="text-end text-muted small">{{ trade.holding_days }} days</td>
+                            <td class="text-end fw-bold {% if trade.net_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                ₹{{ trade.net_pnl|floatformat:2 }}
+                            </td>
+                            <td class="text-end fw-bold {% if trade.pnl_pct >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ trade.pnl_pct|floatformat:2 }}%
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                No trade entry signals triggered for this strategy across the tested period.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+

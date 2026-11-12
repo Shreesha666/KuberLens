@@ -4,7 +4,8 @@
  * 1. TradingView Lightweight Charts (v4.2.1) - Primary Candlestick, Volume & Indicator Engine
  * 2. Apache ECharts (v5.5.1) - Dashboard Analytics & Portfolio Visualizations
  *
- * Designed for Django + HTMX single-page dynamic applications with full dark/light theme support.
+ * Modeled after top institutional broker interfaces (TradingView / Zerodha Kite).
+ * Fully compatible with Django + HTMX single-page dynamic applications with dark/light themes.
  */
 
 // ============================================================================
@@ -67,17 +68,18 @@ class TradingViewStockChart {
     getThemeColors() {
         const isDark = this.isDarkMode();
         return {
-            bg: isDark ? '#0f172a' : '#ffffff',
-            text: isDark ? '#94a3b8' : '#64748b',
-            grid: isDark ? 'rgba(51, 65, 85, 0.25)' : 'rgba(226, 232, 240, 0.8)',
-            border: isDark ? '#334155' : '#e2e8f0',
-            crosshair: isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(100, 116, 139, 0.4)',
-            upColor: '#10b981',       // Emerald
-            downColor: '#ef4444',     // Crimson
+            bg: isDark ? '#131722' : '#ffffff',
+            text: isDark ? '#787b86' : '#5d606b',
+            grid: isDark ? 'rgba(42, 46, 57, 0.45)' : 'rgba(240, 243, 250, 0.85)',
+            border: isDark ? '#2a2e39' : '#e0e3eb',
+            crosshair: isDark ? 'rgba(120, 123, 134, 0.5)' : 'rgba(150, 153, 164, 0.5)',
+            // Top broker financial colors (TradingView / Zerodha Kite palette)
+            upColor: '#089981',       // TradingView Emerald
+            downColor: '#f23645',     // TradingView Crimson
             sma20Color: '#2563eb',    // Royal Blue
             sma50Color: '#f59e0b',    // Amber
-            ema20Color: '#8b5cf6',    // Purple
-            bbColor: 'rgba(139, 92, 246, 0.6)',
+            ema20Color: '#8b5cf6',    // Violet
+            bbColor: 'rgba(139, 92, 246, 0.65)',
         };
     }
 
@@ -92,7 +94,7 @@ class TradingViewStockChart {
 
         const colors = this.getThemeColors();
         const width = this.container.clientWidth || 800;
-        const height = this.options.height || 420;
+        const height = this.options.height || 440;
 
         // Create Main TradingView Chart
         this.chart = LightweightCharts.createChart(this.container, {
@@ -126,8 +128,8 @@ class TradingViewStockChart {
             rightPriceScale: {
                 borderColor: colors.border,
                 scaleMargins: {
-                    top: 0.08,
-                    bottom: 0.24, // Leaves space for volume histogram
+                    top: 0.1,
+                    bottom: 0.18, // Clean spacing for price action
                 },
                 alignLabels: true,
             },
@@ -149,7 +151,7 @@ class TradingViewStockChart {
             },
         });
 
-        // Initialize Series
+        // 1. Candlestick Series (Main Price)
         this.candlestickSeries = this.chart.addCandlestickSeries({
             upColor: colors.upColor,
             downColor: colors.downColor,
@@ -158,20 +160,28 @@ class TradingViewStockChart {
             wickDownColor: colors.downColor,
         });
 
+        // 2. Volume Series (Dedicated 'volume' scale, occupying only bottom 15%, no right-axis tags)
         this.volumeSeries = this.chart.addHistogramSeries({
             priceFormat: { type: 'volume' },
-            priceScaleId: '', // Overlay series inside main pane
-            scaleMargins: {
-                top: 0.8,
-                bottom: 0,
-            },
+            priceScaleId: 'volume', // Isolated from main price scale
         });
 
+        this.chart.priceScale('volume').applyOptions({
+            scaleMargins: {
+                top: 0.84, // Volume strictly constrained to bottom 16%
+                bottom: 0,
+            },
+            visible: false, // Never bleed numbers into the price scale
+        });
+
+        // 3. Technical Indicator Overlays (Hide right-axis tags to eliminate label crowding)
         this.sma20Series = this.chart.addLineSeries({
             color: colors.sma20Color,
             lineWidth: 1.5,
             title: 'SMA 20',
             crosshairMarkerVisible: true,
+            lastValueVisible: false, // No right axis tag
+            priceLineVisible: false, // No horizontal line at latest point
         });
 
         this.sma50Series = this.chart.addLineSeries({
@@ -179,6 +189,8 @@ class TradingViewStockChart {
             lineWidth: 1.5,
             title: 'SMA 50',
             crosshairMarkerVisible: true,
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
 
         this.ema20Series = this.chart.addLineSeries({
@@ -187,6 +199,8 @@ class TradingViewStockChart {
             title: 'EMA 20',
             crosshairMarkerVisible: true,
             visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
 
         this.bbUpperSeries = this.chart.addLineSeries({
@@ -196,6 +210,8 @@ class TradingViewStockChart {
             title: 'BB Upper',
             crosshairMarkerVisible: false,
             visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
 
         this.bbLowerSeries = this.chart.addLineSeries({
@@ -205,6 +221,8 @@ class TradingViewStockChart {
             title: 'BB Lower',
             crosshairMarkerVisible: false,
             visible: false,
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
 
         // Crosshair legend inspection
@@ -269,11 +287,12 @@ class TradingViewStockChart {
                 close: c.close,
             });
 
+            // Faint, subtle broker-style volume bars (opacity 0.22)
             const isUp = c.close >= c.open;
             volumeData.push({
                 time: time,
                 value: c.volume,
-                color: isUp ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)',
+                color: isUp ? 'rgba(8, 153, 129, 0.25)' : 'rgba(242, 54, 69, 0.25)',
             });
 
             if (c.sma20 !== null && c.sma20 !== undefined) {
@@ -304,7 +323,7 @@ class TradingViewStockChart {
                 macdHistData.push({
                     time: time,
                     value: c.macd_hist,
-                    color: c.macd_hist >= 0 ? '#10b981' : '#ef4444',
+                    color: c.macd_hist >= 0 ? '#089981' : '#f23645',
                 });
             }
         }
@@ -359,53 +378,53 @@ class TradingViewStockChart {
     }
 
     renderTradeLevels() {
-        // Clear existing price lines
+        // Clear existing price lines cleanly
         for (const pl of this.priceLines) {
             try {
                 this.candlestickSeries.removePriceLine(pl);
             } catch (e) {
-                // Ignore removal errors if series was recreated
+                // Ignore removal error
             }
         }
         this.priceLines = [];
 
         if (!this.indicatorState.levels || !this.levels) return;
 
-        // 1. Stop Loss (Red Dashed)
+        // 1. Stop Loss (Red Dashed) - Title 'SL' so label renders as "SL 286.14" without duplicate text
         if (this.levels.stop_loss && this.levels.stop_loss > 0) {
             const slLine = this.candlestickSeries.createPriceLine({
                 price: parseFloat(this.levels.stop_loss),
-                color: '#dc2626',
-                lineWidth: 2,
+                color: '#ef4444',
+                lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
-                title: `SL ₹${this.levels.stop_loss}`,
+                title: 'SL',
             });
             this.priceLines.push(slLine);
         }
 
-        // 2. Target 1 (Green Dashed)
+        // 2. Target 1 (Green Dashed) - Title 'T1'
         if (this.levels.target_1 && this.levels.target_1 > 0) {
             const t1Line = this.candlestickSeries.createPriceLine({
                 price: parseFloat(this.levels.target_1),
-                color: '#059669',
-                lineWidth: 2,
+                color: '#089981',
+                lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
-                title: `T1 ₹${this.levels.target_1}`,
+                title: 'T1',
             });
             this.priceLines.push(t1Line);
         }
 
-        // 3. Target 2 (Teal Dashed)
+        // 3. Target 2 (Teal Dashed) - Title 'T2'
         if (this.levels.target_2 && this.levels.target_2 > 0) {
             const t2Line = this.candlestickSeries.createPriceLine({
                 price: parseFloat(this.levels.target_2),
-                color: '#0d9488',
-                lineWidth: 2,
+                color: '#06b6d4',
+                lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
-                title: `T2 ₹${this.levels.target_2}`,
+                title: 'T2',
             });
             this.priceLines.push(t2Line);
         }
@@ -420,7 +439,7 @@ class TradingViewStockChart {
             const colors = this.getThemeColors();
             this.rsiChart = LightweightCharts.createChart(rsiContainer, {
                 width: this.container.clientWidth,
-                height: 130,
+                height: 120,
                 layout: {
                     background: { type: 'solid', color: colors.bg },
                     textColor: colors.text,
@@ -435,7 +454,7 @@ class TradingViewStockChart {
                     scaleMargins: { top: 0.1, bottom: 0.1 },
                 },
                 timeScale: {
-                    visible: false, // Hidden to share timescale with main chart
+                    visible: false,
                 },
             });
 
@@ -456,14 +475,13 @@ class TradingViewStockChart {
             });
             this.rsiSeries.createPriceLine({
                 price: 30,
-                color: '#10b981',
+                color: '#089981',
                 lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
                 title: '30 OS',
             });
 
-            // Synchronize visible time range
             this.chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
                 if (this.rsiChart && range) {
                     this.rsiChart.timeScale().setVisibleLogicalRange(range);
@@ -485,7 +503,7 @@ class TradingViewStockChart {
             const colors = this.getThemeColors();
             this.macdChart = LightweightCharts.createChart(macdContainer, {
                 width: this.container.clientWidth,
-                height: 130,
+                height: 120,
                 layout: {
                     background: { type: 'solid', color: colors.bg },
                     textColor: colors.text,
@@ -537,7 +555,6 @@ class TradingViewStockChart {
         if (type === this.currentChartType) return;
         this.currentChartType = type;
 
-        const colors = this.getThemeColors();
         const candleData = this.rawCandles.map(c => ({
             time: c.time,
             open: c.open,
@@ -557,8 +574,8 @@ class TradingViewStockChart {
             if (this.lineSeries) this.lineSeries.applyOptions({ visible: false });
             if (!this.areaSeries) {
                 this.areaSeries = this.chart.addAreaSeries({
-                    topColor: 'rgba(37, 99, 235, 0.4)',
-                    bottomColor: 'rgba(37, 99, 235, 0.02)',
+                    topColor: 'rgba(37, 99, 235, 0.28)',
+                    bottomColor: 'rgba(37, 99, 235, 0.01)',
                     lineColor: '#2563eb',
                     lineWidth: 2,
                 });
@@ -581,7 +598,6 @@ class TradingViewStockChart {
 
     handleCrosshairMove(param) {
         if (!param || !param.time || !param.seriesData) {
-            // Restore latest candle when not hovering
             if (this.rawCandles.length > 0) {
                 this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
             }
@@ -623,17 +639,29 @@ class TradingViewStockChart {
         const sma20Wrap = document.getElementById('legend-sma20-wrap');
         const sma50Wrap = document.getElementById('legend-sma50-wrap');
 
+        const isUp = candle.close >= candle.open;
+        const colorClass = isUp ? 'text-success' : 'text-danger';
+
         if (dateEl) dateEl.textContent = candle.time;
-        if (openEl) openEl.textContent = `₹${Number(candle.open).toFixed(2)}`;
-        if (highEl) highEl.textContent = `₹${Number(candle.high).toFixed(2)}`;
-        if (lowEl) lowEl.textContent = `₹${Number(candle.low).toFixed(2)}`;
-        if (closeEl) closeEl.textContent = `₹${Number(candle.close).toFixed(2)}`;
-        if (volEl) volEl.textContent = candle.volume > 0 ? candle.volume.toLocaleString('en-IN') : '-';
+        if (openEl) openEl.textContent = Number(candle.open).toFixed(2);
+        if (highEl) highEl.textContent = Number(candle.high).toFixed(2);
+        if (lowEl) lowEl.textContent = Number(candle.low).toFixed(2);
+        if (closeEl) {
+            closeEl.textContent = Number(candle.close).toFixed(2);
+            closeEl.className = `${colorClass} fw-bold`;
+        }
+        if (volEl) {
+            const v = candle.volume;
+            if (v >= 10000000) volEl.textContent = `${(v / 10000000).toFixed(2)}Cr`;
+            else if (v >= 100000) volEl.textContent = `${(v / 100000).toFixed(2)}L`;
+            else if (v >= 1000) volEl.textContent = `${(v / 1000).toFixed(1)}k`;
+            else volEl.textContent = v > 0 ? v.toLocaleString('en-IN') : '-';
+        }
 
         if (sma20El && sma20Wrap) {
             if (candle.sma20 && this.indicatorState.sma20) {
                 sma20Wrap.classList.remove('d-none');
-                sma20El.textContent = `₹${Number(candle.sma20).toFixed(2)}`;
+                sma20El.textContent = Number(candle.sma20).toFixed(2);
             } else {
                 sma20Wrap.classList.add('d-none');
             }
@@ -642,7 +670,7 @@ class TradingViewStockChart {
         if (sma50El && sma50Wrap) {
             if (candle.sma50 && this.indicatorState.sma50) {
                 sma50Wrap.classList.remove('d-none');
-                sma50El.textContent = `₹${Number(candle.sma50).toFixed(2)}`;
+                sma50El.textContent = Number(candle.sma50).toFixed(2);
             } else {
                 sma50Wrap.classList.add('d-none');
             }
@@ -650,33 +678,38 @@ class TradingViewStockChart {
     }
 
     bindToolbarEvents() {
-        // 1. Timeframe Buttons
+        // 1. Timeframe Pills (Zerodha Kite style)
         const tfGroup = document.getElementById('chart-timeframe-group');
         if (tfGroup) {
-            tfGroup.querySelectorAll('button[data-days]').forEach(btn => {
+            tfGroup.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.onclick = () => {
-                    tfGroup.querySelectorAll('button').forEach(b => b.classList.remove('active', 'btn-primary'));
-                    tfGroup.querySelectorAll('button').forEach(b => b.classList.add('btn-outline-secondary'));
-                    btn.classList.add('active', 'btn-primary');
-                    btn.classList.remove('btn-outline-secondary');
+                    tfGroup.querySelectorAll('.timeframe-btn').forEach(b => {
+                        b.classList.remove('active', 'btn-primary', 'text-white', 'fw-bold');
+                        b.classList.add('btn-link', 'text-muted');
+                    });
+                    btn.classList.add('active', 'btn-primary', 'text-white', 'fw-bold');
+                    btn.classList.remove('btn-link', 'text-muted');
                     const days = parseInt(btn.getAttribute('data-days'), 10);
                     this.loadData(days);
                 };
             });
         }
 
-        // 2. Chart Type Buttons
-        const typeGroup = document.getElementById('chart-type-group');
-        if (typeGroup) {
-            typeGroup.querySelectorAll('button[data-type]').forEach(btn => {
-                btn.onclick = () => {
-                    typeGroup.querySelectorAll('button').forEach(b => b.classList.remove('active', 'btn-secondary'));
-                    btn.classList.add('active', 'btn-secondary');
-                    const type = btn.getAttribute('data-type');
-                    this.setChartType(type);
-                };
-            });
-        }
+        // 2. Chart Type Dropdown
+        document.querySelectorAll('[data-chart-type]').forEach(item => {
+            item.onclick = (e) => {
+                e.preventDefault();
+                const type = item.getAttribute('data-chart-type');
+                document.querySelectorAll('[data-chart-type]').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                const labelEl = document.getElementById('chart-type-label');
+                if (labelEl) {
+                    labelEl.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                }
+                this.setChartType(type);
+            };
+        });
 
         // 3. Indicator Toggles
         document.querySelectorAll('.indicator-toggle').forEach(input => {
@@ -710,7 +743,6 @@ class TradingViewStockChart {
                     }
                 }
 
-                // Update crosshair legend
                 if (this.rawCandles.length > 0) {
                     this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
                 }
@@ -723,7 +755,8 @@ class TradingViewStockChart {
             levelsBtn.onclick = () => {
                 this.indicatorState.levels = !this.indicatorState.levels;
                 levelsBtn.classList.toggle('active', this.indicatorState.levels);
-                levelsBtn.classList.toggle('btn-secondary', this.indicatorState.levels);
+                levelsBtn.classList.toggle('btn-primary', this.indicatorState.levels);
+                levelsBtn.classList.toggle('text-white', this.indicatorState.levels);
                 this.renderTradeLevels();
             };
         }
@@ -868,7 +901,7 @@ window.EChartsAnalytics = {
                     emphasis: {
                         label: { show: true, fontSize: 13, fontWeight: 'bold' },
                     },
-                    data: data, // [{ name: 'IT', value: 120000 }, ...]
+                    data: data,
                 },
             ],
         };

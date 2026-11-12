@@ -10,9 +10,12 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.models import CustomUser
 from apps.fundamental_analysis.models import FundamentalSnapshot
+from apps.holdings.models import Holding
 from apps.instruments.models import Exchange, ExchangeListing, Instrument
 from apps.market.models import HistoricalCandle
+from apps.portfolio.models import Portfolio
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 
 
@@ -160,12 +163,48 @@ class TestStockViews:
         assert "tech-v1.0.0" in content
         assert "fund-v1.0.0" in content
         assert "stock-chart-canvas" in content
+        assert "Existing Holder Strategy" in content
+        assert "New Prospective Investor" in content
+        assert "Optimal Entry Zone" in content
 
         # HTMX partial
         resp_htmx = client.get(url, HTTP_HX_REQUEST="true")
         assert resp_htmx.status_code == 200
         assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
         assert "Reliance Industries Limited" in resp_htmx.content.decode()
+        assert "Existing Holder Strategy" in resp_htmx.content.decode()
+        assert "New Prospective Investor" in resp_htmx.content.decode()
+
+    def test_stock_detail_with_active_holding(self, seeded_stocks):
+        client = Client()
+        user = CustomUser.objects.create_user(
+            username="stockholdertest", email="stockholder@example.com", password="pass"
+        )
+        client.force_login(user)
+
+        portfolio = Portfolio.objects.create(user=user, name="Main Portfolio", is_default=True)
+        rel_listing = ExchangeListing.objects.get(symbol="RELIANCE")
+
+        Holding.objects.create(
+            portfolio=portfolio,
+            listing=rel_listing,
+            total_quantity=50,
+            average_buy_price=Decimal("2400.00"),
+            invested_amount=Decimal("120000.00"),
+            current_price=Decimal("2520.00"),
+            current_value=Decimal("126000.00"),
+            unrealised_pnl=Decimal("6000.00"),
+            unrealised_pnl_percent=Decimal("5.00"),
+        )
+
+        url = reverse("stocks:stock_detail", kwargs={"symbol": "RELIANCE"})
+        res = client.get(url)
+        assert res.status_code == 200
+        content = res.content.decode()
+        assert "Existing Holder Strategy" in content
+        assert "50 shares" in content
+        assert "View In Holdings" in content
+        assert "New Prospective Investor" in content
 
     def test_stock_detail_nonexistent_returns_404(self):
         client = Client()

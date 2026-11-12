@@ -90,3 +90,4 @@ class TestCompanyLogos:
         res = self.client.get(detail_url)
         assert res.status_code == 200
         assert '/stocks/TCS/logo/' in res.content.decode("utf-8")
+

@@ -5,7 +5,7 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Max, Min, Q
+from django.db.models import Avg, Max, Min, Q, Sum
 from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views import View
@@ -13,12 +13,15 @@ from django.views.generic import DetailView, ListView, TemplateView
 
 from apps.core.mixins import HTMXResponseMixin
 from apps.fundamental_analysis.models import FundamentalSnapshot
+from apps.holdings.models import Holding
 from apps.instruments.models import ExchangeListing, Instrument
 from apps.market.models import HistoricalCandle, MarketQuote
+from apps.portfolio.models import Portfolio
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 from services.indicators.calculator import TechnicalIndicatorCalculator
 from services.logos import CompanyLogoService
 from services.market_data.service import MarketDataService
+from services.recommendations.evaluator import RecommendationEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +212,42 @@ class StockDetailView(HTMXResponseMixin, DetailView):
             .exclude(id=listing.id)
             .select_related("instrument", "exchange")[:5]
         )
+
+        # 6. Dual-Perspective Recommendation Framework (Existing Holder vs New Investor)
+        user = self.request.user if self.request.user.is_authenticated else None
+        portfolio = None
+        if user:
+            portfolio = (
+                Portfolio.objects.filter(user=user, is_default=True).first()
+                or Portfolio.objects.filter(user=user).first()
+            )
+        if not portfolio:
+            portfolio = Portfolio.objects.first()
+
+        holding = None
+        total_portfolio_val = Decimal("0.00")
+        if portfolio:
+            holding = Holding.objects.filter(
+                portfolio=portfolio,
+                listing=listing,
+                total_quantity__gt=0,
+            ).first()
+            total_portfolio_val = (
+                Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
+                .aggregate(Sum("current_value"))
+                .get("current_value__sum")
+                or Decimal("0.00")
+            )
+
+        recommendations = RecommendationEvaluator.evaluate(
+            listing=listing,
+            holding=holding,
+            technical=tech_snapshot,
+            fundamental=fund_snapshot,
+            portfolio_total_value=total_portfolio_val,
+        )
+        context["recommendations"] = recommendations
+        context["holding"] = holding
 
         return context
 

@@ -1,0 +1,308 @@
+{% load core_tags %}
+<div class="container-fluid p-0">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted"
+                           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">Research</li>
+                    <li class="breadcrumb-item active text-body" aria-current="page">Sector Analysis</li>
+                    {% if selected_sector %}
+                    <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">{{ selected_sector }}</li>
+                    {% endif %}
+                </ol>
+            </nav>
+            <h2 class="h3 fw-bold mb-1">
+                {% if selected_sector %}{{ selected_sector }} Sector{% else %}Sector Analysis & Industry Performance{% endif %}
+            </h2>
+            <p class="text-muted small mb-0">
+                {% if selected_sector %}
+                Constituent stocks, valuation multiples, and price performance for {{ selected_sector }}.
+                {% else %}
+                Ranked sector performance, valuation multiples, and constituent breakdown across NSE/BSE listed equities.
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if selected_sector %}
+            <a href="{% url 'stocks:sector_analysis' %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5"
+               hx-get="{% url 'stocks:sector_analysis' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-arrow-left"></i> All Sectors
+            </a>
+            {% endif %}
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5"
+                    hx-get="{% if selected_sector %}{% url 'stocks:sector_analysis' %}?sector={{ selected_sector|urlencode }}{% else %}{% url 'stocks:sector_analysis' %}{% endif %}"
+                    hx-target="#main-content">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Top Summary KPI Cards (When viewing all sectors) -->
+    {% if not selected_sector %}
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Sectors Tracked</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0">{{ total_sectors }}</h3>
+                <div class="mt-2 small text-muted">
+                    <span>NSE/BSE Industry Classification</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Top Performing Sector</span>
+                {% with top_sec=sectors.0 %}
+                <h4 class="fw-bold text-truncate mt-1 mb-0 text-success" style="font-size: 1.15rem;">
+                    {{ top_sec.name }}
+                </h4>
+                <div class="mt-2 small text-muted">
+                    <span class="text-success fw-bold num-mono">{% if top_sec.avg_change_percent > 0 %}+{% endif %}{{ top_sec.avg_change_percent }}%</span> avg change
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Lagging Sector</span>
+                {% with last_sec=sectors|last %}
+                <h4 class="fw-bold text-truncate mt-1 mb-0 text-danger" style="font-size: 1.15rem;">
+                    {{ last_sec.name }}
+                </h4>
+                <div class="mt-2 small text-muted">
+                    <span class="text-danger fw-bold num-mono">{{ last_sec.avg_change_percent }}%</span> avg change
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <span class="text-muted small text-uppercase fw-semibold">Total Equities Covered</span>
+                <h3 class="fw-bold num-mono mt-1 mb-0">268</h3>
+                <div class="mt-2 small text-muted">
+                    <span>NIFTY 500 / Midcap 250 Universe</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- DETAIL VIEW: When a specific sector is selected -->
+    {% if selected_sector and selected_sector_summary %}
+    <!-- Sector KPI Banner -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card text-center py-3">
+                <span class="text-muted small text-uppercase fw-semibold">Constituents</span>
+                <h4 class="fw-bold num-mono mt-1 mb-0">{{ selected_sector_summary.stock_count }} Stocks</h4>
+                <div class="mt-1 small text-muted">
+                    <span class="badge bg-primary bg-opacity-10 text-primary">{{ selected_sector_summary.large_count }} Large</span>
+                    <span class="badge bg-info bg-opacity-10 text-info">{{ selected_sector_summary.mid_count }} Mid</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ selected_sector_summary.small_count }} Small</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card text-center py-3">
+                <span class="text-muted small text-uppercase fw-semibold">Avg 1-Day Change</span>
+                <h4 class="fw-bold num-mono mt-1 mb-0 {{ selected_sector_summary.avg_change_percent|financial_color }}">
+                    {% if selected_sector_summary.avg_change_percent > 0 %}+{% endif %}{{ selected_sector_summary.avg_change_percent }}%
+                </h4>
+                <div class="mt-1 small text-muted">
+                    <span class="text-success fw-semibold">{{ selected_sector_summary.advancers }} &#9650;</span> &bull;
+                    <span class="text-danger fw-semibold">{{ selected_sector_summary.decliners }} &#9660;</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card text-center py-3">
+                <span class="text-muted small text-uppercase fw-semibold">Sector Avg P/E</span>
+                <h4 class="fw-bold num-mono mt-1 mb-0">{{ selected_sector_summary.avg_pe|default:"N/A" }}</h4>
+                <div class="mt-1 small text-muted">
+                    <span>P/B: {{ selected_sector_summary.avg_pb|default:"N/A" }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card text-center py-3">
+                <span class="text-muted small text-uppercase fw-semibold">Sector Avg ROE</span>
+                <h4 class="fw-bold num-mono mt-1 mb-0">{{ selected_sector_summary.avg_roe|default:"N/A" }}%</h4>
+                <div class="mt-1 small text-muted">
+                    <span>Return on Equity</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Constituent Stocks Table -->
+    <div class="stat-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Constituent Stocks in {{ selected_sector }}</h5>
+            <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ constituent_stocks|length }} Companies</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-muted small border-secondary border-opacity-10">
+                        <th>COMPANY</th>
+                        <th>MARKET CAP</th>
+                        <th class="text-end">PRICE</th>
+                        <th class="text-end">1D CHANGE</th>
+                        <th class="text-end">P/E RATIO</th>
+                        <th class="text-end">RSI (14)</th>
+                        <th class="text-center">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in constituent_stocks %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'stocks:stock_detail' item.symbol %}" class="fw-bold text-decoration-none text-body"
+                               hx-get="{% url 'stocks:stock_detail' item.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                {{ item.symbol }}
+                            </a>
+                            <div class="text-muted small text-truncate" style="max-width: 220px; font-size: 0.75rem;">
+                                {{ item.company_name }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.market_cap_category == 'LARGE' %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary">Large Cap</span>
+                            {% elif item.market_cap_category == 'MID' %}
+                            <span class="badge bg-info bg-opacity-10 text-info">Mid Cap</span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary">Small Cap</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end num-mono fw-semibold">
+                            {% if item.quote %}₹{{ item.quote.price }}{% else %}&mdash;{% endif %}
+                        </td>
+                        <td class="text-end num-mono fw-medium {% if item.quote.change_percent and item.quote.change_percent > 0 %}text-success{% elif item.quote.change_percent and item.quote.change_percent < 0 %}text-danger{% else %}text-muted{% endif %}">
+                            {% if item.quote %}
+                                {% if item.quote.change_percent > 0 %}+{% endif %}{{ item.quote.change_percent }}%
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if item.fundamental and item.fundamental.pe_ratio %}{{ item.fundamental.pe_ratio }}{% else %}&mdash;{% endif %}
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if item.technical and item.technical.rsi_14 %}
+                            <span class="{% if item.technical.rsi_14 > 70 %}text-danger fw-bold{% elif item.technical.rsi_14 < 30 %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                {{ item.technical.rsi_14 }}
+                            </span>
+                            {% else %}
+                            &mdash;
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'stocks:stock_detail' item.symbol %}" class="btn btn-sm btn-outline-primary py-0.5 px-2" style="font-size: 0.75rem;"
+                               hx-get="{% url 'stocks:stock_detail' item.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                Research &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No constituent stocks found for this sector.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MAIN VIEW: All Sectors Grid & Table -->
+    {% else %}
+    <div class="stat-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Sector Performance & Valuation Matrix</h5>
+            <span class="text-muted small">Ranked by 1-Day Price Performance</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-muted small border-secondary border-opacity-10">
+                        <th>SECTOR NAME</th>
+                        <th>STOCKS</th>
+                        <th class="text-end">1D AVG CHANGE</th>
+                        <th class="text-center" style="min-width: 140px;">BREADTH (ADV/DEC)</th>
+                        <th class="text-end">AVG P/E</th>
+                        <th class="text-end">AVG ROE</th>
+                        <th>TOP MOVER</th>
+                        <th class="text-center">ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sec in sectors %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'stocks:sector_analysis' %}?sector={{ sec.name|urlencode }}"
+                               class="fw-bold text-decoration-none text-body"
+                               hx-get="{% url 'stocks:sector_analysis' %}?sector={{ sec.name|urlencode }}"
+                               hx-target="#main-content" hx-push-url="true">
+                                <i class="bi bi-pie-chart text-primary me-1.5"></i>
+                                {{ sec.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-body border fw-semibold">{{ sec.stock_count }}</span>
+                            <span class="text-muted small ms-1" style="font-size: 0.75rem;">
+                                ({{ sec.large_count }}L / {{ sec.mid_count }}M)
+                            </span>
+                        </td>
+                        <td class="text-end num-mono fw-bold {{ sec.avg_change_percent|financial_color }}">
+                            {% if sec.avg_change_percent > 0 %}+{% endif %}{{ sec.avg_change_percent }}%
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center gap-1.5 small num-mono">
+                                <span class="text-success fw-semibold">{{ sec.advancers }} &#9650;</span>
+                                <span class="text-muted opacity-50">/</span>
+                                <span class="text-danger fw-semibold">{{ sec.decliners }} &#9660;</span>
+                            </div>
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if sec.avg_pe %}{{ sec.avg_pe }}{% else %}&mdash;{% endif %}
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if sec.avg_roe %}{{ sec.avg_roe }}%{% else %}&mdash;{% endif %}
+                        </td>
+                        <td>
+                            {% if sec.top_stock %}
+                            <a href="{% url 'stocks:stock_detail' sec.top_stock.listing.symbol %}" class="fw-semibold text-decoration-none text-body small"
+                               hx-get="{% url 'stocks:stock_detail' sec.top_stock.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                {{ sec.top_stock.listing.symbol }}
+                            </a>
+                            <span class="num-mono small ms-1 {% if sec.top_stock.change_percent > 0 %}text-success{% else %}text-danger{% endif %}">
+                                ({% if sec.top_stock.change_percent > 0 %}+{% endif %}{{ sec.top_stock.change_percent }}%)
+                            </span>
+                            {% else %}
+                            &mdash;
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'stocks:sector_analysis' %}?sector={{ sec.name|urlencode }}"
+                               class="btn btn-sm btn-outline-secondary py-0.5 px-2" style="font-size: 0.75rem;"
+                               hx-get="{% url 'stocks:sector_analysis' %}?sector={{ sec.name|urlencode }}"
+                               hx-target="#main-content" hx-push-url="true">
+                                Explore &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">No sector data available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>

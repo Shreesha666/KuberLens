@@ -185,3 +185,31 @@ class TestStockViews:
         assert "open" in data["candles"][0]
         assert "close" in data["candles"][0]
         assert "sma20" in data["candles"][-1]
+
+    def test_sector_analysis_view_full_and_htmx(self, seeded_stocks):
+        client = Client()
+        url = reverse("stocks:sector_analysis")
+
+        # Full page direct load
+        resp_full = client.get(url)
+        assert resp_full.status_code == 200
+        content = resp_full.content.decode()
+        assert "Sector Analysis" in content
+        assert "Energy" in content
+        assert "Information Technology" in content
+
+        # HTMX partial swap
+        resp_htmx = client.get(url, HTTP_HX_REQUEST="true")
+        assert resp_htmx.status_code == 200
+        assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
+        assert "Sector Performance & Valuation Matrix" in resp_htmx.content.decode()
+
+    def test_sector_analysis_filtered_sector(self, seeded_stocks):
+        client = Client()
+        url = reverse("stocks:sector_analysis") + "?sector=Energy"
+
+        response = client.get(url)
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert "Constituent Stocks in Energy" in content
+        assert "RELIANCE" in content

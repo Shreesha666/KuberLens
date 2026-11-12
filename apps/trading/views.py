@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
@@ -84,7 +85,13 @@ class SwingScannerView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
             s["sizing"] = sizing
             annotated_setups.append(s)
 
-        context["setups"] = annotated_setups
+        # Paginate results (12 setups per page)
+        page_number = self.request.GET.get("page", 1)
+        paginator = Paginator(annotated_setups, 12)
+        page_obj = paginator.get_page(page_number)
+
+        context["page_obj"] = page_obj
+        context["setups"] = page_obj.object_list
         context["setups_count"] = len(annotated_setups)
         context["strategy_choices"] = SwingStrategyType.choices
         context["selected_strategy"] = strat_filter

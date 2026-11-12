@@ -1,0 +1,208 @@
+{% load core_tags %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 fw-bold">
+                <i class="bi bi-lightning-charge text-warning me-2"></i>Swing Trading Hub
+            </h1>
+            <p class="text-muted small mb-0">
+                Rule-based 1–8 week setups with mathematical position sizing, automated stop-loss placement, and risk/reward validation.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'trading:journal' %}" class="btn btn-outline-primary"
+               hx-get="{% url 'trading:journal' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-journal-bookmark me-1"></i> Trade Journal
+            </a>
+            <span class="badge bg-primary fs-6 px-3 py-2 d-flex align-items-center">
+                {{ setups_count }} Qualified Setups
+            </span>
+        </div>
+    </div>
+
+    <!-- Scanner & Sizer Filter Bar -->
+    <div class="card border mb-4 shadow-sm">
+        <div class="card-body p-3">
+            <form method="get" action="{% url 'trading:scanner' %}"
+                  hx-get="{% url 'trading:scanner' %}" hx-target="#main-content" hx-push-url="true">
+                <div class="row g-3 align-items-end">
+                    <!-- Strategy Selector -->
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Strategy Setup</label>
+                        <select name="strategy" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                            <option value="ALL" {% if selected_strategy == 'ALL' %}selected{% endif %}>All Swing Strategies</option>
+                            {% for code, label in strategy_choices %}
+                            <option value="{{ code }}" {% if selected_strategy == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Market Cap -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">Market Cap</label>
+                        <select name="market_cap" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                            <option value="ALL" {% if selected_cap == 'ALL' %}selected{% endif %}>All Market Caps</option>
+                            <option value="LARGE" {% if selected_cap == 'LARGE' %}selected{% endif %}>Large Cap</option>
+                            <option value="MID" {% if selected_cap == 'MID' %}selected{% endif %}>Mid Cap</option>
+                        </select>
+                    </div>
+
+                    <!-- Min R:R -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">Min Risk / Reward</label>
+                        <select name="min_rr" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                            <option value="1.5" {% if selected_min_rr == '1.5' %}selected{% endif %}>1 : 1.5</option>
+                            <option value="2.0" {% if selected_min_rr == '2.0' %}selected{% endif %}>1 : 2.0 (Recommended)</option>
+                            <option value="2.5" {% if selected_min_rr == '2.5' %}selected{% endif %}>1 : 2.5</option>
+                            <option value="3.0" {% if selected_min_rr == '3.0' %}selected{% endif %}>1 : 3.0</option>
+                        </select>
+                    </div>
+
+                    <!-- Trading Capital for Sizing -->
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Your Trading Capital (₹)</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="capital" class="form-control" value="{{ trading_capital }}" step="50000" min="10000">
+                        </div>
+                    </div>
+
+                    <!-- Risk % per trade -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">Risk per Trade (%)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" name="risk_pct" class="form-control" value="{{ risk_pct }}" step="0.25" min="0.5" max="3.0">
+                            <span class="input-group-text">%</span>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Setups Grid -->
+    {% if setups %}
+    <div class="row g-3">
+        {% for s in setups %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="card h-100 border shadow-sm">
+                <!-- Card Header -->
+                <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'stocks:detail' s.symbol %}" class="fw-bold fs-6 text-decoration-none text-body"
+                           hx-get="{% url 'stocks:detail' s.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            {{ s.symbol }}
+                        </a>
+                        <span class="badge bg-light text-secondary border ms-1">{{ s.market_cap }}</span>
+                    </div>
+                    <span class="badge {% if s.risk_reward >= 2.0 %}bg-success{% else %}bg-primary{% endif %}">
+                        R:R 1 : {{ s.risk_reward }}
+                    </span>
+                </div>
+
+                <!-- Card Body -->
+                <div class="card-body p-3">
+                    <!-- Strategy Name -->
+                    <div class="mb-2">
+                        <span class="badge bg-light text-primary border small fw-normal">
+                            <i class="bi bi-tag me-1"></i>{{ s.strategy_name }}
+                        </span>
+                        <span class="text-muted small ms-2"><i class="bi bi-clock me-1"></i>{{ s.holding_period }}</span>
+                    </div>
+
+                    <!-- Pricing Table -->
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-borderless small mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted py-1">Current Price:</td>
+                                    <td class="fw-bold py-1 text-end">₹{{ s.current_price|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted py-1">Entry Range:</td>
+                                    <td class="fw-semibold py-1 text-end text-primary">₹{{ s.entry_min|floatformat:2 }} – ₹{{ s.entry_max|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted py-1">Stop Loss:</td>
+                                    <td class="fw-bold py-1 text-end text-danger">₹{{ s.stop_loss|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted py-1">Target 1:</td>
+                                    <td class="fw-bold py-1 text-end text-success">₹{{ s.target_1|floatformat:2 }}</td>
+                                </tr>
+                                {% if s.target_2 %}
+                                <tr>
+                                    <td class="text-muted py-1">Target 2:</td>
+                                    <td class="fw-semibold py-1 text-end text-success">₹{{ s.target_2|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Risk Position Sizing Pill -->
+                    {% if s.sizing %}
+                    <div class="p-2 rounded bg-light border mb-3 small">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted fw-bold">Sized Qty:</span>
+                            <span class="fw-bold text-primary">{{ s.sizing.quantity }} shares</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Capital: ₹{{ s.sizing.capital_required|floatformat:0 }}</span>
+                            <span class="text-danger fw-semibold">Risk: ₹{{ s.sizing.risk_amount|floatformat:0 }}</span>
+                        </div>
+                        {% if s.sizing.warnings %}
+                        <div class="text-warning small mt-1">
+                            <i class="bi bi-info-circle me-1"></i>Capped to concentration limit
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Trade Explanation -->
+                    <div class="small text-secondary mb-2 bg-white p-2 rounded border-start border-3 border-info">
+                        {{ s.explanation }}
+                    </div>
+
+                    <!-- Invalidation Condition -->
+                    <div class="text-xs text-muted">
+                        <i class="bi bi-shield-x text-danger me-1"></i>{{ s.invalidation }}
+                    </div>
+                </div>
+
+                <!-- Card Footer Actions -->
+                <div class="card-footer bg-white border-top p-2 d-flex justify-content-between">
+                    <a href="{% url 'stocks:detail' s.symbol %}" class="btn btn-outline-secondary btn-sm"
+                       hx-get="{% url 'stocks:detail' s.symbol %}" hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-graph-up me-1"></i> Chart
+                    </a>
+                    <a href="{% url 'trading:journal' %}?symbol={{ s.symbol }}&strategy={{ s.strategy_name }}&entry={{ s.entry_max }}&sl={{ s.stop_loss }}&target={{ s.target_1 }}&qty={{ s.sizing.quantity }}"
+                       class="btn btn-primary btn-sm"
+                       hx-get="{% url 'trading:journal' %}?symbol={{ s.symbol }}&strategy={{ s.strategy_name }}&entry={{ s.entry_max }}&sl={{ s.stop_loss }}&target={{ s.target_1 }}&qty={{ s.sizing.quantity }}"
+                       hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-journal-plus me-1"></i> Log in Journal
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card border text-center p-5">
+        <div class="text-muted mb-3"><i class="bi bi-search fs-1"></i></div>
+        <h5 class="fw-bold">No Trade Setups Found Matching Filters</h5>
+        <p class="text-muted small">Try lowering the minimum Risk/Reward threshold or selecting "All Swing Strategies".</p>
+        <div>
+            <a href="{% url 'trading:scanner' %}" class="btn btn-outline-primary btn-sm"
+               hx-get="{% url 'trading:scanner' %}" hx-target="#main-content" hx-push-url="true">
+                Reset Filters
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>

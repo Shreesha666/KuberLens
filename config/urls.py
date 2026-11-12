@@ -18,6 +18,7 @@ urlpatterns = [
     path("portfolio/", include("apps.portfolio.urls", namespace="portfolio")),
     path("screener/", include("apps.screener.urls", namespace="screener")),
     path("watchlists/", include("apps.watchlists.urls", namespace="watchlists")),
+    path("trading/", include("apps.trading.urls", namespace="trading")),
     path("settings/", include("apps.settings_app.urls", namespace="settings_app")),
     path("", include("apps.dashboard.urls", namespace="dashboard")),
 ]

@@ -1,0 +1,53 @@
+{% load core_tags %}
+<div class="card bg-light border p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="small fw-bold text-uppercase text-muted">Risk Sizing Summary</span>
+        <span class="badge {% if sizing.is_over_allocated %}bg-warning text-dark{% else %}bg-primary{% endif %}">
+            {{ sizing.capital_allocation_pct }}% of Account
+        </span>
+    </div>
+
+    <div class="row g-2 text-center my-1">
+        <div class="col-4">
+            <div class="bg-white p-2 rounded border">
+                <div class="small text-muted">Suggested Qty</div>
+                <div class="fw-bold fs-5 text-primary">{{ sizing.quantity }}</div>
+                <div class="text-xs text-muted">Shares</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="bg-white p-2 rounded border">
+                <div class="small text-muted">Risk Amount</div>
+                <div class="fw-bold fs-5 text-danger">{{ sizing.risk_amount|format_inr }}</div>
+                <div class="text-xs text-muted">{{ sizing.risk_percentage }}% capital</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="bg-white p-2 rounded border">
+                <div class="small text-muted">Capital Required</div>
+                <div class="fw-bold fs-5 text-dark">{{ sizing.capital_required|format_inr }}</div>
+                <div class="text-xs text-muted">@ ₹{{ sizing.entry_price|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if risk_reward %}
+    <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+        <span class="small text-muted">Risk-to-Reward Ratio:</span>
+        <span class="badge {% if risk_reward >= 2.0 %}bg-success{% elif risk_reward >= 1.5 %}bg-info text-dark{% else %}bg-warning text-dark{% endif %} fs-6">
+            1 : {{ risk_reward }}
+        </span>
+    </div>
+    {% endif %}
+
+    {% if sizing.warnings %}
+    <div class="mt-2">
+        {% for w in sizing.warnings %}
+        <div class="alert alert-warning py-1 px-2 mb-1 small d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
+            <div>{{ w }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

@@ -162,6 +162,20 @@ def sync_ipos_markets(
                 seen_slugs.add(slug)
                 candidates.append(item)
 
+    # Reconcile existing DB issues that might have legacy mock/seed dates
+    known_reconcile_slugs = {
+        "NTPCGREEN": "ntpc-green-energy-limited",
+        "AFCONS": "afcons-infrastructure-limited",
+        "BLACKBUCK": "zinka-logistics-solutions-limited",
+        "SWIGGY": "swiggy-limited",
+        "WAAREEENER": "waaree-energies-limited",
+        "HYUNDAI": "hyundai-motor-india-limited",
+    }
+    for sym, k_slug in known_reconcile_slugs.items():
+        if k_slug not in seen_slugs and IPOMaster.objects.filter(symbol=sym).exists():
+            seen_slugs.add(k_slug)
+            candidates.append({"slug": k_slug, "symbol": sym})
+
     logger.info("Found %d candidate IPOs from ipos.markets overview", len(candidates))
 
     # Process candidates up to detail_limit

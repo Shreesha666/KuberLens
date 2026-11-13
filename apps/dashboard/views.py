@@ -63,11 +63,17 @@ class DashboardView(HTMXResponseMixin, TemplateView):
             else Decimal("0.00")
         )
 
+        from apps.ipo.models import IPOMaster, IPOStatus
+
         active_setups_count = TradeSetup.objects.filter(status="ACTIVE").count()
         recent_setups = list(
             TradeSetup.objects.filter(status="ACTIVE")
             .select_related("listing__instrument")
             .order_by("-risk_reward_ratio", "-created_at")[:5]
+        )
+        active_ipos = list(
+            IPOMaster.objects.filter(status__in=[IPOStatus.LIVE, IPOStatus.UPCOMING])
+            .order_by("open_date")[:4]
         )
 
         watchlist_count = (
@@ -84,10 +90,12 @@ class DashboardView(HTMXResponseMixin, TemplateView):
             "day_pnl": day_pnl,
             "day_pnl_pct": day_pnl_pct,
             "active_setups_count": active_setups_count,
+            "active_ipos_count": IPOMaster.objects.filter(status=IPOStatus.LIVE).count(),
             "watchlist_count": watchlist_count,
             "holdings_count": len(holdings),
         }
         context["recent_setups"] = recent_setups
+        context["active_ipos"] = active_ipos
         context["top_holdings"] = sorted(
             holdings, key=lambda x: x.current_value, reverse=True
         )[:5]

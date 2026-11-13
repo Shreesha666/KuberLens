@@ -88,6 +88,30 @@ class TradeSetup(AuditedModel):
     def reward_amount_per_share(self) -> Decimal:
         return self.target_1 - self.entry_max
 
+    @property
+    def target_upside_percent(self) -> Decimal:
+        base_price = self.current_price or self.entry_min
+        if base_price and base_price > Decimal("0.0") and self.target_1:
+            return round(((self.target_1 - base_price) / base_price) * Decimal("100"), 1)
+        return Decimal("0.0")
+
+    @property
+    def stop_loss_risk_percent(self) -> Decimal:
+        base_price = self.current_price or self.entry_min
+        if base_price and base_price > Decimal("0.0") and self.stop_loss:
+            return round(((base_price - self.stop_loss) / base_price) * Decimal("100"), 1)
+        return Decimal("0.0")
+
+    @property
+    def strategy_display_short(self) -> str:
+        mapping = {
+            "SMA_PULLBACK": "SMA Pullback",
+            "BREAKOUT_CONSOLIDATION": "Breakout",
+            "RSI_OVERSOLD_BOUNCE": "Oversold Bounce",
+            "MOMENTUM_GOLDEN_CROSS": "Golden Cross",
+        }
+        return mapping.get(self.strategy, self.get_strategy_display())
+
 
 class TradeJournal(AuditedModel):
     """

@@ -5,12 +5,9 @@
         <button id="mobile-sidebar-toggle" class="btn btn-outline-secondary btn-sm d-lg-none me-2" type="button" aria-label="Toggle Navigation">
             <i class="bi bi-list fs-5"></i>
         </button>
-        <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center gap-2 text-body text-nowrap"
+        <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center text-body text-nowrap"
            hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;">
-                <i class="bi bi-graph-up-arrow" style="font-size: 0.85rem;"></i>
-            </div>
-            <span class="fw-bold tracking-tight text-nowrap text-body" style="font-size: 0.9rem; letter-spacing: -0.01em;">KuberLens</span>
+            <img src="{% static 'branding/logo/kuberlens-primary-logo.png' %}" alt="KuberLens Logo" class="brand-logo" height="34" style="max-height: 38px; width: auto; object-fit: contain;">
         </a>
     </div>
 

@@ -77,6 +77,21 @@ body {
     background-color: var(--bg-surface);
 }
 
+.brand-logo {
+    height: 32px;
+    max-height: 36px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    transition: opacity 0.15s ease-in-out;
+}
+
+[data-bs-theme="dark"] .brand-logo {
+    background-color: #ffffff;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
 .header-main-bar {
     flex-grow: 1;
     height: 100%;

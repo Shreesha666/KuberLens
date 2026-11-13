@@ -1,13 +1,16 @@
 {% load static %}
 <header id="top-header">
-    <!-- Left: Brand Logo Container (matches sidebar width exactly on desktop) -->
+    <!-- Left: Brand Logo Container (matches 260px sidebar width exactly on desktop) -->
     <div class="header-brand-box">
-        <button id="mobile-sidebar-toggle" class="btn btn-outline-secondary btn-sm d-lg-none me-2" type="button" aria-label="Toggle Navigation">
+        <button id="mobile-sidebar-toggle" class="btn btn-outline-secondary btn-sm d-lg-none me-2" type="button"
+            aria-label="Toggle Navigation">
             <i class="bi bi-list fs-5"></i>
         </button>
-        <a href="{% url 'dashboard:index' %}" class="text-decoration-none d-flex align-items-center text-body text-nowrap"
-           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
-            <img src="{% static 'branding/logo/kuberlens-primary-logo.png' %}" alt="KuberLens Logo" class="brand-logo" height="76" style="height: 76px; max-height: 80px; width: auto; object-fit: contain;">
+        <a href="{% url 'dashboard:index' %}"
+            class="text-decoration-none d-flex align-items-center text-body text-nowrap"
+            hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
+            <img src="{% static 'branding/logo/kuberlens-primary-logo.png' %}" alt="KuberLens Logo" class="brand-logo"
+                height="34" style="max-height: 80px; width: auto; object-fit: contain;">
         </a>
     </div>
 
@@ -15,26 +18,26 @@
     <div class="header-main-bar">
         <!-- Extended Global Search with HTMX Autocomplete Dropdown -->
         <div class="header-search-box" id="global-search-container">
-            <input type="search" class="header-search-input"
-                   name="q" placeholder="Search stocks, indices, IPOs, or instruments (e.g. RELIANCE, TCS)..." aria-label="Global Search"
-                   hx-get="{% url 'stocks:stock_search' %}"
-                   hx-trigger="keyup changed delay:250ms, search"
-                   hx-target="#search-results"
-                   autocomplete="off">
+            <input type="search" class="header-search-input" name="q"
+                placeholder="Search stocks, indices, IPOs, or instruments (e.g. RELIANCE, TCS)..."
+                aria-label="Global Search" hx-get="{% url 'stocks:stock_search' %}"
+                hx-trigger="keyup changed delay:250ms, search" hx-target="#search-results" autocomplete="off">
             <i class="bi bi-search header-search-icon"></i>
-            <div id="search-results" class="position-absolute w-100 mt-1 shadow-sm rounded-3 z-3 bg-surface" style="top: 100%; left: 0;"></div>
+            <div id="search-results" class="position-absolute w-100 mt-1 shadow-sm rounded-3 z-3 bg-surface"
+                style="top: 100%; left: 0;"></div>
         </div>
 
         <!-- Right Controls: Notifications, User Menu -->
         <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
 
             <!-- Notifications Trigger -->
-            <a class="header-icon-btn" aria-label="Notifications"
-               href="{% url 'notifications:list' %}"
-               hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
+            <a class="header-icon-btn" aria-label="Notifications" href="{% url 'notifications:list' %}"
+                hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
                 <i class="bi bi-bell"></i>
                 {% if unread_notifications_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.6rem; padding: 0.2em 0.4em;">
+                <span
+                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white"
+                    style="font-size: 0.6rem; padding: 0.2em 0.4em;">
                     {{ unread_notifications_count }}
                 </span>
                 {% endif %}
@@ -51,28 +54,39 @@
                     </span>
                     <i class="bi bi-chevron-down text-muted" style="font-size: 0.6rem;"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-secondary border-opacity-10 rounded-3 mt-1 py-1" style="min-width: 190px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-secondary border-opacity-10 rounded-3 mt-1 py-1"
+                    style="min-width: 190px;">
                     {% if user.is_authenticated %}
                     <li class="px-3 py-1.5">
-                        <div class="small text-muted" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;">Signed in as</div>
-                        <div class="fw-bold text-truncate text-body" style="font-size: 0.825rem;">{{ user.username }}</div>
+                        <div class="small text-muted"
+                            style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;">Signed in as
+                        </div>
+                        <div class="fw-bold text-truncate text-body" style="font-size: 0.825rem;">{{ user.username }}
+                        </div>
                     </li>
-                    <li><hr class="dropdown-divider my-1"></li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 px-3 small" href="{% url 'accounts:profile' %}"
-                           hx-get="{% url 'accounts:profile' %}" hx-target="#main-content" hx-push-url="true">
+                        <hr class="dropdown-divider my-1">
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 px-3 small"
+                            href="{% url 'accounts:profile' %}" hx-get="{% url 'accounts:profile' %}"
+                            hx-target="#main-content" hx-push-url="true">
                             <i class="bi bi-person-gear text-muted"></i> Preferences & Profile
                         </a>
                     </li>
-                    <li><hr class="dropdown-divider my-1"></li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 px-3 small text-danger" href="{% url 'accounts:logout' %}">
+                        <hr class="dropdown-divider my-1">
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 px-3 small text-danger"
+                            href="{% url 'accounts:logout' %}">
                             <i class="bi bi-box-arrow-right"></i> Sign Out
                         </a>
                     </li>
                     {% else %}
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 px-3 small text-primary" href="{% url 'accounts:login' %}">
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 px-3 small text-primary"
+                            href="{% url 'accounts:login' %}">
                             <i class="bi bi-box-arrow-in-right"></i> Sign In
                         </a>
                     </li>

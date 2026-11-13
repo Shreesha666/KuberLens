@@ -107,8 +107,34 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
 
         context["sector_breakdown"] = sector_breakdown
 
-        # Stock Concentration Check
+        # Fetch latest market quotes for day change calculations
+        listing_ids = [h.listing_id for h in holdings]
+        quotes_dict = {}
+        for q in MarketQuote.objects.filter(listing_id__in=listing_ids).order_by("retrieved_at"):
+            quotes_dict[q.listing_id] = q
+
+        total_day_pnl = Decimal("0.00")
+        gainers_count = 0
+        losers_count = 0
+
+        # Stock Concentration Check & Enrichment
         for h in holdings:
+            quote = quotes_dict.get(h.listing_id)
+            if quote and quote.change is not None:
+                h.day_change = quote.change
+                h.day_change_percent = quote.change_percent or Decimal("0.00")
+                h.day_pnl = Decimal(str(h.total_quantity)) * quote.change
+            else:
+                h.day_change = Decimal("0.00")
+                h.day_change_percent = Decimal("0.00")
+                h.day_pnl = Decimal("0.00")
+            total_day_pnl += h.day_pnl
+
+            if h.unrealised_pnl > Decimal("0.00"):
+                gainers_count += 1
+            elif h.unrealised_pnl < Decimal("0.00"):
+                losers_count += 1
+
             if current_val > 0:
                 pct = round((h.current_value / current_val * Decimal("100.0")), 1)
                 h.allocation_percent = pct
@@ -119,6 +145,15 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
             else:
                 h.allocation_percent = Decimal("0.0")
 
+        context["total_day_pnl"] = total_day_pnl
+        prev_equity_val = current_val - total_day_pnl
+        context["day_pnl_percent"] = (
+            (total_day_pnl / prev_equity_val * Decimal("100.0"))
+            if prev_equity_val > Decimal("0.00")
+            else Decimal("0.00")
+        )
+        context["gainers_count"] = gainers_count
+        context["losers_count"] = losers_count
         context["concentration_warnings"] = concentration_warnings
         return context
 

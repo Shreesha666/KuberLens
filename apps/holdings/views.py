@@ -81,17 +81,56 @@ class HoldingListView(LoginRequiredMixin, HTMXResponseMixin, ListView):
         total_unreal = total_val - total_inv
         total_realised = sum((h.realised_pnl for h in holdings), Decimal("0.00"))
 
+        # Fetch latest market quotes for day change calculations
+        listing_ids = [h.listing_id for h in holdings]
+        quotes_dict = {}
+        for q in MarketQuote.objects.filter(listing_id__in=listing_ids).order_by("retrieved_at"):
+            quotes_dict[q.listing_id] = q
+
+        total_day_pnl = Decimal("0.00")
+        gainers_count = 0
+        losers_count = 0
+        sectors_set = set()
+
         for h in holdings:
+            sec = h.listing.instrument.sector
+            if sec:
+                sectors_set.add(sec)
             h.portfolio_weight = (
                 round((h.current_value / total_val * Decimal("100.0")), 1)
                 if total_val > Decimal("0.00")
                 else Decimal("0.0")
             )
+            quote = quotes_dict.get(h.listing_id)
+            if quote and quote.change is not None:
+                h.day_change = quote.change
+                h.day_change_percent = quote.change_percent or Decimal("0.00")
+                h.day_pnl = Decimal(str(h.total_quantity)) * quote.change
+            else:
+                h.day_change = Decimal("0.00")
+                h.day_change_percent = Decimal("0.00")
+                h.day_pnl = Decimal("0.00")
+            total_day_pnl += h.day_pnl
+
+            if h.unrealised_pnl > Decimal("0.00"):
+                gainers_count += 1
+            elif h.unrealised_pnl < Decimal("0.00"):
+                losers_count += 1
 
         context["total_invested"] = total_inv
         context["total_current_value"] = total_val
         context["total_unrealised_pnl"] = total_unreal
         context["total_realised_pnl"] = total_realised
+        context["total_day_pnl"] = total_day_pnl
+        prev_equity_val = total_val - total_day_pnl
+        context["day_pnl_percent"] = (
+            (total_day_pnl / prev_equity_val * Decimal("100.0"))
+            if prev_equity_val > Decimal("0.00")
+            else Decimal("0.00")
+        )
+        context["gainers_count"] = gainers_count
+        context["losers_count"] = losers_count
+        context["sectors"] = sorted(sectors_set)
         return context
 
 

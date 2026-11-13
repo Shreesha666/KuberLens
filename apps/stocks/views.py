@@ -5,7 +5,7 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Avg, Max, Min, Q, Sum
+from django.db.models import Avg, Max, Min, Sum
 from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views import View
@@ -17,6 +17,7 @@ from apps.holdings.models import Holding
 from apps.instruments.models import ExchangeListing, Instrument
 from apps.market.models import HistoricalCandle, MarketQuote
 from apps.portfolio.models import Portfolio
+from apps.stocks.search import smart_stock_search
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 from services.indicators.calculator import TechnicalIndicatorCalculator
 from services.logos import CompanyLogoService
@@ -38,17 +39,7 @@ class StockSearchView(View):
                 return JsonResponse({"results": []})
             return JsonResponse({"results": []})
 
-        listings = (
-            ExchangeListing.objects.filter(is_tradeable=True)
-            .filter(
-                Q(symbol__icontains=query)
-                | Q(instrument__display_name__icontains=query)
-                | Q(instrument__legal_name__icontains=query)
-                | Q(instrument__isin__icontains=query)
-            )
-            .select_related("instrument", "exchange")
-            .order_by("symbol")[:8]
-        )
+        listings = smart_stock_search(query, limit=8)
 
         # Batch fetch latest quotes for listings in search results
         listing_ids = [item.id for item in listings]
@@ -109,11 +100,14 @@ class StockListView(HTMXResponseMixin, ListView):
         if cap:
             qs = qs.filter(instrument__market_cap_category__iexact=cap)
         if search:
-            qs = qs.filter(
-                Q(symbol__icontains=search)
-                | Q(instrument__display_name__icontains=search)
-                | Q(instrument__legal_name__icontains=search)
-            )
+            matching = smart_stock_search(search, limit=50)
+            matching_ids = [m.id for m in matching]
+            if matching_ids:
+                from django.db.models import Case, When
+                preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(matching_ids)])
+                qs = qs.filter(id__in=matching_ids).order_by(preserved_order)
+            else:
+                qs = qs.none()
         return qs
 
     def get_context_data(self, **kwargs):

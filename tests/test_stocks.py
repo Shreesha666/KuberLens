@@ -58,6 +58,40 @@ def seeded_stocks(db):
         is_tradeable=True,
     )
 
+    inst_bandhan = Instrument.objects.create(
+        isin="INE528058670",
+        legal_name="Bandhan Bank Limited",
+        display_name="Bandhan Bank",
+        sector="Financial Services",
+        industry="Private Sector Bank",
+        market_cap_category="MID",
+    )
+    ExchangeListing.objects.create(
+        instrument=inst_bandhan,
+        exchange=nse,
+        symbol="BANDHANBNK",
+        trading_symbol="BANDHANBNK",
+        is_primary=True,
+        is_tradeable=True,
+    )
+
+    inst_urban = Instrument.objects.create(
+        isin="INE0W9Y01014",
+        legal_name="Urban Company Limited",
+        display_name="Urban Company",
+        sector="Technology",
+        industry="Consumer Tech",
+        market_cap_category="MID",
+    )
+    ExchangeListing.objects.create(
+        instrument=inst_urban,
+        exchange=nse,
+        symbol="URBANCO",
+        trading_symbol="URBANCO",
+        is_primary=True,
+        is_tradeable=True,
+    )
+
     # Historical candles for RELIANCE
     now = timezone.now() - timedelta(days=26)
     for i in range(25):
@@ -123,6 +157,40 @@ class TestStockViews:
         res_isin = client.get(reverse("stocks:stock_search") + "?q=INE002A01018")
         assert res_isin.status_code == 200
         assert res_isin.json()["results"][0]["symbol"] == "RELIANCE"
+
+    def test_search_typo_tolerance_bandhan_bank(self, seeded_stocks):
+        client = Client()
+        # Typo: 'badhan bank' (missing 'n')
+        res_typo = client.get(reverse("stocks:stock_search") + "?q=badhan+bank")
+        assert res_typo.status_code == 200
+        data = res_typo.json()["results"]
+        assert len(data) >= 1
+        assert data[0]["symbol"] == "BANDHANBNK"
+
+        # Typo: 'badhan'
+        res_single = client.get(reverse("stocks:stock_search") + "?q=badhan")
+        assert res_single.status_code == 200
+        data_single = res_single.json()["results"]
+        assert len(data_single) >= 1
+        assert data_single[0]["symbol"] == "BANDHANBNK"
+
+    def test_search_urban_company(self, seeded_stocks):
+        client = Client()
+        # Urban company
+        res = client.get(reverse("stocks:stock_search") + "?q=urban+company")
+        assert res.status_code == 200
+        data = res.json()["results"]
+        assert len(data) >= 1
+        assert data[0]["symbol"] == "URBANCO"
+
+    def test_search_multi_word_token_conjunction(self, seeded_stocks):
+        client = Client()
+        # Reversed words: 'bank bandhan'
+        res = client.get(reverse("stocks:stock_search") + "?q=bank+bandhan")
+        assert res.status_code == 200
+        data = res.json()["results"]
+        assert len(data) >= 1
+        assert data[0]["symbol"] == "BANDHANBNK"
 
     def test_search_htmx_partial_response(self, seeded_stocks):
         client = Client()

@@ -346,7 +346,7 @@ class Command(BaseCommand):
             if not inst:
                 inst = Instrument.objects.create(
                     isin=default_isin,
-                    display_name=symbol,
+                    display_name=name,
                     legal_name=f"{name} Limited" if not name.endswith("Limited") else name,
                     sector=sector,
                     industry=industry,

@@ -14,45 +14,22 @@
         </a>
     </div>
 
-    <!-- Main Bar: Center Market Ticker + Right Controls -->
+    <!-- Main Bar: Extended Global Search + Right Controls -->
     <div class="header-main-bar">
-        <!-- Center: Indices Ticker (Desktop) -->
-        <div class="d-none d-xl-flex align-items-center ticker-strip">
-            <!-- Market Status Pill -->
-            <div class="market-status-pill">
-                <span class="status-dot {% if market_status.is_open %}bg-success{% else %}bg-secondary{% endif %}"></span>
-                <span class="text-secondary fw-semibold">{{ market_status.exchange }}: {{ market_status.session_name }}</span>
-            </div>
-
-            <div class="ticker-divider"></div>
-
-            {% for item in market_ticker %}
-            <div class="ticker-item">
-                <span class="ticker-symbol">{{ item.symbol }}</span>
-                <span class="ticker-price num-mono">{{ item.price }}</span>
-                <span class="ticker-change num-mono {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}">
-                    {% if item.is_positive %}&#9650;{% else %}&#9660;{% endif %} {{ item.change }} ({{ item.change_percent }})
-                </span>
-            </div>
-            {% if not forloop.last %}
-            <div class="ticker-divider"></div>
-            {% endif %}
-            {% endfor %}
+        <!-- Extended Global Search with HTMX Autocomplete Dropdown -->
+        <div class="header-search-box" id="global-search-container">
+            <input type="search" class="header-search-input"
+                   name="q" placeholder="Search stocks, indices, IPOs, or instruments (e.g. RELIANCE, TCS)..." aria-label="Global Search"
+                   hx-get="{% url 'stocks:stock_search' %}"
+                   hx-trigger="keyup changed delay:250ms, search"
+                   hx-target="#search-results"
+                   autocomplete="off">
+            <i class="bi bi-search header-search-icon"></i>
+            <div id="search-results" class="position-absolute w-100 mt-1 shadow-sm rounded-3 z-3 bg-surface" style="top: 100%; left: 0;"></div>
         </div>
 
-        <!-- Right Controls: Global Search, Notifications, User Menu -->
+        <!-- Right Controls: Notifications, User Menu -->
         <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-            <!-- Global Search with HTMX Autocomplete Dropdown -->
-            <div class="d-none d-md-block header-search-box" id="global-search-container">
-                <input type="search" class="header-search-input"
-                       name="q" placeholder="Search symbol..." aria-label="Global Search"
-                       hx-get="{% url 'stocks:stock_search' %}"
-                       hx-trigger="keyup changed delay:250ms, search"
-                       hx-target="#search-results"
-                       autocomplete="off">
-                <i class="bi bi-search header-search-icon"></i>
-                <div id="search-results" class="position-absolute w-100 mt-1 shadow-sm rounded-3 z-3 bg-surface" style="top: 100%; left: 0;"></div>
-            </div>
 
             <!-- Notifications Trigger -->
             <a class="header-icon-btn" aria-label="Notifications"

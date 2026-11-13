@@ -17,7 +17,7 @@ def test_dashboard_direct_url_full_shell():
     assert 'id="sidebar"' in content
     assert 'id="main-content"' in content
     assert "KuberLens" in content
-    assert "NIFTY 50" in content
+    assert 'id="global-search-container"' in content
 
 @pytest.mark.django_db
 def test_dashboard_htmx_partial_swap():

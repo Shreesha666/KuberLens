@@ -195,6 +195,26 @@ def resolve_and_register_stock(query: str) -> ExchangeListing | None:
                     "is_tradeable": True,
                 },
             )
+
+            # Auto-fetch historical candles & indicators for immediate chart and technical analytics
+            try:
+                from datetime import timedelta
+
+                from django.utils import timezone
+
+                from services.indicators.calculator import TechnicalIndicatorCalculator
+                from services.market_data.service import MarketDataService
+
+                end_d = timezone.now().date()
+                start_d = end_d - timedelta(days=365)
+                candles = MarketDataService.get_historical_candles(
+                    listing, start_date=start_d, end_date=end_d, interval="1d", fetch_if_missing=True
+                )
+                if candles:
+                    TechnicalIndicatorCalculator.compute_and_store_snapshots(listing, candles)
+            except Exception as e:
+                logger.debug("Initial candle backfill error for '%s': %s", sym, e)
+
             logger.info("Dynamically registered stock '%s' (%s) to universe", sym, display_name)
             return listing
         except Exception as e:

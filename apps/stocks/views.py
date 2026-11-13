@@ -170,6 +170,23 @@ class StockDetailView(HTMXResponseMixin, DetailView):
         ).order_by("timestamp")
 
         candles = list(candles_qs)
+
+        # Auto-fetch if candles are empty
+        if not candles:
+            try:
+                end_d = timezone.now().date()
+                start_d = end_d - timedelta(days=365)
+                candles = MarketDataService.get_historical_candles(
+                    listing, start_date=start_d, end_date=end_d, interval="1d", fetch_if_missing=True
+                )
+                candles_qs = HistoricalCandle.objects.filter(
+                    listing=listing,
+                    interval="1d",
+                    timestamp__gte=one_year_ago,
+                ).order_by("timestamp")
+            except Exception as e:
+                logger.warning("Could not auto-fetch candles for %s: %s", listing.symbol, e)
+
         context["candle_count"] = len(candles)
 
         if candles:
@@ -204,6 +221,30 @@ class StockDetailView(HTMXResponseMixin, DetailView):
             .order_by("-calculated_at")
             .first()
         )
+        if not fund_snapshot:
+            try:
+                import yfinance as yf
+
+                from services.fundamentals.analyzer import FundamentalAnalyzer
+
+                t = yf.Ticker(f"{listing.symbol}.NS")
+                info = getattr(t, "info", None) or {}
+                raw_data = {
+                    "pe_ratio": info.get("trailingPE") or info.get("forwardPE"),
+                    "pb_ratio": info.get("priceToBook"),
+                    "roe": (info.get("returnOnEquity") * 100) if info.get("returnOnEquity") else None,
+                    "roce": (info.get("returnOnAssets") * 100) if info.get("returnOnAssets") else None,
+                    "debt_to_equity": info.get("debtToEquity"),
+                    "current_ratio": info.get("currentRatio"),
+                    "revenue_growth_yoy": (info.get("revenueGrowth") * 100) if info.get("revenueGrowth") else None,
+                    "operating_margin": (info.get("operatingMargins") * 100) if info.get("operatingMargins") else None,
+                    "net_margin": (info.get("profitMargins") * 100) if info.get("profitMargins") else None,
+                }
+                if any(v is not None for v in raw_data.values()):
+                    fund_snapshot = FundamentalAnalyzer.evaluate_instrument(listing.instrument, raw_data)
+            except Exception as e:
+                logger.warning("Could not auto-fetch fundamentals for %s: %s", listing.symbol, e)
+
         context["fundamental"] = fund_snapshot
 
         # 5. Peer Listings in same sector
@@ -249,6 +290,7 @@ class StockDetailView(HTMXResponseMixin, DetailView):
             technical=tech_snapshot,
             fundamental=fund_snapshot,
             portfolio_total_value=total_portfolio_val,
+            quote=quote,
         )
         context["recommendations"] = recommendations
         context["holding"] = holding
@@ -283,6 +325,20 @@ class StockChartDataView(View):
             start_date = None
 
         candles = list(query.order_by("timestamp"))
+
+        # Auto-backfill if candles are missing
+        if not candles:
+            try:
+                end_d = timezone.now().date()
+                fetch_days = max(days, 180)
+                start_d = end_d - timedelta(days=fetch_days)
+                candles = MarketDataService.get_historical_candles(
+                    listing, start_date=start_d, end_date=end_d, interval=interval, fetch_if_missing=True
+                )
+                if start_date:
+                    candles = [c for c in candles if c.timestamp >= start_date]
+            except Exception as e:
+                logger.warning("Could not backfill candles for %s: %s", listing.symbol, e)
 
         # Pull technical snapshots for moving averages and indicators
         snap_query = TechnicalIndicatorSnapshot.objects.filter(listing=listing, interval=interval)

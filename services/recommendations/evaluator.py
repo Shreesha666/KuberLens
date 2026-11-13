@@ -21,15 +21,32 @@ class RecommendationEvaluator:
         technical: TechnicalIndicatorSnapshot | None = None,
         fundamental: FundamentalSnapshot | None = None,
         portfolio_total_value: Decimal | None = None,
+        quote: Any = None,
     ) -> dict[str, Any]:
         """
         Generates distinct recommendations for:
         1. Existing Holders (capital preservation, trim, accumulate, stop loss)
         2. New Prospective Investors (entry triggers, invalidation, price targets)
         """
-        current_price = holding.current_price if holding else Decimal("1000.0")
-        if not holding and technical and technical.bollinger_middle:
+        current_price = None
+        if quote and getattr(quote, "price", None) and quote.price > Decimal("0.0"):
+            current_price = Decimal(str(quote.price))
+        elif holding and holding.current_price and holding.current_price > Decimal("0.0"):
+            current_price = holding.current_price
+        elif technical and technical.bollinger_middle and technical.bollinger_middle > Decimal("0.0"):
             current_price = technical.bollinger_middle
+        else:
+            from apps.market.models import HistoricalCandle, MarketQuote
+            latest_q = MarketQuote.objects.filter(listing=listing).order_by("-retrieved_at").first()
+            if latest_q and latest_q.price > Decimal("0.0"):
+                current_price = latest_q.price
+            else:
+                latest_c = HistoricalCandle.objects.filter(listing=listing).order_by("-timestamp").first()
+                if latest_c and latest_c.close > Decimal("0.0"):
+                    current_price = latest_c.close
+
+        if not current_price or current_price <= Decimal("0.0"):
+            current_price = Decimal("100.0")
 
         # ------------------------------------------------------------------
         # 1. Existing Holder Guidance
@@ -115,13 +132,13 @@ class RecommendationEvaluator:
         tech_trend = technical.trend_signal if technical else "NEUTRAL"
         support = (
             technical.support_level
-            if technical and technical.support_level and technical.support_level > Decimal("0.0")
-            else (current_price * Decimal("0.95"))
+            if technical and technical.support_level and Decimal("0.0") < technical.support_level < current_price
+            else round(current_price * Decimal("0.95"), 2)
         )
         resistance = (
             technical.resistance_level
             if technical and technical.resistance_level and technical.resistance_level > current_price
-            else (current_price * Decimal("1.10"))
+            else round(current_price * Decimal("1.10"), 2)
         )
 
         # 1. Volatility-Adjusted Stop Loss (ATR Chandelier Exit Logic)
@@ -134,13 +151,18 @@ class RecommendationEvaluator:
 
         # Moving average dynamic support floor
         effective_support = support
-        if technical and technical.ema_20 and technical.ema_20 < current_price:
+        if technical and technical.ema_20 and Decimal("0.0") < technical.ema_20 < current_price:
             effective_support = max(effective_support, technical.ema_20)
+        elif technical and technical.sma_20 and Decimal("0.0") < technical.sma_20 < current_price:
+            effective_support = max(effective_support, technical.sma_20)
+
+        if effective_support < current_price * Decimal("0.85") or effective_support >= current_price:
+            effective_support = round(current_price * Decimal("0.94"), 2)
 
         stop_level = round(effective_support - atr_buffer, 2)
         if stop_level >= current_price:
-            stop_level = round(current_price * Decimal("0.96"), 2)
-        if stop_level <= Decimal("0.0"):
+            stop_level = round(current_price * Decimal("0.95"), 2)
+        if stop_level <= Decimal("0.0") or stop_level < current_price * Decimal("0.80"):
             stop_level = round(current_price * Decimal("0.90"), 2)
 
         stop_loss_rationale = f"Structural Support (₹{effective_support:,.2f}) − 1.5× ATR Buffer (₹{atr_buffer:,.2f})"
@@ -149,11 +171,11 @@ class RecommendationEvaluator:
         if technical and technical.bollinger_upper and technical.bollinger_upper > current_price:
             target_1 = round(max(resistance, technical.bollinger_upper), 2)
         else:
-            target_1 = round(max(resistance, current_price * Decimal("1.06")), 2)
+            target_1 = round(max(resistance, current_price * Decimal("1.08")), 2)
 
         swing_high = technical.swing_high if technical and technical.swing_high else resistance
         swing_low = technical.swing_low if technical and technical.swing_low else effective_support
-        measured_swing = max(Decimal("10.0"), swing_high - swing_low)
+        measured_swing = max(Decimal("1.0"), swing_high - swing_low)
         target_2 = round(target_1 + (measured_swing * Decimal("0.618")), 2)
         if target_2 <= target_1:
             target_2 = round(target_1 * Decimal("1.08"), 2)
@@ -203,9 +225,12 @@ class RecommendationEvaluator:
         else:
             status = "WAIT FOR PULLBACK"
 
+        entry_lower = round(min(effective_support * Decimal("1.005"), current_price * Decimal("0.97")), 2)
+        entry_upper = round(max(entry_lower + Decimal("0.50"), current_price * Decimal("0.995")), 2)
+
         new_investor_rec = {
             "status": status,
-            "entry_zone": f"₹{round(effective_support * Decimal('1.005'), 2)} - ₹{round(current_price * Decimal('0.995'), 2)}",
+            "entry_zone": f"₹{entry_lower} - ₹{entry_upper}",
             "stop_loss": f"₹{stop_level}",
             "stop_loss_value": float(stop_level),
             "stop_loss_rationale": stop_loss_rationale,

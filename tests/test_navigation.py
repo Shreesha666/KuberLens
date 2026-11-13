@@ -34,7 +34,7 @@ def test_dashboard_htmx_partial_swap():
     assert 'id="sidebar"' not in content
     assert 'id="top-header"' not in content
     assert "Executive Dashboard" in content
-    assert "Major Market Indices" in content
+    assert "High-Conviction Swing Setups" in content
 
 @pytest.mark.django_db
 def test_market_overview_direct_and_htmx():

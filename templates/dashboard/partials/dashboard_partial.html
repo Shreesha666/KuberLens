@@ -1,6 +1,6 @@
 {% load core_tags %}
 <div class="container-fluid p-0">
-    <!-- Top Row: Welcome & Market Pulse -->
+    <!-- Top Row: Welcome & Quick Actions -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
@@ -104,77 +104,10 @@
         </div>
     </div>
 
-    <!-- Main Dashboard Panels -->
+    <!-- Middle Row: High-Conviction Swing Setups & Active IPO Desk Radar -->
     <div class="row g-4 mb-4">
-        <!-- Major Market Indices Panel -->
-        <div class="col-12 col-lg-7">
-            <div class="stat-card-elevated h-100 d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-primary bg-opacity-10 text-primary p-1.5 rounded-3">
-                            <i class="bi bi-graph-up-arrow fs-6"></i>
-                        </span>
-                        <div>
-                            <h5 class="fw-bold mb-0" style="font-size: var(--font-size-md, 1rem);">Major Market Indices</h5>
-                            <span class="text-muted" style="font-size: var(--font-size-xs, 0.72rem);">Live benchmark quotes across NSE & BSE</span>
-                        </div>
-                    </div>
-                    <a href="{% url 'dashboard:market_overview' %}"
-                       class="small text-decoration-none text-primary fw-semibold d-inline-flex align-items-center gap-1"
-                       hx-get="{% url 'dashboard:market_overview' %}" hx-target="#main-content" hx-push-url="true">
-                        <span>Market Hub</span>
-                        <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-
-                <div class="table-responsive flex-grow-1">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr class="text-muted small border-secondary border-opacity-25" style="font-size: var(--font-size-xs, 0.72rem);">
-                                <th class="ps-2">BENCHMARK</th>
-                                <th class="text-end">LAST (INR)</th>
-                                <th class="text-end">NET CHANGE</th>
-                                <th class="text-end">% CHG</th>
-                                <th class="text-center pe-2">SESSION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in market_ticker %}
-                            <tr>
-                                <td class="ps-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="rounded-2 p-1.5 d-flex align-items-center justify-content-center {% if item.is_positive %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10" style="width: 28px; height: 28px;">
-                                            <i class="bi {% if item.is_positive %}bi-arrow-up-right text-success{% else %}bi-arrow-down-right text-danger{% endif %} fs-6"></i>
-                                        </div>
-                                        <span class="fw-bold text-dark">{{ item.symbol }}</span>
-                                    </div>
-                                </td>
-                                <td class="text-end num-mono fw-bold">{{ item.price }}</td>
-                                <td class="text-end num-mono {% if item.is_positive %}text-gain{% else %}text-loss{% endif %}">
-                                    {{ item.change }}
-                                </td>
-                                <td class="text-end num-mono">
-                                    <span class="badge {% if item.is_positive %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if item.is_positive %}text-success{% else %}text-danger{% endif %} px-2 py-1">
-                                        {{ item.change_percent }}
-                                    </span>
-                                </td>
-                                <td class="text-center pe-2">
-                                    <span class="badge badge-soft-success py-1 px-2" style="font-size: 0.6875rem;">EOD Settled</span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4 text-muted small">No market ticker data currently available.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <!-- High-Conviction Active Trade Setups -->
-        <div class="col-12 col-lg-5">
+        <div class="col-12 col-lg-6">
             <div class="stat-card-elevated h-100 border-accent-primary d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-2">
@@ -206,7 +139,7 @@
                                 <div class="d-flex align-items-center gap-1.5 text-truncate">
                                     <span class="fw-bold text-primary">{{ setup.listing.symbol }}</span>
                                     {% if setup.listing.instrument.name %}
-                                    <span class="text-muted small d-none d-sm-inline text-truncate" style="font-size: 0.75rem; max-width: 140px;">
+                                    <span class="text-muted small d-none d-sm-inline text-truncate" style="font-size: 0.75rem; max-width: 180px;">
                                         &bull; {{ setup.listing.instrument.name }}
                                     </span>
                                     {% endif %}
@@ -244,87 +177,9 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Secondary Row: Top Portfolio Holdings & Active IPO Desk Radar -->
-    <div class="row g-4">
-        <!-- Top Portfolio Holdings -->
-        <div class="col-12 col-lg-7">
-            <div class="stat-card-elevated h-100 d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success bg-opacity-10 text-success p-1.5 rounded-3">
-                            <i class="bi bi-pie-chart fs-6"></i>
-                        </span>
-                        <div>
-                            <h5 class="fw-bold mb-0" style="font-size: var(--font-size-md, 1rem);">Top Portfolio Holdings</h5>
-                            <span class="text-muted" style="font-size: var(--font-size-xs, 0.72rem);">Primary asset allocation by market value</span>
-                        </div>
-                    </div>
-                    <a href="{% url 'holdings:list' %}"
-                       class="small text-decoration-none text-primary fw-semibold d-inline-flex align-items-center gap-1"
-                       hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
-                        <span>All Holdings</span>
-                        <i class="bi bi-arrow-right"></i>
-                    </a>
-                </div>
-
-                <div class="table-responsive flex-grow-1">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr class="text-muted small border-secondary border-opacity-25" style="font-size: var(--font-size-xs, 0.72rem);">
-                                <th class="ps-2">ASSET</th>
-                                <th class="text-end">QTY</th>
-                                <th class="text-end">INVESTED</th>
-                                <th class="text-end">CURRENT VAL</th>
-                                <th class="text-end pe-2">UNREALISED P&L</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for h in top_holdings %}
-                            <tr>
-                                <td class="ps-2">
-                                    <a href="{% url 'stocks:stock_detail' h.listing.symbol %}"
-                                       hx-get="{% url 'stocks:stock_detail' h.listing.symbol %}"
-                                       hx-target="#main-content"
-                                       hx-push-url="true"
-                                       class="text-decoration-none d-flex align-items-center">
-                                        {% stock_logo h.listing size=34 css_class="me-3 p-0.5 rounded-2 shadow-xs" %}
-                                        <div>
-                                            <div class="fw-bold text-primary">{{ h.listing.symbol }}</div>
-                                            <div class="text-muted" style="font-size: 0.72rem;">{{ h.listing.instrument.name|truncatechars:20 }}</div>
-                                        </div>
-                                    </a>
-                                </td>
-                                <td class="text-end num-mono fw-semibold">{{ h.total_quantity }}</td>
-                                <td class="text-end num-mono text-muted">{{ h.invested_amount|format_inr }}</td>
-                                <td class="text-end num-mono fw-bold">{{ h.current_value|format_inr }}</td>
-                                <td class="text-end num-mono pe-2">
-                                    <div class="fw-bold {% if h.unrealised_pnl >= 0 %}text-gain{% else %}text-loss{% endif %}">
-                                        {{ h.unrealised_pnl|format_inr }}
-                                    </div>
-                                    <span class="badge {% if h.unrealised_pnl_percent >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if h.unrealised_pnl_percent >= 0 %}text-success{% else %}text-danger{% endif %} px-1.5 py-0.5" style="font-size: 0.68rem;">
-                                        {% if h.unrealised_pnl_percent >= 0 %}+{% endif %}{{ h.unrealised_pnl_percent }}%
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-4 text-muted small">
-                                    No portfolio holdings logged yet.
-                                    <a href="{% url 'holdings:add_transaction' %}" class="text-primary ms-1"
-                                       hx-get="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true">Add Transaction</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <!-- Active IPO Desk Radar -->
-        <div class="col-12 col-lg-5">
+        <div class="col-12 col-lg-6">
             <div class="stat-card-elevated h-100 border-accent-info d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-2">
@@ -347,7 +202,7 @@
                     {% for ipo in active_ipos %}
                     <div class="setup-item d-flex justify-content-between align-items-center p-2.5">
                         <div class="d-flex align-items-center min-w-0">
-                            {% stock_logo ipo.symbol size=36 css_class="me-3 p-0.5 rounded-2 shadow-xs" %}
+                            {% stock_logo ipo.symbol size=38 css_class="me-3 p-1 rounded-2 shadow-xs" %}
                             <div class="min-w-0">
                                 <div class="d-flex align-items-center gap-1.5">
                                     <span class="fw-bold text-dark">{{ ipo.symbol }}</span>
@@ -383,6 +238,83 @@
                         No live or upcoming IPOs tracked currently.
                     </div>
                     {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Top Portfolio Holdings (Full Width) -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="stat-card-elevated d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success bg-opacity-10 text-success p-1.5 rounded-3">
+                            <i class="bi bi-pie-chart fs-6"></i>
+                        </span>
+                        <div>
+                            <h5 class="fw-bold mb-0" style="font-size: var(--font-size-md, 1rem);">Top Portfolio Holdings</h5>
+                            <span class="text-muted" style="font-size: var(--font-size-xs, 0.72rem);">Primary asset allocation by market value</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'holdings:list' %}"
+                       class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+                       hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
+                        <span>All Holdings</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small border-secondary border-opacity-25" style="font-size: var(--font-size-xs, 0.72rem);">
+                                <th class="ps-2">ASSET</th>
+                                <th class="text-end">QUANTITY</th>
+                                <th class="text-end">INVESTED CAPITAL</th>
+                                <th class="text-end">CURRENT VALUE</th>
+                                <th class="text-end pe-2">UNREALISED P&L</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for h in top_holdings %}
+                            <tr>
+                                <td class="ps-2">
+                                    <a href="{% url 'stocks:stock_detail' h.listing.symbol %}"
+                                       hx-get="{% url 'stocks:stock_detail' h.listing.symbol %}"
+                                       hx-target="#main-content"
+                                       hx-push-url="true"
+                                       class="text-decoration-none d-flex align-items-center">
+                                        {% stock_logo h.listing size=36 css_class="me-3 p-1 rounded-2 shadow-xs" %}
+                                        <div>
+                                            <div class="fw-bold text-primary">{{ h.listing.symbol }}</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">{{ h.listing.instrument.name|truncatechars:28 }}</div>
+                                        </div>
+                                    </a>
+                                </td>
+                                <td class="text-end num-mono fw-semibold">{{ h.total_quantity }}</td>
+                                <td class="text-end num-mono text-muted">{{ h.invested_amount|format_inr }}</td>
+                                <td class="text-end num-mono fw-bold text-dark">{{ h.current_value|format_inr }}</td>
+                                <td class="text-end num-mono pe-2">
+                                    <div class="fw-bold {% if h.unrealised_pnl >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                                        {{ h.unrealised_pnl|format_inr }}
+                                    </div>
+                                    <span class="badge {% if h.unrealised_pnl_percent >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if h.unrealised_pnl_percent >= 0 %}text-success{% else %}text-danger{% endif %} px-2 py-0.5" style="font-size: 0.7rem;">
+                                        {% if h.unrealised_pnl_percent >= 0 %}+{% endif %}{{ h.unrealised_pnl_percent }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">
+                                    No portfolio holdings logged yet.
+                                    <a href="{% url 'holdings:add_transaction' %}" class="text-primary ms-1"
+                                       hx-get="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true">Add Transaction</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

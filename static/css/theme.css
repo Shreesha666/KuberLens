@@ -576,7 +576,7 @@ body {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
-    padding: 1.25rem 1.4rem;
+    padding: 1rem 1.25rem;
     box-shadow: var(--card-shadow);
     transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
     position: relative;

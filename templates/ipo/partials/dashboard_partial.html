@@ -32,15 +32,22 @@
     <!-- Card 1: Live Open Issues -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card-elevated border-accent-success h-100">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Live &amp; Open Issues</span>
-                <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Live &amp; Open Issues</span>
+                    <div class="d-flex align-items-baseline gap-2 mt-1 mb-0">
+                        <h3 class="fw-bold num-mono text-dark mb-0" style="font-size: 1.625rem;">{{ live_count }}</h3>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 fw-medium" style="font-size: 0.72rem;">
+                            <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.4rem;"></i>Bidding Active
+                        </span>
+                    </div>
+                </div>
+                <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: rgba(5, 150, 105, 0.1); color: var(--color-green);">
                     <i class="bi bi-broadcast fs-5"></i>
                 </div>
             </div>
-            <div class="fs-2 fw-bold num-mono text-body mb-1" style="font-size: 1.75rem;">{{ live_count }}</div>
-            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
-                <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Accepting Bids</span>
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+                <span>Accepting bids right now</span>
                 <a href="{% url 'ipo:issues' %}?tab=live" class="text-primary text-decoration-none fw-semibold"
                    hx-get="{% url 'ipo:issues' %}?tab=live" hx-target="#main-content" hx-push-url="true">
                     View &rarr;
@@ -52,15 +59,22 @@
     <!-- Card 2: Upcoming Pipeline -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card-elevated border-accent-primary h-100">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Upcoming Pipeline</span>
-                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Upcoming Pipeline</span>
+                    <div class="d-flex align-items-baseline gap-2 mt-1 mb-0">
+                        <h3 class="fw-bold num-mono text-primary mb-0" style="font-size: 1.625rem;">{{ upcoming_count }}</h3>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 fw-medium" style="font-size: 0.72rem;">
+                            <i class="bi bi-calendar-event me-1"></i>Scheduled
+                        </span>
+                    </div>
+                </div>
+                <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: rgba(37, 99, 235, 0.1); color: var(--color-blue);">
                     <i class="bi bi-hourglass-split fs-5"></i>
                 </div>
             </div>
-            <div class="fs-2 fw-bold num-mono text-body mb-1" style="font-size: 1.75rem;">{{ upcoming_count }}</div>
             <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
-                <span>Approved &amp; Scheduled</span>
+                <span>Approved pipeline</span>
                 <a href="{% url 'ipo:issues' %}?tab=upcoming" class="text-primary text-decoration-none fw-semibold"
                    hx-get="{% url 'ipo:issues' %}?tab=upcoming" hx-target="#main-content" hx-push-url="true">
                     Inspect &rarr;
@@ -72,13 +86,18 @@
     <!-- Card 3: Capital Mobilized -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card-elevated border-accent-info h-100">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Total Issue Size</span>
-                <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Total Issue Size</span>
+                    <div class="d-flex align-items-baseline mt-1 mb-0">
+                        <h3 class="fw-bold num-mono text-dark mb-0" style="font-size: 1.625rem;">₹{{ total_mobilized_cr|intcomma_inr }}</h3>
+                        <span class="text-muted fw-semibold ms-1" style="font-size: 0.875rem; font-family: var(--font-family-sans);">Cr</span>
+                    </div>
+                </div>
+                <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: rgba(8, 145, 178, 0.1); color: var(--color-cyan);">
                     <i class="bi bi-currency-rupee fs-5"></i>
                 </div>
             </div>
-            <div class="fs-2 fw-bold num-mono text-body mb-1" style="font-size: 1.75rem;">₹{{ total_mobilized_cr|floatformat:0 }} Cr</div>
             <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
                 <span>Mainboard: <strong class="text-secondary">{{ mainboard_count }}</strong></span>
                 <span>SME: <strong class="text-secondary">{{ sme_count }}</strong></span>
@@ -89,17 +108,24 @@
     <!-- Card 4: Average Listing Day Gain -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card-elevated border-accent-warning h-100">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Avg Debut Return</span>
-                <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Avg Debut Return</span>
+                    <div class="d-flex align-items-baseline gap-2 mt-1 mb-0">
+                        <h3 class="fw-bold num-mono mb-0 {% if avg_listing_gain >= 0 %}text-gain{% else %}text-loss{% endif %}" style="font-size: 1.625rem;">
+                            {% if avg_listing_gain >= 0 %}+{% endif %}{{ avg_listing_gain|floatformat:1 }}%
+                        </h3>
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-20 fw-medium" style="font-size: 0.72rem;">
+                            Day 1 Pop
+                        </span>
+                    </div>
+                </div>
+                <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: rgba(217, 119, 6, 0.1); color: #d97706;">
                     <i class="bi bi-graph-up-arrow fs-5"></i>
                 </div>
             </div>
-            <div class="fs-2 fw-bold num-mono {% if avg_listing_gain >= 0 %}text-gain{% else %}text-loss{% endif %} mb-1" style="font-size: 1.75rem;">
-                {% if avg_listing_gain >= 0 %}+{% endif %}{{ avg_listing_gain|floatformat:1 }}%
-            </div>
             <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
-                <span>Across {{ listed_count }} recent debuts</span>
+                <span>{{ listed_count }} Debuts Tracked</span>
                 <a href="{% url 'ipo:performance' %}" class="text-primary text-decoration-none fw-semibold"
                    hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">
                     Returns Desk &rarr;
@@ -180,13 +206,14 @@
 
                             <!-- Min Investment & Lot Size -->
                             <td class="text-end num-mono text-nowrap">
-                                <div class="fw-bold text-secondary">₹{{ ipo.calculated_min_investment|floatformat:0 }}</div>
+                                <div class="fw-bold text-secondary">₹{{ ipo.calculated_min_investment|intcomma_inr }}</div>
                                 <span class="text-muted small" style="font-size: 0.7rem;">{{ ipo.lot_size }} shares</span>
                             </td>
 
                             <!-- Total Issue Size (Cr) -->
-                            <td class="text-end num-mono fw-bold text-body text-nowrap">
-                                ₹{{ ipo.total_issue_size_cr|floatformat:1 }} Cr
+                            <td class="text-end text-body text-nowrap">
+                                <span class="num-mono fw-bold">₹{{ ipo.total_issue_size_cr|intcomma_inr }}</span>
+                                <span class="fw-normal text-muted ms-0.5" style="font-size: 0.75rem; font-family: var(--font-family-sans);">Cr</span>
                             </td>
 
                             <!-- Open & Close Dates (Protected against ugly wrapping) -->
@@ -272,7 +299,7 @@
                         <!-- Top Header: Logo, Symbol, Date, and Listing Gain Pill -->
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center min-w-0">
-                                {% stock_logo item.symbol size=38 css_class="p-1 rounded-2 shadow-xs" %}
+                                {% stock_logo item.symbol size=38 css_class="me-3 p-1 rounded-2 shadow-xs" %}
                                 <div class="min-w-0">
                                     <div class="d-flex align-items-center text-truncate">
                                         <span class="fw-bold text-dark fs-6">{{ item.symbol }}</span>
@@ -294,15 +321,15 @@
                         <div class="row g-1 mt-2.5 pt-2 border-top border-secondary border-opacity-10 text-center">
                             <div class="col-4 border-end border-secondary border-opacity-10 text-start ps-1">
                                 <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Issue Price</div>
-                                <div class="fw-bold num-mono text-secondary" style="font-size: 0.8125rem;">₹{{ item.issue_price|floatformat:0 }}</div>
+                                <div class="fw-bold num-mono text-secondary" style="font-size: 0.8125rem;">₹{{ item.issue_price|intcomma_inr }}</div>
                             </div>
                             <div class="col-4 border-end border-secondary border-opacity-10">
                                 <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Day 1 Open</div>
-                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.listing_day_open|floatformat:0 }}</div>
+                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.listing_day_open|intcomma_inr }}</div>
                             </div>
                             <div class="col-4 text-end pe-1">
                                 <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Issue Size</div>
-                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.total_issue_size_cr|floatformat:0 }} Cr</div>
+                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.total_issue_size_cr|intcomma_inr }} <span class="fw-normal text-muted" style="font-size: 0.7rem; font-family: var(--font-family-sans);">Cr</span></div>
                             </div>
                         </div>
                     </a>

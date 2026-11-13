@@ -37,6 +37,18 @@ def format_inr(value):
         return f"₹{value}"
 
 
+@register.filter
+def intcomma_inr(value):
+    """Formats an integer or decimal with thousand separators, e.g. 67308 -> 67,308"""
+    if value is None or value == "":
+        return "0"
+    try:
+        val = Decimal(str(value))
+        return f"{val:,.0f}"
+    except Exception:
+        return str(value)
+
+
 @register.simple_tag
 def stock_logo(target, size=32, css_class=""):
     """

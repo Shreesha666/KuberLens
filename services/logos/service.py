@@ -45,38 +45,51 @@ class CompanyLogoService:
         clean_symbol = symbol.strip().upper()
         cache_key = f"{cls.CACHE_KEY_PREFIX}{clean_symbol}"
 
-        # 1. Check local cache
+        # 1. Check local cache (distinguishing official logo from fallback monogram)
         cached_data = cache.get(cache_key)
-        if cached_data:
+        is_cached_monogram = bool(
+            cached_data and b'letter-spacing="0.5"' in cached_data
+        )
+        if cached_data and not is_cached_monogram:
             return cached_data, "image/svg+xml"
 
-        # 2. Attempt fetching from api.dharun.dev
+        # 2. Attempt fetching from CDN and API sources
+        candidate_urls = [
+            f"https://cdn.jsdelivr.net/gh/MrChartist/global-stock-logos@main/logos/{clean_symbol}.svg",
+            f"https://raw.githubusercontent.com/MrChartist/global-stock-logos/main/logos/{clean_symbol}.svg",
+        ]
         api_url = getattr(settings, "DHARUN_LOGO_API_URL", "https://api.dharun.dev/v1/logos")
-        api_key = getattr(settings, "DHARUN_API_KEY", "")
+        if api_url:
+            candidate_urls.append(f"{api_url.rstrip('/')}/{clean_symbol}")
 
-        url = f"{api_url.rstrip('/')}/{clean_symbol}"
+        api_key = getattr(settings, "DHARUN_API_KEY", "")
         headers = {
-            "User-Agent": "IndianStockIntel/1.0",
+            "User-Agent": "KuberLens/1.0 (Mozilla/5.0)",
             "Accept": "image/svg+xml,image/*,*/*",
         }
         if api_key:
             headers["x-api-key"] = api_key
 
-        try:
-            req = urllib.request.Request(url, headers=headers)
-            # Short timeout to prevent blocking worker threads
-            with urllib.request.urlopen(req, timeout=3.5) as response:
-                if response.status == 200:
-                    content = response.read()
-                    content_type = response.headers.get("Content-Type", "image/svg+xml")
-                    if "svg" in content_type.lower() or content.strip().startswith(b"<svg"):
-                        cache.set(cache_key, content, cls.CACHE_TIMEOUT)
-                        return content, "image/svg+xml"
-                    elif "png" in content_type.lower():
-                        cache.set(cache_key, content, cls.CACHE_TIMEOUT)
-                        return content, "image/png"
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError) as exc:
-            logger.debug("Could not fetch remote logo for %s: %s", clean_symbol, exc)
+        for url in candidate_urls:
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=3.0) as response:
+                    if response.status == 200:
+                        content = response.read()
+                        content_type = response.headers.get("Content-Type", "image/svg+xml")
+                        if "svg" in content_type.lower() or content.strip().startswith(b"<svg"):
+                            cache.set(cache_key, content, cls.CACHE_TIMEOUT)
+                            return content, "image/svg+xml"
+                        elif "png" in content_type.lower():
+                            cache.set(cache_key, content, cls.CACHE_TIMEOUT)
+                            return content, "image/png"
+            except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError) as exc:
+                logger.debug("Could not fetch remote logo for %s from %s: %s", clean_symbol, url, exc)
+                continue
+
+        # If previous fallback was cached and remote failed, reuse cached fallback
+        if cached_data:
+            return cached_data, "image/svg+xml"
 
         # 3. Deterministic SVG Monogram Fallback
         fallback_svg = cls.generate_fallback_monogram(clean_symbol)

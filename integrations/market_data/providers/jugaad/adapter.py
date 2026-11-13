@@ -52,16 +52,61 @@ class JugaadDataProvider(MarketDataProvider):
             from jugaad_data.nse import NSELive
             nse = NSELive()
             q = nse.stock_quote(listing.symbol)
-            price_info = q.get("priceInfo", {})
-            ltp = Decimal(str(price_info.get("lastPrice", "0")))
-            change = Decimal(str(price_info.get("change", "0")))
-            p_change = Decimal(str(price_info.get("pChange", "0")))
-            open_p = Decimal(str(price_info.get("open", ltp)))
-            close_p = Decimal(str(price_info.get("close", ltp))) or ltp
-            prev_close = Decimal(str(price_info.get("previousClose", ltp)))
-            intra_high = Decimal(str(price_info.get("intraDayHighLow", {}).get("max", ltp)))
-            intra_low = Decimal(str(price_info.get("intraDayHighLow", {}).get("min", ltp)))
-            vol = int(q.get("securityWiseDP", {}).get("quantityTraded", 0) or 0)
+            price_info = q.get("priceInfo", {}) or {}
+            meta_data = q.get("metaData", {}) or {}
+            trade_info = q.get("tradeInfo", {}) or {}
+            order_book = q.get("orderBook", {}) or {}
+
+            # Multi-location fallback for live vs off-market structures
+            ltp_val = (
+                price_info.get("lastPrice")
+                or trade_info.get("lastPrice")
+                or order_book.get("lastPrice")
+                or meta_data.get("lastPrice")
+                or meta_data.get("basePrice")
+                or meta_data.get("previousClose")
+                or "0"
+            )
+            ltp = Decimal(str(ltp_val))
+
+            prev_close_val = (
+                price_info.get("previousClose")
+                or meta_data.get("previousClose")
+                or trade_info.get("basePrice")
+                or ltp
+            )
+            prev_close = Decimal(str(prev_close_val))
+
+            change_val = (
+                price_info.get("change")
+                or meta_data.get("change")
+                or (ltp - prev_close)
+            )
+            change = Decimal(str(change_val))
+
+            pchange_val = (
+                price_info.get("pChange")
+                or meta_data.get("pChange")
+                or ((change / prev_close * 100) if prev_close else Decimal("0"))
+            )
+            p_change = Decimal(str(pchange_val))
+
+            open_val = meta_data.get("open") or price_info.get("open") or ltp
+            open_p = Decimal(str(open_val))
+
+            high_val = meta_data.get("dayHigh") or price_info.get("intraDayHighLow", {}).get("max") or ltp
+            high_p = Decimal(str(high_val))
+
+            low_val = meta_data.get("dayLow") or price_info.get("intraDayHighLow", {}).get("min") or ltp
+            low_p = Decimal(str(low_val))
+
+            close_p = Decimal(str(price_info.get("close") or meta_data.get("closePrice") or ltp)) or ltp
+            vol = int(
+                trade_info.get("totalTradedVolume")
+                or trade_info.get("quantitytraded")
+                or q.get("securityWiseDP", {}).get("quantityTraded", 0)
+                or 0
+            )
             latency_ms = int((time.time() - start_t) * 1000)
 
             quote = MarketQuoteDTO(
@@ -71,8 +116,8 @@ class JugaadDataProvider(MarketDataProvider):
                 change=change,
                 change_percent=p_change,
                 open=open_p,
-                high=intra_high,
-                low=intra_low,
+                high=high_p,
+                low=low_p,
                 close=close_p,
                 previous_close=prev_close,
                 volume=vol,

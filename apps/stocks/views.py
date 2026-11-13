@@ -50,6 +50,13 @@ class StockSearchView(View):
             .order_by("symbol")[:8]
         )
 
+        # Batch fetch latest quotes for listings in search results
+        listing_ids = [item.id for item in listings]
+        quotes_by_listing = {}
+        for quote in MarketQuote.objects.filter(listing_id__in=listing_ids).order_by("listing_id", "-retrieved_at"):
+            if quote.listing_id not in quotes_by_listing:
+                quotes_by_listing[quote.listing_id] = quote
+
         results = [
             {
                 "symbol": item.symbol,
@@ -60,6 +67,9 @@ class StockSearchView(View):
                 "sector": item.instrument.sector,
                 "cap": item.instrument.market_cap_category,
                 "url": f"/stocks/{item.symbol}/",
+                "price": float(quotes_by_listing[item.id].price) if item.id in quotes_by_listing else None,
+                "change": float(quotes_by_listing[item.id].change) if item.id in quotes_by_listing else None,
+                "change_percent": float(quotes_by_listing[item.id].change_percent) if item.id in quotes_by_listing else None,
             }
             for item in listings
         ]

@@ -48,14 +48,32 @@ class YahooFinanceProvider(MarketDataProvider):
             ticker = yf.Ticker(ticker_str)
             fast_info = ticker.fast_info
 
-            price = Decimal(str(round(fast_info.last_price, 4)))
-            prev_close = Decimal(str(round(fast_info.previous_close, 4)))
-            open_p = Decimal(str(round(fast_info.open, 4))) if fast_info.open else price
-            high_p = Decimal(str(round(fast_info.day_high, 4))) if fast_info.day_high else price
-            low_p = Decimal(str(round(fast_info.day_low, 4))) if fast_info.day_low else price
+            last_p = getattr(fast_info, "last_price", None)
+            prev_p = getattr(fast_info, "previous_close", None)
+
+            if last_p is None:
+                # Fallback to recent history candles
+                hist = ticker.history(period="5d")
+                if not hist.empty:
+                    last_p = float(hist["Close"].iloc[-1])
+                    if len(hist) > 1 and prev_p is None:
+                        prev_p = float(hist["Close"].iloc[-2])
+
+            if last_p is None:
+                raise ProviderConnectionError(f"Yahoo Finance returned no price data for {ticker_str}")
+
+            price = Decimal(str(round(last_p, 4)))
+            prev_close = Decimal(str(round(prev_p, 4))) if prev_p is not None else price
+            open_val = getattr(fast_info, "open", None)
+            high_val = getattr(fast_info, "day_high", None)
+            low_val = getattr(fast_info, "day_low", None)
+
+            open_p = Decimal(str(round(open_val, 4))) if open_val else price
+            high_p = Decimal(str(round(high_val, 4))) if high_val else price
+            low_p = Decimal(str(round(low_val, 4))) if low_val else price
             change = price - prev_close
             p_change = (change / prev_close * 100) if prev_close else Decimal("0")
-            vol = int(fast_info.last_volume or 0)
+            vol = int(getattr(fast_info, "last_volume", 0) or 0)
             latency_ms = int((time.time() - start_t) * 1000)
 
             quote = MarketQuoteDTO(

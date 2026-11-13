@@ -108,6 +108,38 @@ class MarketDataService:
             if existing:
                 existing.freshness_status = FreshnessStatus.OFFLINE.value
                 return existing
+
+            # Check if we have historical candle data to construct an offline fallback quote
+            latest_candle = HistoricalCandle.objects.filter(listing=listing).order_by("-timestamp").first()
+            if latest_candle:
+                prev_candle = (
+                    HistoricalCandle.objects.filter(listing=listing, timestamp__lt=latest_candle.timestamp)
+                    .order_by("-timestamp")
+                    .first()
+                )
+                prev_close = prev_candle.close if prev_candle else latest_candle.close
+                change = latest_candle.close - prev_close
+                change_pct = (change / prev_close * 100) if prev_close else Decimal("0")
+                return MarketQuote(
+                    listing=listing,
+                    price=latest_candle.close,
+                    change=change,
+                    change_percent=change_pct,
+                    open=latest_candle.open,
+                    high=latest_candle.high,
+                    low=latest_candle.low,
+                    close=latest_candle.close,
+                    previous_close=prev_close,
+                    volume=latest_candle.volume,
+                    source_provider=latest_candle.source_provider or "HISTORICAL",
+                    source_type="DELAYED",
+                    freshness_status=FreshnessStatus.OFFLINE.value,
+                    source_timestamp=latest_candle.timestamp,
+                    retrieved_at=timezone.now(),
+                    measured_latency_ms=0,
+                    configured_delay_minutes=1440,
+                )
+
             raise ProviderConnectionError(
                 f"Unable to retrieve quote for {listing.symbol} from any configured provider. Last error: {last_error}"
             )

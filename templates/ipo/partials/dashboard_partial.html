@@ -295,41 +295,46 @@
                        hx-get="{% url 'ipo:detail' item.symbol %}"
                        hx-target="#main-content"
                        hx-push-url="true"
-                       class="setup-item d-block">
+                       class="recent-debut-card">
                         <!-- Top Header: Logo, Symbol, Date, and Listing Gain Pill -->
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center min-w-0">
-                                {% stock_logo item.symbol size=38 css_class="me-3 p-1 rounded-2 shadow-xs" %}
+                                {% stock_logo item.symbol size=38 css_class="p-1 rounded-2 shadow-xs" %}
                                 <div class="min-w-0">
                                     <div class="d-flex align-items-center text-truncate">
                                         <span class="fw-bold text-dark fs-6">{{ item.symbol }}</span>
                                     </div>
-                                    <div class="text-muted text-truncate mt-0.5" style="font-size: 0.72rem; max-width: 150px;">
+                                    <div class="text-muted text-truncate mt-0.5" style="font-size: 0.72rem; max-width: 160px;" title="{{ item.company_name }}">
                                         {{ item.listing_date|date:"d M Y" }} &bull; {{ item.company_name }}
                                     </div>
                                 </div>
                             </div>
 
                             <div class="text-end ps-2 flex-shrink-0">
-                                <span class="badge {% if item.listing_day_gain_percent >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if item.listing_day_gain_percent >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono py-1 px-2" style="font-size: 0.75rem;">
+                                <span class="badge {% if item.listing_day_gain_percent >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if item.listing_day_gain_percent >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono py-1 px-2.5 rounded-pill" style="font-size: 0.75rem;">
                                     <i class="bi {% if item.listing_day_gain_percent >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %} me-0.5"></i>{% if item.listing_day_gain_percent >= 0 %}+{% endif %}{{ item.listing_day_gain_percent|floatformat:1 }}%
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Bottom Strip: 3-Box Financial Micro-Metrics -->
-                        <div class="row g-1 mt-2.5 pt-2 border-top border-secondary border-opacity-10 text-center">
-                            <div class="col-4 border-end border-secondary border-opacity-10 text-start ps-1">
-                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Issue Price</div>
-                                <div class="fw-bold num-mono text-secondary" style="font-size: 0.8125rem;">₹{{ item.issue_price|intcomma_inr }}</div>
-                            </div>
-                            <div class="col-4 border-end border-secondary border-opacity-10">
-                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Day 1 Open</div>
-                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.listing_day_open|intcomma_inr }}</div>
-                            </div>
-                            <div class="col-4 text-end pe-1">
-                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Issue Size</div>
-                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.total_issue_size_cr|intcomma_inr }} <span class="fw-normal text-muted" style="font-size: 0.7rem; font-family: var(--font-family-sans);">Cr</span></div>
+                        <!-- Inset Financial Micro-Metrics Strip (No harsh divider borders) -->
+                        <div class="metrics-strip">
+                            <div class="row g-1 align-items-center">
+                                <div class="col-4 text-start ps-1">
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.625rem; letter-spacing: 0.04em;">Issue Price</div>
+                                    <div class="fw-bold num-mono text-secondary mt-0.5" style="font-size: 0.8125rem;">₹{{ item.issue_price|intcomma_inr }}</div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.625rem; letter-spacing: 0.04em;">Day 1 Open</div>
+                                    <div class="fw-bold num-mono text-dark mt-0.5" style="font-size: 0.8125rem;">₹{{ item.listing_day_open|intcomma_inr }}</div>
+                                </div>
+                                <div class="col-4 text-end pe-1">
+                                    <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.625rem; letter-spacing: 0.04em;">Issue Size</div>
+                                    <div class="fw-bold text-dark mt-0.5" style="font-size: 0.8125rem;">
+                                        <span class="num-mono">₹{{ item.total_issue_size_cr|intcomma_inr }}</span>
+                                        <span class="text-muted fw-normal" style="font-size: 0.7rem; font-family: var(--font-family-sans);">Cr</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </a>

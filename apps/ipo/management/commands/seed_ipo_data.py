@@ -24,7 +24,6 @@ from apps.ipo.models import (
     IssueType,
 )
 from services.ipo.scoring import evaluate_ipo_scoring
-from services.ipo.sync import sync_ipos_markets
 
 
 class Command(BaseCommand):
@@ -287,11 +286,8 @@ class Command(BaseCommand):
                 "drhp_url": "https://www.sebi.gov.in/",
                 "rhp_url": "https://www.nseindia.com/",
                 "official_exchange_url": "https://www.nseindia.com/market-data/all-upcoming-issues-ipo",
-                "listing_day_open": Decimal("420.00"),
-                "listing_day_close": Decimal("456.00"),
                 "listing_day_high": Decimal("464.00"),
                 "listing_day_low": Decimal("412.00"),
-                "listing_day_gain_percent": Decimal("16.92"),
                 "current_market_price": Decimal("456.00"),
                 "total_gain_since_listing": Decimal("16.92"),
                 "subscriptions": [

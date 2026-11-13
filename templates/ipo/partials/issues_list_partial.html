@@ -213,13 +213,77 @@
         {% endif %}
     </div>
 
-    <!-- Table Footer with Summary Stats -->
+    <!-- Table Footer with Summary Stats & Pagination -->
     {% if ipos %}
-    <div class="card-footer bg-transparent border-top px-4 py-2.5 d-flex flex-wrap justify-content-between align-items-center gap-2 text-muted small">
-        <div>
-            Showing <strong class="text-body">{{ ipos|length }}</strong> of <strong class="text-body">{{ all_count }}</strong> primary market issues
+    <div class="card-footer bg-transparent border-top px-4 py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <div class="small text-muted">
+            Showing <strong class="text-body">{{ page_obj.start_index }}</strong> to <strong class="text-body">{{ page_obj.end_index }}</strong> of <strong class="text-body">{{ total_count }}</strong> primary market issues (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
         </div>
-        <div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav aria-label="IPO issues page navigation">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <!-- Previous Button -->
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="{% url 'ipo:issues' %}?page={{ page_obj.previous_page_number }}&tab={{ current_tab }}&type={{ current_type }}&q={{ search_query }}&sort={{ sort_by }}"
+                       hx-get="{% url 'ipo:issues' %}?page={{ page_obj.previous_page_number }}&tab={{ current_tab }}&type={{ current_type }}&q={{ search_query }}&sort={{ sort_by }}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&laquo;</span>
+                </li>
+                {% endif %}
+
+                <!-- Numbered Page Items (with elision support) -->
+                {% for p in page_range %}
+                    {% if p == page_obj.paginator.ELLIPSIS or p == '…' %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&hellip;</span>
+                    </li>
+                    {% elif p == page_obj.number %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ p }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{% url 'ipo:issues' %}?page={{ p }}&tab={{ current_tab }}&type={{ current_type }}&q={{ search_query }}&sort={{ sort_by }}"
+                           hx-get="{% url 'ipo:issues' %}?page={{ p }}&tab={{ current_tab }}&type={{ current_type }}&q={{ search_query }}&sort={{ sort_by }}"
+                           hx-target="#main-content"
+                           hx-push-url="true">{{ p }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Next Button -->
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="{% url 'ipo:issues' %}?page={{ page_obj.next_page_number }}&tab={{ current_tab }}&type={{ current_type }}&q={{ search_query }}&sort={{ sort_by }}"
+                       hx-get="{% url 'ipo:issues' %}?page={{ page_obj.next_page_number }}&tab={{ current_tab }}&type={{ current_type }}&q={{ search_query }}&sort={{ sort_by }}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" aria-hidden="true">&raquo;</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <div class="small text-muted d-none d-lg-block">
             <i class="bi bi-shield-check text-primary me-1"></i>Official SEBI / Exchange Verified Issue Data
         </div>
     </div>

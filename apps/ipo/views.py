@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.db.models import Avg, Q, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
@@ -142,12 +143,21 @@ class IPOIssuesListView(HTMXResponseMixin, TemplateView):
         else:
             qs = qs.order_by("-open_date", "company_name")
 
-        context["ipos"] = list(qs)
+        # Pagination (15 issues per page)
+        page_number = self.request.GET.get("page", 1)
+        paginator = Paginator(qs, 15)
+        page_obj = paginator.get_page(page_number)
+
+        context["page_obj"] = page_obj
+        context["ipos"] = page_obj.object_list
         context["current_tab"] = tab
         context["current_type"] = issue_type
         context["search_query"] = search_query
         context["sort_by"] = sort_by
-        context["total_count"] = len(context["ipos"])
+        context["total_count"] = paginator.count
+        context["page_range"] = paginator.get_elided_page_range(
+            number=page_obj.number, on_each_side=2, on_ends=1
+        )
 
         # Tab counts
         context["all_count"] = IPOMaster.objects.count()

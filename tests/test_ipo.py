@@ -285,6 +285,46 @@ class TestIPOIntelligenceModule:
         assert "TESTUPCOMING" in content_search
         assert "TESTLIVE" not in content_search
 
+    def test_ipo_issues_list_pagination(self, client: Client, db):
+        """Tests that IPOIssuesListView paginates results at 15 items per page and preserves query parameters."""
+        today = timezone.now().date()
+        # Create 20 test IPO records
+        for i in range(20):
+            IPOMaster.objects.create(
+                symbol=f"PAGEIPO{i:02d}",
+                company_name=f"Page Test Company {i:02d} Ltd",
+                status=IPOStatus.UPCOMING,
+                issue_type=IssueType.MAINBOARD,
+                exchange="NSE",
+                open_date=today + timedelta(days=i + 1),
+                close_date=today + timedelta(days=i + 4),
+            )
+
+        url = reverse("ipo:issues")
+
+        # Page 1 request with filter params
+        resp_p1 = client.get(f"{url}?tab=upcoming&type=MAINBOARD&sort=name_asc&page=1")
+        assert resp_p1.status_code == 200
+        content_p1 = resp_p1.content.decode("utf-8")
+        assert resp_p1.context["page_obj"].paginator.num_pages >= 2
+        assert len(resp_p1.context["ipos"]) == 15
+        assert "Showing" in content_p1
+        assert "Page 1 of" in content_p1
+        # Check that page 2 link exists and preserves query params
+        assert "page=2" in content_p1
+        assert "tab=upcoming" in content_p1
+        assert "type=MAINBOARD" in content_p1
+        assert "sort=name_asc" in content_p1
+
+        # Page 2 request
+        resp_p2 = client.get(f"{url}?tab=upcoming&type=MAINBOARD&sort=name_asc&page=2")
+        assert resp_p2.status_code == 200
+        assert resp_p2.context["page_obj"].number == 2
+        assert len(resp_p2.context["ipos"]) == 5
+        content_p2 = resp_p2.content.decode("utf-8")
+        assert "page=1" in content_p2
+        assert "Page 2 of" in content_p2
+
     def test_ipo_research_list_view_and_sorting(self, client: Client, ipo_dataset):
         """Tests the Fundamental Research & Valuation directory view and sorting."""
         url = reverse("ipo:research")

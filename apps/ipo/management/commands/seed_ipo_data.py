@@ -7,12 +7,14 @@ rich 3-year fundamental histories, peer comparisons, regulatory documents, and s
 from datetime import timedelta
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.instruments.models import ExchangeListing
 from apps.ipo.models import (
     DocumentType,
+    IPOApplication,
     IPODocument,
     IPOFundamentals,
     IPOGMPRecord,
@@ -1184,5 +1186,54 @@ class Command(BaseCommand):
             evaluate_ipo_scoring(ipo, save=True)
 
             count += 1
+
+        # Seed sample user IPO applications if a user exists
+        User = get_user_model()
+        user = User.objects.first()
+        if user:
+            ntpc_ipo = IPOMaster.objects.filter(symbol="NTPCGREEN").first()
+            if ntpc_ipo:
+                IPOApplication.objects.update_or_create(
+                    user=user,
+                    ipo=ntpc_ipo,
+                    application_number="APP-NTPC-202401",
+                    defaults={
+                        "investor_category": "RETAIL",
+                        "lots_applied": 2,
+                        "shares_applied": 2 * ntpc_ipo.lot_size,
+                        "bid_price": ntpc_ipo.effective_upper_price or Decimal("108.00"),
+                        "applied_amount": Decimal(2 * ntpc_ipo.lot_size) * (ntpc_ipo.effective_upper_price or Decimal("108.00")),
+                        "is_cutoff_bid": True,
+                        "mandate_status": "APPROVED",
+                        "allotment_status": "AWAITING",
+                        "demat_account": "Zerodha (12081600)",
+                        "listing_strategy": "HOLD",
+                        "notes": "Applied on Day 1 via UPI mandate",
+                    },
+                )
+            bajaj_ipo = IPOMaster.objects.filter(symbol="BAJAJHFL").first()
+            if bajaj_ipo:
+                IPOApplication.objects.update_or_create(
+                    user=user,
+                    ipo=bajaj_ipo,
+                    application_number="APP-BAJAJ-202488",
+                    defaults={
+                        "investor_category": "RETAIL",
+                        "lots_applied": 1,
+                        "shares_applied": bajaj_ipo.lot_size,
+                        "bid_price": bajaj_ipo.issue_price or Decimal("70.00"),
+                        "applied_amount": Decimal(bajaj_ipo.lot_size) * (bajaj_ipo.issue_price or Decimal("70.00")),
+                        "is_cutoff_bid": True,
+                        "mandate_status": "APPROVED",
+                        "allotment_status": "ALLOTTED",
+                        "allotted_shares": bajaj_ipo.lot_size,
+                        "allotted_amount": Decimal(bajaj_ipo.lot_size) * (bajaj_ipo.issue_price or Decimal("70.00")),
+                        "demat_account": "Groww (12088700)",
+                        "listing_strategy": "BOOK_PROFIT",
+                        "transferred_to_portfolio": False,
+                        "notes": "Full allotment received! Ready for listing gain booking.",
+                    },
+                )
+            self.stdout.write(self.style.SUCCESS(f"Seeded sample IPO applications for user {user.username}."))
 
         self.stdout.write(self.style.SUCCESS(f"Successfully seeded {count} IPO records."))

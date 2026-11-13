@@ -376,6 +376,18 @@ class IPOApplication(AuditedModel):
     )
     allotted_shares = models.PositiveIntegerField(default=0)
     allotted_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    demat_account = models.CharField(max_length=50, blank=True, default="")
+    listing_strategy = models.CharField(
+        max_length=30,
+        choices=[
+            ("HOLD", "Hold for Long-Term"),
+            ("BOOK_PROFIT", "Book Listing Gains at Open"),
+            ("PARTIAL_EXIT", "Partial Exit / Recover Capital"),
+            ("STOP_LOSS", "Exit on Stop Loss"),
+        ],
+        default="HOLD",
+    )
+    transferred_to_portfolio = models.BooleanField(default=False)
     notes = models.TextField(blank=True, default="")
 
     class Meta:
@@ -384,4 +396,11 @@ class IPOApplication(AuditedModel):
 
     def __str__(self):
         return f"{self.user} - {self.ipo.symbol} ({self.lots_applied} Lots) - {self.allotment_status}"
+
+    @property
+    def refund_amount(self) -> Decimal:
+        if self.applied_amount and self.allotted_amount is not None:
+            diff = self.applied_amount - self.allotted_amount
+            return max(Decimal("0.00"), diff)
+        return Decimal("0.00")
 

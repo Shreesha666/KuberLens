@@ -66,6 +66,11 @@
             hx-get="{% url 'ipo:research' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-file-earmark-bar-graph"></i> Research &amp; Financials
         </a>
+        <a href="{% url 'ipo:applications' %}"
+            class="nav-link {% if active_nav == 'ipo_applications' %}active{% endif %}"
+            hx-get="{% url 'ipo:applications' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-journal-check"></i> My Applications
+        </a>
 
         <!-- MY INVESTMENTS -->
         <div class="nav-section-title">My Investments</div>

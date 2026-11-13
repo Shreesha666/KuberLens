@@ -320,6 +320,36 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Log in Tracker Card -->
+            <div class="card border-0 shadow-sm mb-4 bg-primary-subtle border border-primary-subtle">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <h5 class="fw-bold text-body mb-1 d-flex align-items-center gap-2">
+                                <i class="bi bi-journal-plus text-primary"></i>
+                                <span>Save Bid to Allotment Tracker</span>
+                            </h5>
+                            <p class="text-muted small mb-0">Record this planned bid in your personal tracker to monitor UPI mandate approval and allotment results.</p>
+                        </div>
+                        <form method="post" action="{% url 'ipo:application_create' %}"
+                              hx-post="{% url 'ipo:application_create' %}" hx-target="#main-content">
+                            {% csrf_token %}
+                            <input type="hidden" name="ipo_id" value="{{ ipo.id }}">
+                            <input type="hidden" name="investor_category" value="{{ bid_plan.category }}">
+                            <input type="hidden" name="lots_applied" value="{{ bid_plan.lots }}">
+                            <input type="hidden" name="bid_price" value="{{ bid_plan.bid_price|floatformat:2 }}">
+                            <input type="hidden" name="is_cutoff_bid" value="{% if bid_plan.is_cutoff %}true{% else %}false{% endif %}">
+                            <input type="hidden" name="mandate_status" value="APPROVED">
+                            <input type="hidden" name="listing_strategy" value="HOLD">
+                            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 py-2">
+                                <i class="bi bi-bookmark-check"></i>
+                                <span>Track This Application</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

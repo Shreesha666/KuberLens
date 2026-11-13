@@ -5,18 +5,26 @@ chronological issue calendar, and detailed IPO research profile.
 """
 from decimal import Decimal
 
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Avg, Q, Sum
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import DetailView, TemplateView
+from django.views.generic import DetailView, ListView, TemplateView, View
 
 from apps.core.mixins import HTMXResponseMixin
-from apps.ipo.models import IPOMaster, IPOStatus, IssueType
+from apps.holdings.models import HoldingTransaction, TransactionType
+from apps.instruments.models import ExchangeListing
+from apps.ipo.models import IPOApplication, IPOMaster, IPOStatus, IssueType
+from apps.portfolio.models import Portfolio
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
 from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
+from services.portfolio.accounting import FIFOAccountingEngine
 
 
 class IPODashboardView(HTMXResponseMixin, TemplateView):
@@ -514,3 +522,241 @@ class IPOBidPlannerView(HTMXResponseMixin, TemplateView):
         context["planner_pans"] = pans
 
         return context
+
+
+class IPOApplicationListView(LoginRequiredMixin, HTMXResponseMixin, ListView):
+    """
+    Personal Allotment & Bid Tracker:
+    Tracks user's IPO bids, UPI mandate statuses, allotment outcomes,
+    refund amounts, and 1-click portfolio transfer.
+    """
+    model = IPOApplication
+    template_name = "ipo/applications_list.html"
+    partial_template_name = "ipo/partials/applications_list_partial.html"
+    context_object_name = "applications"
+    active_nav = "ipo_applications"
+
+    def get_queryset(self):
+        qs = IPOApplication.objects.filter(user=self.request.user).select_related("ipo", "ipo__listing")
+        status_filter = self.request.GET.get("status", "ALL").upper()
+        if status_filter == "AWAITING":
+            qs = qs.filter(allotment_status="AWAITING")
+        elif status_filter == "ALLOTTED":
+            qs = qs.filter(allotment_status__in=["ALLOTTED", "PARTIALLY_ALLOTTED"])
+        elif status_filter == "REFUNDED":
+            qs = qs.filter(allotment_status__in=["NOT_ALLOTTED", "REFUNDED"])
+        return qs.order_by("-created_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_apps = IPOApplication.objects.filter(user=self.request.user)
+
+        total_blocked = user_apps.filter(
+            allotment_status="AWAITING",
+            mandate_status="APPROVED",
+        ).aggregate(Sum("applied_amount"))["applied_amount__sum"] or Decimal("0.00")
+
+        total_allotted = user_apps.filter(
+            allotment_status__in=["ALLOTTED", "PARTIALLY_ALLOTTED"]
+        ).aggregate(Sum("allotted_amount"))["allotted_amount__sum"] or Decimal("0.00")
+
+        total_refund = Decimal("0.00")
+        for app in user_apps:
+            if app.allotment_status != "AWAITING":
+                total_refund += app.refund_amount
+
+        context["page_title"] = "My IPO Applications & Allotment Tracker"
+        context["active_nav"] = "ipo_applications"
+        context["total_applications_count"] = user_apps.count()
+        context["total_blocked_funds"] = total_blocked
+        context["total_allotted_funds"] = total_allotted
+        context["total_refund_funds"] = total_refund
+        context["current_status_filter"] = self.request.GET.get("status", "ALL").upper()
+
+        today = timezone.now().date()
+        context["available_ipos"] = IPOMaster.objects.filter(
+            Q(status__in=[IPOStatus.LIVE, IPOStatus.UPCOMING]) | Q(close_date__gte=today)
+        ).order_by("company_name")
+        return context
+
+
+class IPOLogApplicationView(LoginRequiredMixin, View):
+    """
+    Log a new IPO Application from Bid Planner or standalone tracker modal.
+    """
+    def post(self, request, *args, **kwargs):
+        ipo_id = request.POST.get("ipo_id")
+        symbol = request.POST.get("symbol")
+        if ipo_id:
+            ipo = get_object_or_404(IPOMaster, pk=ipo_id)
+        elif symbol:
+            ipo = get_object_or_404(IPOMaster, symbol=symbol.upper())
+        else:
+            messages.error(request, "IPO issue must be specified.")
+            return redirect("ipo:applications")
+
+        investor_category = request.POST.get("investor_category", "RETAIL")
+        try:
+            lots_applied = int(request.POST.get("lots_applied", 1) or 1)
+        except (ValueError, TypeError):
+            lots_applied = 1
+
+        is_cutoff_bid = request.POST.get("is_cutoff_bid", "true").lower() in ["true", "1", "yes", "on"]
+
+        bid_price_raw = request.POST.get("bid_price")
+        if is_cutoff_bid or not bid_price_raw:
+            bid_price = ipo.effective_upper_price or Decimal("100.00")
+        else:
+            try:
+                bid_price = Decimal(bid_price_raw)
+            except (ValueError, TypeError):
+                bid_price = ipo.effective_upper_price or Decimal("100.00")
+
+        shares_applied = lots_applied * ipo.lot_size
+        applied_amount = Decimal(shares_applied) * bid_price
+
+        application_number = request.POST.get("application_number", "").strip()
+        demat_account = request.POST.get("demat_account", "").strip()
+        listing_strategy = request.POST.get("listing_strategy", "HOLD")
+        mandate_status = request.POST.get("mandate_status", "APPROVED")
+        notes = request.POST.get("notes", "").strip()
+
+        IPOApplication.objects.create(
+            user=request.user,
+            ipo=ipo,
+            investor_category=investor_category,
+            application_number=application_number,
+            lots_applied=lots_applied,
+            shares_applied=shares_applied,
+            bid_price=bid_price,
+            applied_amount=applied_amount,
+            is_cutoff_bid=is_cutoff_bid,
+            mandate_status=mandate_status,
+            allotment_status="AWAITING",
+            demat_account=demat_account,
+            listing_strategy=listing_strategy,
+            notes=notes,
+        )
+        messages.success(request, f"Application for {lots_applied} lot(s) of {ipo.company_name} logged successfully.")
+
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:applications"))
+            response["HX-Redirect"] = reverse("ipo:applications")
+            return response
+        return redirect("ipo:applications")
+
+
+class IPOUpdateApplicationOutcomeView(LoginRequiredMixin, View):
+    """
+    Update allotment outcome (Allotted shares, status, mandate status).
+    """
+    def post(self, request, pk, *args, **kwargs):
+        application = get_object_or_404(IPOApplication, pk=pk, user=request.user)
+        allotment_status = request.POST.get("allotment_status", application.allotment_status)
+        try:
+            allotted_shares = int(request.POST.get("allotted_shares", 0) or 0)
+        except (ValueError, TypeError):
+            allotted_shares = 0
+        mandate_status = request.POST.get("mandate_status", application.mandate_status)
+
+        application.allotment_status = allotment_status
+        application.allotted_shares = allotted_shares
+        application.allotted_amount = Decimal(allotted_shares) * application.bid_price
+        application.mandate_status = mandate_status
+
+        notes = request.POST.get("notes")
+        if notes is not None:
+            application.notes = notes.strip()
+
+        application.save()
+        messages.success(request, f"Outcome updated for {application.ipo.symbol} application.")
+
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:applications"))
+            response["HX-Redirect"] = reverse("ipo:applications")
+            return response
+        return redirect("ipo:applications")
+
+
+class IPOTransferToPortfolioView(LoginRequiredMixin, View):
+    """
+    1-Click sync from Allotted IPO to Portfolio Holdings.
+    Creates immutable BUY HoldingTransaction and recalculates position via FIFOAccountingEngine.
+    """
+    def post(self, request, pk, *args, **kwargs):
+        application = get_object_or_404(IPOApplication, pk=pk, user=request.user)
+
+        if application.transferred_to_portfolio:
+            messages.warning(request, f"Allotted shares for {application.ipo.symbol} have already been transferred to portfolio.")
+            return redirect("ipo:applications")
+
+        if application.allotted_shares <= 0 or application.allotment_status not in ["ALLOTTED", "PARTIALLY_ALLOTTED"]:
+            messages.error(request, "Cannot transfer application with 0 allotted shares.")
+            return redirect("ipo:applications")
+
+        listing = application.ipo.listing
+        if not listing:
+            listing = ExchangeListing.objects.filter(symbol=application.ipo.symbol, is_tradeable=True).first()
+            if listing and not application.ipo.listing:
+                application.ipo.listing = listing
+                application.ipo.save(update_fields=["listing"])
+
+        if not listing:
+            messages.error(
+                request,
+                f"Exchange listing for {application.ipo.symbol} not found. "
+                "The stock may not have officially listed on NSE/BSE yet.",
+            )
+            return redirect("ipo:applications")
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            user=request.user,
+            is_default=True,
+            defaults={"name": "Main Portfolio"},
+        )
+
+        HoldingTransaction.objects.create(
+            portfolio=portfolio,
+            listing=listing,
+            transaction_type=TransactionType.BUY,
+            quantity=application.allotted_shares,
+            price=application.bid_price,
+            brokerage=Decimal("0.00"),
+            statutory_taxes=Decimal("0.00"),
+            executed_at=timezone.now(),
+            notes=f"IPO Allotment sync for {application.ipo.symbol} (App #{application.application_number or application.id})",
+        )
+
+        FIFOAccountingEngine.reconcile_holding(portfolio=portfolio, listing=listing)
+
+        application.transferred_to_portfolio = True
+        application.save(update_fields=["transferred_to_portfolio"])
+
+        messages.success(
+            request,
+            f"Successfully transferred {application.allotted_shares} shares of {application.ipo.symbol} "
+            f"into your portfolio ({portfolio.name})!",
+        )
+
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:applications"))
+            response["HX-Redirect"] = reverse("ipo:applications")
+            return response
+        return redirect("ipo:applications")
+
+
+class IPOApplicationDeleteView(LoginRequiredMixin, View):
+    """
+    Delete an IPO application record.
+    """
+    def post(self, request, pk, *args, **kwargs):
+        application = get_object_or_404(IPOApplication, pk=pk, user=request.user)
+        symbol = application.ipo.symbol
+        application.delete()
+        messages.info(request, f"Application for {symbol} removed.")
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:applications"))
+            response["HX-Redirect"] = reverse("ipo:applications")
+            return response
+        return redirect("ipo:applications")
+

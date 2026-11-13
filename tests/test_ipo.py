@@ -12,8 +12,11 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.holdings.models import Holding, HoldingTransaction, TransactionType
+from apps.instruments.models import Exchange, ExchangeListing, Instrument
 from apps.ipo.models import (
     DocumentType,
+    IPOApplication,
     IPODocument,
     IPOFundamentals,
     IPOMaster,
@@ -21,6 +24,7 @@ from apps.ipo.models import (
     IPOSubscriptionSnapshot,
     IssueType,
 )
+from apps.portfolio.models import Portfolio
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
 from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
 from services.ipo.research import compute_financial_metrics
@@ -517,3 +521,198 @@ class TestIPOIntelligenceModule:
         assert waaree.subscriptions.count() == 3
         assert waaree.scoring.recommendation == "STRONG_RESEARCH_CANDIDATE"
         assert waaree.scoring.listing_gain_potential == "HIGH"
+
+    def test_ipo_application_list_view_and_filtering(self, client: Client, ipo_dataset, django_user_model):
+        """Verifies personal IPO application ledger view, status tabs, and KPI aggregation."""
+        user = django_user_model.objects.create_user(username="investor1", password="password123")
+        client.login(username="investor1", password="password123")
+
+        live = ipo_dataset["live"]
+        sme = ipo_dataset["sme"]
+
+        # 1. Awaiting application
+        IPOApplication.objects.create(
+            user=user,
+            ipo=live,
+            application_number="APP-101",
+            lots_applied=2,
+            shares_applied=200,
+            bid_price=Decimal("110.00"),
+            applied_amount=Decimal("22000.00"),
+            mandate_status="APPROVED",
+            allotment_status="AWAITING",
+        )
+
+        # 2. Allotted application
+        IPOApplication.objects.create(
+            user=user,
+            ipo=sme,
+            application_number="APP-102",
+            lots_applied=1,
+            shares_applied=100,
+            bid_price=Decimal("120.00"),
+            applied_amount=Decimal("12000.00"),
+            mandate_status="APPROVED",
+            allotment_status="ALLOTTED",
+            allotted_shares=100,
+            allotted_amount=Decimal("12000.00"),
+        )
+
+        # Full page request
+        url = reverse("ipo:applications")
+        res = client.get(url)
+        assert res.status_code == 200
+        assert res.context["total_applications_count"] == 2
+        assert res.context["total_blocked_funds"] == Decimal("22000.00")
+        assert res.context["total_allotted_funds"] == Decimal("12000.00")
+        assert "APP-101" in res.content.decode()
+        assert "APP-102" in res.content.decode()
+
+        # HTMX partial request with filter
+        htmx_res = client.get(url + "?status=AWAITING", HTTP_HX_REQUEST="true")
+        assert htmx_res.status_code == 200
+        content = htmx_res.content.decode()
+        assert "APP-101" in content
+        assert "APP-102" not in content
+
+    def test_ipo_log_application_view(self, client: Client, ipo_dataset, django_user_model):
+        """Verifies logging a new bid application from Bid Planner or standalone tracker."""
+        user = django_user_model.objects.create_user(username="investor2", password="password123")
+        client.login(username="investor2", password="password123")
+        live = ipo_dataset["live"]
+
+        post_url = reverse("ipo:application_create")
+        payload = {
+            "ipo_id": live.id,
+            "investor_category": "RETAIL",
+            "lots_applied": 3,
+            "bid_price": "110.00",
+            "is_cutoff_bid": "true",
+            "application_number": "APP-TEST-999",
+            "demat_account": "Zerodha (12345678)",
+            "listing_strategy": "BOOK_PROFIT",
+            "mandate_status": "APPROVED",
+            "notes": "Testing bid logging",
+        }
+        res = client.post(post_url, data=payload)
+        assert res.status_code == 302
+
+        app = IPOApplication.objects.get(application_number="APP-TEST-999")
+        assert app.user == user
+        assert app.ipo == live
+        assert app.lots_applied == 3
+        assert app.shares_applied == 300  # 3 lots * 100
+        assert app.applied_amount == Decimal("33000.00")
+        assert app.demat_account == "Zerodha (12345678)"
+        assert app.listing_strategy == "BOOK_PROFIT"
+
+    def test_ipo_update_application_outcome_view(self, client: Client, ipo_dataset, django_user_model):
+        """Verifies updating allotment status, allotted shares and calculating refund amount."""
+        user = django_user_model.objects.create_user(username="investor3", password="password123")
+        client.login(username="investor3", password="password123")
+        live = ipo_dataset["live"]
+
+        app = IPOApplication.objects.create(
+            user=user,
+            ipo=live,
+            application_number="APP-OUTCOME-1",
+            lots_applied=2,
+            shares_applied=200,
+            bid_price=Decimal("100.00"),
+            applied_amount=Decimal("20000.00"),
+            allotment_status="AWAITING",
+        )
+
+        outcome_url = reverse("ipo:application_outcome", kwargs={"pk": app.pk})
+        res = client.post(outcome_url, data={
+            "allotment_status": "PARTIALLY_ALLOTTED",
+            "allotted_shares": 100,
+            "mandate_status": "APPROVED",
+            "notes": "Partial lot allotment received",
+        })
+        assert res.status_code == 302
+
+        app.refresh_from_db()
+        assert app.allotment_status == "PARTIALLY_ALLOTTED"
+        assert app.allotted_shares == 100
+        assert app.allotted_amount == Decimal("10000.00")
+        assert app.refund_amount == Decimal("10000.00")
+
+    def test_ipo_transfer_to_portfolio_view(self, client: Client, ipo_dataset, django_user_model):
+        """Verifies 1-click sync from Allotted IPO to Portfolio Holdings via FIFOAccountingEngine."""
+        user = django_user_model.objects.create_user(username="investor4", password="password123")
+        client.login(username="investor4", password="password123")
+        live = ipo_dataset["live"]
+
+        # Create Instrument & ExchangeListing for live IPO
+        exchange, _ = Exchange.objects.get_or_create(code="NSE", defaults={"name": "NSE"})
+        instrument = Instrument.objects.create(
+            isin=live.isin,
+            legal_name=live.company_name,
+            display_name=live.company_name,
+        )
+        listing = ExchangeListing.objects.create(
+            instrument=instrument,
+            exchange=exchange,
+            symbol=live.symbol,
+            is_tradeable=True,
+        )
+        live.listing = listing
+        live.save()
+
+        # Create allotted IPO application
+        app = IPOApplication.objects.create(
+            user=user,
+            ipo=live,
+            application_number="APP-TRANSFER-1",
+            lots_applied=1,
+            shares_applied=100,
+            bid_price=Decimal("110.00"),
+            applied_amount=Decimal("11000.00"),
+            allotment_status="ALLOTTED",
+            allotted_shares=100,
+            allotted_amount=Decimal("11000.00"),
+            transferred_to_portfolio=False,
+        )
+
+        transfer_url = reverse("ipo:application_transfer_portfolio", kwargs={"pk": app.pk})
+        res = client.post(transfer_url)
+        assert res.status_code == 302
+
+        app.refresh_from_db()
+        assert app.transferred_to_portfolio is True
+
+        # Verify HoldingTransaction and Holding exist
+        portfolio = Portfolio.objects.get(user=user, is_default=True)
+        tx = HoldingTransaction.objects.filter(portfolio=portfolio, listing=listing).first()
+        assert tx is not None
+        assert tx.transaction_type == TransactionType.BUY
+        assert tx.quantity == 100
+        assert tx.price == Decimal("110.00")
+
+        holding = Holding.objects.filter(portfolio=portfolio, listing=listing).first()
+        assert holding is not None
+        assert holding.total_quantity == 100
+        assert holding.invested_amount == Decimal("11000.00")
+
+    def test_ipo_application_delete_view(self, client: Client, ipo_dataset, django_user_model):
+        """Verifies deletion of an application record."""
+        user = django_user_model.objects.create_user(username="investor5", password="password123")
+        client.login(username="investor5", password="password123")
+        live = ipo_dataset["live"]
+
+        app = IPOApplication.objects.create(
+            user=user,
+            ipo=live,
+            application_number="APP-DEL-1",
+            lots_applied=1,
+            shares_applied=100,
+            bid_price=Decimal("100.00"),
+            applied_amount=Decimal("10000.00"),
+        )
+
+        del_url = reverse("ipo:application_delete", kwargs={"pk": app.pk})
+        res = client.post(del_url)
+        assert res.status_code == 302
+        assert not IPOApplication.objects.filter(pk=app.pk).exists()
+

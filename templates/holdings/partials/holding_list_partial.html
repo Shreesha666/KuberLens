@@ -209,17 +209,17 @@
                         data-weight="{{ h.portfolio_weight }}"
                         data-day-pct="{{ h.day_change_percent }}">
                         <td class="ps-4">
-                            <div class="d-flex align-items-center gap-2.5">
-                                {% stock_logo h.listing size=34 css_class="p-0.5 flex-shrink-0" %}
-                                <div class="text-truncate" style="max-width: 190px;">
-                                    <div class="d-flex align-items-center gap-1.5">
+                            <div class="d-flex align-items-center gap-3">
+                                {% stock_logo h.listing size=36 css_class="p-1 flex-shrink-0" %}
+                                <div class="text-truncate" style="max-width: 220px;">
+                                    <div class="d-flex align-items-center gap-2">
                                         <a href="{% url 'holdings:detail' h.listing.symbol %}"
                                            class="text-decoration-none fw-bold text-body hover-primary text-truncate"
                                            hx-get="{% url 'holdings:detail' h.listing.symbol %}"
                                            hx-target="#main-content" hx-push-url="true">
                                             {{ h.listing.symbol }}
                                         </a>
-                                        <span class="badge bg-light text-secondary border small px-1.5 py-0.5" style="font-size: 0.68rem;">
+                                        <span class="badge bg-light text-secondary border small px-2 py-0.5" style="font-size: 0.68rem;">
                                             {{ h.listing.exchange.code }}
                                         </span>
                                     </div>

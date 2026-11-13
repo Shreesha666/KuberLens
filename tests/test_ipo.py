@@ -22,6 +22,7 @@ from apps.ipo.models import (
     IssueType,
 )
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
+from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
@@ -358,9 +359,92 @@ class TestIPOIntelligenceModule:
         assert "Factor Radar Comparison" in scoring_content
         assert "Company Frontier" in scoring_content
 
+        # Tab: Interactive Bid Planner (Phase D)
+        resp_planner = client.get(f"{base_url}?tab=planner", HTTP_HX_REQUEST="true")
+        assert resp_planner.status_code == 200
+        planner_content = resp_planner.content.decode("utf-8")
+        assert "Bid Parameters" in planner_content
+        assert "Total Funds to be Blocked" in planner_content
+        assert "SEBI Retail Lottery Allotment Probability" in planner_content
+
         # 404 on nonexistent symbol
         resp_404 = client.get(reverse("ipo:detail", kwargs={"symbol": "NONEXISTENT"}))
         assert resp_404.status_code == 404
+
+    def test_bid_planner_calculations_and_limits(self, ipo_dataset):
+        """Tests lot sizing, UPI payment limits, category statutory boundaries, and scenarios."""
+        live = ipo_dataset["live"]
+
+        # 1 Lot Retail (₹11,000 <= 2 Lakhs, eligible, UPI)
+        plan_retail = calculate_bid_plan(live, category="RETAIL", lots=1, is_cutoff=True)
+        assert plan_retail["total_shares"] == 100
+        assert plan_retail["total_amount"] == Decimal("11000.00")
+        assert plan_retail["is_eligible"] is True
+        assert plan_retail["payment_mode"] == "UPI_MANDATE"
+        assert len(plan_retail["warnings"]) == 0
+        assert len(plan_retail["scenarios"]) == 5
+
+        # 20 Lots Retail (₹2,20,000 > 2 Lakhs, ineligible)
+        plan_retail_excess = calculate_bid_plan(live, category="RETAIL", lots=20, is_cutoff=True)
+        assert plan_retail_excess["is_eligible"] is False
+        assert any("exceeds the SEBI ₹2,00,000 statutory limit" in w for w in plan_retail_excess["warnings"])
+
+        # sHNI Category with 1 Lot (₹11,000 <= 2L, ineligible)
+        plan_shni_low = calculate_bid_plan(live, category="sHNI", lots=1, is_cutoff=False)
+        assert plan_shni_low["is_eligible"] is False
+        assert any("strictly exceed ₹2,00,000" in w for w in plan_shni_low["warnings"])
+
+        # sHNI Category with 25 Lots (₹2,75,000 > 2L and <= 10L, eligible)
+        plan_shni_ok = calculate_bid_plan(live, category="sHNI", lots=25, is_cutoff=False)
+        assert plan_shni_ok["is_eligible"] is True
+        assert plan_shni_ok["payment_mode"] == "UPI_MANDATE"  # <= 5L
+
+        # Big HNI with 60 Lots (₹6,60,000 > 5L, ASBA NetBanking)
+        plan_asba = calculate_bid_plan(live, category="sHNI", lots=60, is_cutoff=False)
+        assert plan_asba["payment_mode"] == "ASBA_NETBANKING"
+
+    def test_allotment_probability_estimator(self, ipo_dataset):
+        """Tests mathematical SEBI retail lottery probability and multi-PAN family diversification odds."""
+        live = ipo_dataset["live"]
+
+        # Retail oversubscribed at 7.30x (Day 2 snapshot)
+        est = estimate_allotment_probability(live, category="RETAIL", lots_applied=1, num_pan_accounts=1)
+        assert est["is_lottery"] is True
+        assert est["single_pan_probability"] < Decimal("20.0")  # ~13.7%
+        assert len(est["family_scenarios"]) == 5
+        assert any("SEBI Lottery Rule" in note for note in est["compliance_notes"])
+
+        # Multi-PAN family odds increase: P(3 accounts) > P(1 account)
+        est_family = estimate_allotment_probability(live, category="RETAIL", lots_applied=1, num_pan_accounts=3)
+        assert est_family["selected_probability"] > est["single_pan_probability"]
+
+        # Undersubscribed IPO: upcoming has no bids -> 100% allotment
+        upcoming = ipo_dataset["upcoming"]
+        est_upcoming = estimate_allotment_probability(upcoming, category="RETAIL", lots_applied=1)
+        assert est_upcoming["is_lottery"] is False
+        assert est_upcoming["single_pan_probability"] == Decimal("100.0")
+
+    def test_bid_planner_views_and_htmx(self, client: Client, ipo_dataset):
+        """Tests the standalone Bid Planner view and HTMX live parameter updates."""
+        live = ipo_dataset["live"]
+        url = reverse("ipo:bid_planner", kwargs={"symbol": live.symbol})
+
+        # Full page shell
+        resp = client.get(url)
+        assert resp.status_code == 200
+        content = resp.content.decode("utf-8")
+        assert "Interactive Bid Planner" in content
+        assert "Number of Lots" in content
+        assert "Total Funds to be Blocked" in content
+
+        # HTMX partial swap with custom parameters
+        htmx_url = f"{url}?category=RETAIL&lots=3&cutoff=true&pans=2"
+        htmx_resp = client.get(htmx_url, HTTP_HX_REQUEST="true")
+        assert htmx_resp.status_code == 200
+        htmx_content = htmx_resp.content.decode("utf-8")
+        assert "<!DOCTYPE html>" not in htmx_content
+        assert "₹33,000.00" in htmx_content  # 3 lots * 100 shares * ₹110
+        assert "300 shares" in htmx_content
 
     def test_quantitative_scoring_engine(self, ipo_dataset):
         """Tests the 7-pillar quantitative evaluation, weights, confidence, and horizon evaluations."""

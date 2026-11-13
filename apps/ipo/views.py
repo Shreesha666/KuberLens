@@ -13,6 +13,7 @@ from django.views.generic import DetailView, TemplateView
 from apps.core.mixins import HTMXResponseMixin
 from apps.ipo.models import IPOMaster, IPOStatus, IssueType
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
+from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
@@ -405,5 +406,111 @@ class IPODetailView(HTMXResponseMixin, DetailView):
             scoring.recommendation if scoring else "", "bg-secondary text-white"
         )
         context["latest_gmp"] = ipo.gmp_records.order_by("-observed_at").first()
+
+        # 5. Interactive Bid Planner & Allotment Probability (Phase D)
+        planner_category = self.request.GET.get("category", "RETAIL").upper()
+        try:
+            planner_lots = int(self.request.GET.get("lots", 1))
+        except (ValueError, TypeError):
+            planner_lots = 1
+        planner_cutoff = self.request.GET.get("cutoff", "true").lower() in ["true", "1", "yes"]
+        try:
+            planner_pans = int(self.request.GET.get("pans", 1))
+        except (ValueError, TypeError):
+            planner_pans = 1
+
+        context["bid_plan"] = calculate_bid_plan(
+            ipo=ipo,
+            category=planner_category,
+            lots=planner_lots,
+            is_cutoff=planner_cutoff,
+        )
+        context["prob_estimate"] = estimate_allotment_probability(
+            ipo=ipo,
+            category=planner_category,
+            lots_applied=planner_lots,
+            num_pan_accounts=planner_pans,
+        )
+        context["planner_category"] = planner_category
+        context["planner_lots"] = planner_lots
+        context["planner_cutoff"] = planner_cutoff
+        context["planner_pans"] = planner_pans
+
+        return context
+
+
+class IPOBidPlannerView(HTMXResponseMixin, TemplateView):
+    """
+    Interactive IPO Bid Planner & Retail Lottery Probability Estimator.
+    Computes lot allocations, category eligibility (Retail vs sHNI vs bHNI),
+    UPI vs ASBA payment routing, and multi-PAN family allotment probabilities.
+    """
+    template_name = "ipo/bid_planner.html"
+    partial_template_name = "ipo/partials/bid_planner_partial.html"
+    active_nav = "ipo_issues"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        symbol = self.kwargs.get("symbol", "").upper()
+        ipo = get_object_or_404(
+            IPOMaster.objects.select_related("listing", "fundamentals", "scoring"),
+            symbol=symbol,
+        )
+        context["ipo"] = ipo
+        context["page_title"] = f"{ipo.company_name} ({ipo.symbol}) - Interactive Bid Planner"
+        context["active_nav"] = "ipo_issues"
+
+        category = self.request.GET.get("category", "RETAIL").upper()
+        try:
+            lots = int(self.request.GET.get("lots", 1))
+        except (ValueError, TypeError):
+            lots = 1
+
+        is_cutoff = self.request.GET.get("cutoff", "true").lower() in ["true", "1", "yes"]
+
+        custom_price = None
+        price_raw = self.request.GET.get("price", "")
+        if price_raw and not is_cutoff:
+            try:
+                custom_price = Decimal(price_raw)
+            except (ValueError, TypeError):
+                custom_price = None
+
+        budget = None
+        budget_raw = self.request.GET.get("budget", "")
+        if budget_raw:
+            try:
+                budget = Decimal(budget_raw)
+            except (ValueError, TypeError):
+                budget = None
+
+        try:
+            pans = int(self.request.GET.get("pans", 1))
+        except (ValueError, TypeError):
+            pans = 1
+
+        bid_plan = calculate_bid_plan(
+            ipo=ipo,
+            category=category,
+            lots=lots,
+            custom_bid_price=custom_price,
+            is_cutoff=is_cutoff,
+            budget=budget,
+        )
+        prob_estimate = estimate_allotment_probability(
+            ipo=ipo,
+            category=category,
+            lots_applied=lots,
+            num_pan_accounts=pans,
+        )
+
+        context["bid_plan"] = bid_plan
+        context["prob_estimate"] = prob_estimate
+        context["planner_category"] = category
+        context["planner_lots"] = lots
+        context["planner_cutoff"] = is_cutoff
+        context["planner_price"] = custom_price
+        context["planner_budget"] = budget
+        context["planner_pans"] = pans
 
         return context

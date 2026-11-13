@@ -1,0 +1,325 @@
+{% load core_tags humanize %}
+<div id="bid-planner-container">
+    <div class="row g-4">
+        <!-- Left Column: Interactive Bid Configuration Form -->
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                    <h5 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+                        <i class="bi bi-sliders text-primary"></i>
+                        <span>Bid Parameters &amp; Lot Sizing</span>
+                    </h5>
+                    <span class="text-muted small">Configure application lots, category limits and family PANs</span>
+                </div>
+                <div class="card-body px-4 py-2">
+                    <form id="bid-planner-form"
+                          hx-get="{% url 'ipo:bid_planner' ipo.symbol %}"
+                          hx-target="#bid-planner-container"
+                          hx-swap="outerHTML"
+                          hx-push-url="false"
+                          hx-trigger="change from:select, change from:input[type='checkbox'], input delay:250ms from:input[type='number']">
+
+                        <!-- Investor Category -->
+                        <div class="mb-3">
+                            <label for="category-select" class="form-label small fw-semibold text-muted text-uppercase mb-1">
+                                Investor Category
+                            </label>
+                            <select id="category-select" name="category" class="form-select">
+                                <option value="RETAIL" {% if planner_category == 'RETAIL' or bid_plan.category == 'RETAIL' %}selected{% endif %}>
+                                    Retail Individual (RII) — Up to ₹2 Lakhs
+                                </option>
+                                <option value="sHNI" {% if planner_category == 'sHNI' or bid_plan.category == 'sHNI' %}selected{% endif %}>
+                                    Small HNI (sHNI) — ₹2 Lakhs to ₹10 Lakhs
+                                </option>
+                                <option value="bHNI" {% if planner_category == 'bHNI' or bid_plan.category == 'bHNI' %}selected{% endif %}>
+                                    Big HNI (bHNI) — Above ₹10 Lakhs
+                                </option>
+                                <option value="EMPLOYEE" {% if planner_category == 'EMPLOYEE' or bid_plan.category == 'EMPLOYEE' %}selected{% endif %}>
+                                    Employee Quota (Reserved)
+                                </option>
+                                <option value="SHAREHOLDER" {% if planner_category == 'SHAREHOLDER' or bid_plan.category == 'SHAREHOLDER' %}selected{% endif %}>
+                                    Shareholder Reservation
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Lot Sizing -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="lots-input" class="form-label small fw-semibold text-muted text-uppercase mb-0">
+                                    Number of Lots
+                                </label>
+                                <span class="badge bg-secondary-subtle text-secondary border small">
+                                    {{ ipo.lot_size }} shares / lot
+                                </span>
+                            </div>
+                            <div class="input-group">
+                                <input type="number"
+                                       id="lots-input"
+                                       name="lots"
+                                       class="form-control form-control-lg num-mono fw-bold"
+                                       value="{{ bid_plan.lots|default:1 }}"
+                                       min="1"
+                                       max="200"
+                                       step="1"
+                                       required>
+                                <span class="input-group-text bg-body-tertiary text-muted">Lots</span>
+                            </div>
+
+                            <!-- Quick Sizing Pills -->
+                            <div class="d-flex flex-wrap gap-1 mt-2">
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1&cutoff=true"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1&cutoff=true"
+                                   hx-target="#bid-planner-container"
+                                   hx-swap="outerHTML"
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">1 Lot (Min)</a>
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5&cutoff=true"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5&cutoff=true"
+                                   hx-target="#bid-planner-container"
+                                   hx-swap="outerHTML"
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">5 Lots</a>
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=13&cutoff=true"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=13&cutoff=true"
+                                   hx-target="#bid-planner-container"
+                                   hx-swap="outerHTML"
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">Max Retail (~₹1.95L)</a>
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots=14&cutoff=false"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots=14&cutoff=false"
+                                   hx-target="#bid-planner-container"
+                                   hx-swap="outerHTML"
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">sHNI Min (14 Lots)</a>
+                            </div>
+                        </div>
+
+                        <!-- Price Bidding Options -->
+                        <div class="mb-3 p-3 bg-body-tertiary rounded-3 border">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="cutoff-toggle"
+                                       name="cutoff"
+                                       value="true"
+                                       {% if bid_plan.is_cutoff %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold text-body small" for="cutoff-toggle">
+                                    Bid at Cut-off Price (Recommended)
+                                </label>
+                            </div>
+                            <div class="text-muted small mb-2" style="font-size: 0.78rem;">
+                                Automatically locks bid at the issue upper cap (₹{{ ipo.effective_upper_price|floatformat:2 }}). Only available for Retail and Employee categories.
+                            </div>
+
+                            <div class="row g-2 align-items-center">
+                                <div class="col-6">
+                                    <label class="form-label text-muted small mb-0">Price Band Range:</label>
+                                    <strong class="d-block num-mono text-body small">{{ ipo.price_band_display }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <label for="price-input" class="form-label text-muted small mb-0">Custom Bid Price:</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number"
+                                               id="price-input"
+                                               name="price"
+                                               class="form-control num-mono"
+                                               value="{{ bid_plan.bid_price|floatformat:2 }}"
+                                               min="{{ ipo.price_band_min|default:0 }}"
+                                               max="{{ ipo.price_band_max|default:100000 }}"
+                                               step="0.05"
+                                               {% if bid_plan.is_cutoff %}disabled{% endif %}>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Family PAN Accounts Diversification -->
+                        <div class="mb-3">
+                            <label for="pans-select" class="form-label small fw-semibold text-muted text-uppercase mb-1">
+                                Distinct Family PAN Accounts
+                            </label>
+                            <select id="pans-select" name="pans" class="form-select">
+                                <option value="1" {% if prob_estimate.num_pan_accounts == 1 %}selected{% endif %}>1 Account (Single PAN)</option>
+                                <option value="2" {% if prob_estimate.num_pan_accounts == 2 %}selected{% endif %}>2 Accounts (Self + Spouse/Parent)</option>
+                                <option value="3" {% if prob_estimate.num_pan_accounts == 3 %}selected{% endif %}>3 Accounts (Family of 3)</option>
+                                <option value="4" {% if prob_estimate.num_pan_accounts == 4 %}selected{% endif %}>4 Accounts (Family of 4)</option>
+                                <option value="5" {% if prob_estimate.num_pan_accounts == 5 %}selected{% endif %}>5 Accounts (Family Diversified)</option>
+                            </select>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                Simulates legal lottery odds enhancement across distinct family member Demat/PAN accounts.
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Live Sizing Summary, Payment Mandate & Allotment Probability -->
+        <div class="col-12 col-xl-7">
+            <!-- Commitment KPI Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <span class="text-muted small fw-semibold text-uppercase">Total Funds to be Blocked</span>
+                        <span class="badge {% if bid_plan.payment_mode == 'UPI_MANDATE' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} px-2.5 py-1">
+                            <i class="bi {% if bid_plan.payment_mode == 'UPI_MANDATE' %}bi-phone{% else %}bi-bank{% endif %} me-1"></i>
+                            {% if bid_plan.payment_mode == 'UPI_MANDATE' %}UPI Mandate Eligible{% else %}ASBA NetBanking Mandate{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-baseline gap-2 mb-3">
+                        <span class="display-6 fw-bold num-mono text-body">₹{{ bid_plan.total_amount|intcomma }}</span>
+                        <span class="text-muted">for <strong>{{ bid_plan.total_shares }} shares</strong> ({{ bid_plan.lots }} lot{% if bid_plan.lots > 1 %}s{% endif %})</span>
+                    </div>
+
+                    <!-- Regulatory Warnings -->
+                    {% if bid_plan.warnings %}
+                    <div class="alert alert-warning border-0 p-3 mb-3 small d-flex align-items-start gap-2">
+                        <i class="bi bi-exclamation-triangle-fill text-warning-emphasis fs-5 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            {% for w in bid_plan.warnings %}
+                            <div class="mb-1 text-warning-emphasis fw-medium">{{ w }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Key Spec Summary Grid -->
+                    <div class="row g-2 pt-2 border-top">
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted small d-block">Price / Share</span>
+                            <strong class="num-mono text-body">₹{{ bid_plan.bid_price|intcomma }}</strong>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted small d-block">Amount / Lot</span>
+                            <strong class="num-mono text-body">₹{{ bid_plan.amount_per_lot|intcomma }}</strong>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted small d-block">Min Investment</span>
+                            <strong class="num-mono text-body">₹{{ bid_plan.min_retail_amount|intcomma }}</strong>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="text-muted small d-block">UPI Limit Status</span>
+                            <span class="badge {% if bid_plan.total_amount <= 500000 %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+                                {% if bid_plan.total_amount <= 500000 %}Within ₹5L Limit{% else %}Exceeds ₹5L Limit{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Allotment Probability Estimator Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-body">SEBI Retail Lottery Allotment Probability</h5>
+                        <span class="text-muted small">Mathematical probability based on official subscription multiples</span>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">Lottery Engine</span>
+                </div>
+                <div class="card-body px-4 py-2">
+                    <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                            <div>
+                                <span class="text-muted small d-block">Estimated Probability (Selected Strategy: {{ prob_estimate.num_pan_accounts }} Account{% if prob_estimate.num_pan_accounts > 1 %}s{% endif %}):</span>
+                                <span class="fs-2 fw-bold num-mono {% if prob_estimate.selected_probability >= 70 %}text-success{% elif prob_estimate.selected_probability >= 35 %}text-primary{% else %}text-warning-emphasis{% endif %}">
+                                    {{ prob_estimate.selected_probability }}%
+                                </span>
+                                <span class="text-muted small ms-1">(Odds: ~1 in {{ prob_estimate.subscription_multiple|floatformat:1 }})</span>
+                            </div>
+                            <span class="badge {% if prob_estimate.is_lottery %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} px-2.5 py-1">
+                                {% if prob_estimate.is_lottery %}Randomized Lottery{% else %}Guaranteed Allotment{% endif %}
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0">{{ prob_estimate.status_note }}</p>
+                    </div>
+
+                    <!-- Multi-PAN Diversification Table -->
+                    <span class="fw-semibold text-body small d-block mb-2">Family PAN Multi-Account Diversification Strategy:</span>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered align-middle mb-0" style="font-size: 0.8rem;">
+                            <thead class="table-light text-muted text-uppercase text-center">
+                                <tr>
+                                    <th>Distinct PANs</th>
+                                    <th>Total Bids Placed</th>
+                                    <th>Probability &ge; 1 Allotment</th>
+                                    <th>Expected Lots</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in prob_estimate.family_scenarios %}
+                                <tr class="{% if s.is_selected %}table-primary fw-semibold{% endif %} text-center">
+                                    <td>
+                                        <i class="bi bi-person-badge text-primary me-1"></i>
+                                        <strong>{{ s.pans }} Account{% if s.pans > 1 %}s{% endif %}</strong>
+                                    </td>
+                                    <td class="num-mono">{{ s.pans }} minimum lot{% if s.pans > 1 %}s{% endif %}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center justify-content-center gap-2">
+                                            <span class="num-mono fw-bold {% if s.probability_percent >= 70 %}text-success{% elif s.probability_percent >= 40 %}text-primary{% else %}text-body{% endif %}">
+                                                {{ s.probability_percent }}%
+                                            </span>
+                                            <div class="progress flex-fill" style="height: 5px; max-width: 80px;">
+                                                <div class="progress-bar {% if s.probability_percent >= 70 %}bg-success{% else %}bg-primary{% endif %}"
+                                                     style="width: {{ s.probability_percent }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="num-mono text-muted">{{ s.expected_allotments }} lots</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Regulatory Advisory -->
+                    <div class="border-start border-3 border-primary ps-3 py-1 mb-2">
+                        {% for note in prob_estimate.compliance_notes %}
+                        <div class="text-muted small mb-1" style="font-size: 0.74rem;">
+                            <i class="bi bi-info-circle text-primary me-1"></i>{{ note }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenario Gain / Loss Projection Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                    <h5 class="fw-bold mb-0 text-body">Listing Day Gain / Loss Projections</h5>
+                    <span class="text-muted small">Hypothetical returns based on your current bid sizing</span>
+                </div>
+                <div class="card-body px-4 py-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                            <thead class="table-light text-muted text-uppercase">
+                                <tr>
+                                    <th>Market Scenario</th>
+                                    <th class="text-end">Listing Price</th>
+                                    <th class="text-end">Gain / Loss %</th>
+                                    <th class="text-end pe-3">Net Profit / Loss</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sc in bid_plan.scenarios %}
+                                <tr>
+                                    <td>
+                                        <span class="badge {{ sc.badge_class }} me-1.5">{{ sc.label }}</span>
+                                    </td>
+                                    <td class="text-end num-mono text-body">
+                                        ₹{{ sc.listing_price|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end num-mono {% if sc.gain_percent > 0 %}text-success fw-semibold{% elif sc.gain_percent < 0 %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                                        {% if sc.gain_percent > 0 %}+{% endif %}{{ sc.gain_percent }}%
+                                    </td>
+                                    <td class="text-end num-mono pe-3 fw-bold {% if sc.total_gain > 0 %}text-success{% elif sc.total_gain < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                        {% if sc.total_gain > 0 %}+{% endif %}₹{{ sc.total_gain|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

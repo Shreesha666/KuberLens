@@ -23,6 +23,7 @@ from apps.ipo.models import (
 )
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
 from services.ipo.research import compute_financial_metrics
+from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
 
 
@@ -348,12 +349,69 @@ class TestIPOIntelligenceModule:
         assert "Official Regulatory Filings" in docs_content
         assert "Test Live Energies - Red Herring Prospectus" in docs_content
 
+        # Tab: Scoring & Quantitative Evaluation (Phase C)
+        resp_scoring = client.get(f"{base_url}?tab=scoring", HTTP_HX_REQUEST="true")
+        assert resp_scoring.status_code == 200
+        scoring_content = resp_scoring.content.decode("utf-8")
+        assert "Institutional Quantitative Evaluation" in scoring_content
+        assert "7-Pillar Quantitative Factor Analysis" in scoring_content
+        assert "Factor Radar Comparison" in scoring_content
+        assert "Company Frontier" in scoring_content
+
         # 404 on nonexistent symbol
         resp_404 = client.get(reverse("ipo:detail", kwargs={"symbol": "NONEXISTENT"}))
         assert resp_404.status_code == 404
 
+    def test_quantitative_scoring_engine(self, ipo_dataset):
+        """Tests the 7-pillar quantitative evaluation, weights, confidence, and horizon evaluations."""
+        live = ipo_dataset["live"]
+        eval_result = evaluate_ipo_scoring(live, save=True)
+
+        assert eval_result["business_score"] >= Decimal("70.00")
+        assert eval_result["financials_score"] >= Decimal("60.00")
+        assert eval_result["valuation_score"] >= Decimal("80.00")  # discount to peer
+        assert eval_result["growth_score"] >= Decimal("80.00")
+        assert eval_result["overall_score"] >= Decimal("70.00")
+        assert eval_result["confidence_level"] == "HIGH"
+        assert eval_result["data_completeness_percent"] >= Decimal("80.0")
+        assert eval_result["recommendation"] in ["STRONG_RESEARCH_CANDIDATE", "CONSIDER_APPLYING"]
+        assert eval_result["listing_gain_potential"] in ["HIGH", "MODERATE", "LOW"]
+        assert eval_result["short_term_potential"] in ["POSITIVE", "NEUTRAL", "CAUTION"]
+        assert eval_result["long_term_potential"] in ["POSITIVE", "NEUTRAL", "CAUTION"]
+        assert len(eval_result["strengths_list"]) > 0
+
+    def test_insufficient_data_scoring_classification(self, db):
+        """Verifies that an IPO with minimal disclosures correctly receives INSUFFICIENT_DATA."""
+        today = timezone.now().date()
+        sparse_ipo = IPOMaster.objects.create(
+            symbol="SPARSEIPO",
+            company_name="Sparse Disclosures Limited",
+            isin="INE00SPARSE1",
+            issue_type=IssueType.MAINBOARD,
+            exchange="NSE",
+            status=IPOStatus.UPCOMING,
+            open_date=today + timedelta(days=10),
+            close_date=today + timedelta(days=13),
+        )
+        eval_result = evaluate_ipo_scoring(sparse_ipo, save=True)
+        assert eval_result["recommendation"] == "INSUFFICIENT_DATA"
+        assert eval_result["confidence_level"] == "LOW"
+        assert eval_result["data_completeness_percent"] < Decimal("40.0")
+
+    def test_radar_chart_geometry_calculation(self, ipo_dataset):
+        """Verifies SVG spider/radar chart geometry generation."""
+        live = ipo_dataset["live"]
+        evaluate_ipo_scoring(live, save=True)
+        live.refresh_from_db()
+
+        radar = get_radar_chart_geometry(live.scoring)
+        assert len(radar["grid_polygons"]) == 4
+        assert len(radar["axes"]) == 7
+        assert "data_polygon" in radar
+        assert len(radar["data_polygon"].split()) == 7
+
     def test_seed_ipo_data_command(self):
-        """Verifies that seed_ipo_data runs idempotently and populates canonical records with fundamentals."""
+        """Verifies that seed_ipo_data runs idempotently and populates canonical records with fundamentals and scores."""
         call_command("seed_ipo_data")
         assert IPOMaster.objects.filter(symbol="SWIGGY").exists()
         assert IPOMaster.objects.filter(symbol="WAAREEENER").exists()
@@ -362,12 +420,16 @@ class TestIPOIntelligenceModule:
         assert IPOMaster.objects.filter(symbol="NTPCGREEN").exists()
         assert IPOMaster.objects.filter(symbol="BOSSPACK").exists()
 
-        # Check seeded fundamentals & documents
+        # Check seeded fundamentals, documents, and scoring
         swiggy = IPOMaster.objects.get(symbol="SWIGGY")
         assert hasattr(swiggy, "fundamentals")
         assert swiggy.fundamentals.revenue_cagr_3yr == Decimal("40.41")
         assert swiggy.documents.count() >= 3
+        assert hasattr(swiggy, "scoring")
+        assert swiggy.scoring.recommendation == "APPLY_WITH_CAUTION"
 
         waaree = IPOMaster.objects.get(symbol="WAAREEENER")
         assert waaree.fundamentals.revenue_fy_latest == Decimal("11397.61")
         assert waaree.subscriptions.count() == 3
+        assert waaree.scoring.recommendation == "STRONG_RESEARCH_CANDIDATE"
+        assert waaree.scoring.listing_gain_potential == "HIGH"

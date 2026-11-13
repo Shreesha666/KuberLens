@@ -14,6 +14,7 @@ from apps.core.mixins import HTMXResponseMixin
 from apps.ipo.models import IPOMaster, IPOStatus, IssueType
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
 from services.ipo.research import compute_financial_metrics
+from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
 
 
@@ -248,6 +249,10 @@ class IPOResearchListView(HTMXResponseMixin, TemplateView):
             fund = getattr(ipo, "fundamentals", None)
             metrics = compute_financial_metrics(fund, ipo)
             score_obj = getattr(ipo, "scoring", None)
+            if not score_obj:
+                evaluate_ipo_scoring(ipo, save=True)
+                ipo.refresh_from_db()
+                score_obj = getattr(ipo, "scoring", None)
             sub_summary = get_subscription_summary(ipo)
 
             items.append({
@@ -320,8 +325,85 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         # 3. Regulatory Documents Vault (Phase B)
         context["documents"] = list(ipo.documents.order_by("-filing_date", "doc_type"))
 
-        # 4. Scoring & GMP
-        context["scoring"] = getattr(ipo, "scoring", None)
+        # 4. Scoring & Quantitative Evaluation (Phase C)
+        scoring = getattr(ipo, "scoring", None)
+        if not scoring:
+            evaluate_ipo_scoring(ipo, save=True)
+            ipo.refresh_from_db()
+            scoring = getattr(ipo, "scoring", None)
+        context["scoring"] = scoring
+
+        if scoring:
+            context["scoring_pillars"] = [
+                {
+                    "key": "business",
+                    "name": "Business Quality & Moat",
+                    "weight": "20%",
+                    "score": scoring.business_score,
+                    "icon": "bi-buildings",
+                    "description": "Market leadership, moat & operating franchise stability",
+                },
+                {
+                    "key": "financials",
+                    "name": "Financial Health & Solvency",
+                    "weight": "20%",
+                    "score": scoring.financials_score,
+                    "icon": "bi-cash-coin",
+                    "description": "Operating cash flow, profitability & debt-to-equity ratio",
+                },
+                {
+                    "key": "valuation",
+                    "name": "Valuation & Price Attractiveness",
+                    "weight": "20%",
+                    "score": scoring.valuation_score,
+                    "icon": "bi-tags",
+                    "description": "Post-issue P/E & P/B vs listed industry benchmark peers",
+                },
+                {
+                    "key": "growth",
+                    "name": "Growth Trajectory & Scalability",
+                    "weight": "15%",
+                    "score": scoring.growth_score,
+                    "icon": "bi-graph-up-arrow",
+                    "description": "3-Year historical revenue CAGR & forward business scalability",
+                },
+                {
+                    "key": "governance",
+                    "name": "Management Quality & Governance",
+                    "weight": "10%",
+                    "score": scoring.governance_score,
+                    "icon": "bi-shield-check",
+                    "description": "Post-issue promoter retention & lead manager pedigree",
+                },
+                {
+                    "key": "structure",
+                    "name": "IPO Structure & Capital Use",
+                    "weight": "10%",
+                    "score": scoring.structure_score,
+                    "icon": "bi-pie-chart",
+                    "description": "Fresh growth issue vs OFS exit ratio & deployment clarity",
+                },
+                {
+                    "key": "demand",
+                    "name": "Subscription & Market Demand",
+                    "weight": "5%",
+                    "score": scoring.demand_score,
+                    "icon": "bi-activity",
+                    "description": "Bidding demand velocity & unofficial grey market sentiment",
+                },
+            ]
+            context["radar_geometry"] = get_radar_chart_geometry(scoring)
+
+        rec_badges = {
+            "STRONG_RESEARCH_CANDIDATE": "bg-success text-white border-0",
+            "CONSIDER_APPLYING": "bg-primary text-white border-0",
+            "APPLY_WITH_CAUTION": "bg-warning text-dark border-0",
+            "AVOID": "bg-danger text-white border-0",
+            "INSUFFICIENT_DATA": "bg-secondary text-white border-0",
+        }
+        context["recommendation_badge"] = rec_badges.get(
+            scoring.recommendation if scoring else "", "bg-secondary text-white"
+        )
         context["latest_gmp"] = ipo.gmp_records.order_by("-observed_at").first()
 
         return context

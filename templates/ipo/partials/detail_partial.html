@@ -176,6 +176,17 @@
             <i class="bi bi-file-earmark-lock2 me-1"></i> Regulatory Vault ({{ documents|length }})
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'scoring' %}active fw-semibold{% endif %}"
+           href="{% url 'ipo:detail' ipo.symbol %}?tab=scoring"
+           hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=scoring"
+           hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-award me-1"></i> Quantitative Research &amp; Score
+            {% if scoring %}
+            <span class="badge {% if active_tab == 'scoring' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} ms-1">{{ scoring.overall_score|floatformat:0 }}/100</span>
+            {% endif %}
+        </a>
+    </li>
 </ul>
 
 <!-- TAB CONTENT 1: OVERVIEW -->
@@ -302,26 +313,56 @@
             </div>
         </div>
 
-        <!-- Quantitative Research Score Card (if computed) -->
+        <!-- Quantitative Research Score Card (Phase C) -->
         {% if scoring %}
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold mb-0 text-body">Quantitative Research Score</h5>
+                <span class="badge bg-secondary-subtle text-secondary border small">{{ scoring.confidence_level }} Confidence</span>
             </div>
             <div class="card-body px-4 py-2">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fs-2 fw-bold num-mono text-primary">{{ scoring.overall_score }}/100</span>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <div>
+                        <span class="fs-2 fw-bold num-mono text-primary">{{ scoring.overall_score }}</span>
+                        <span class="text-muted small">/100</span>
+                    </div>
+                    <span class="badge {{ recommendation_badge }} px-2.5 py-1.5 fw-semibold">
                         {{ scoring.get_recommendation_display }}
                     </span>
                 </div>
-                <div class="text-muted small mb-2">
+                <div class="text-body small mb-3">
                     {{ scoring.scoring_rationale }}
                 </div>
-                <div class="small d-flex justify-content-between text-muted border-top pt-2">
-                    <span>Listing Gain: <strong class="text-body">{{ scoring.listing_gain_potential }}</strong></span>
-                    <span>Long-Term: <strong class="text-body">{{ scoring.long_term_potential }}</strong></span>
+
+                <!-- Horizons Breakdown -->
+                <div class="d-flex flex-wrap gap-2 py-2 border-top border-bottom mb-3 text-muted" style="font-size: 0.78rem;">
+                    <div class="flex-fill">
+                        <span class="d-block text-muted">Listing Day:</span>
+                        <strong class="{% if scoring.listing_gain_potential == 'HIGH' %}text-success{% elif scoring.listing_gain_potential == 'MODERATE' %}text-primary{% else %}text-muted{% endif %}">
+                            {{ scoring.listing_gain_potential }}
+                        </strong>
+                    </div>
+                    <div class="flex-fill border-start ps-2">
+                        <span class="d-block text-muted">Short-Term (1-3M):</span>
+                        <strong class="{% if scoring.short_term_potential == 'POSITIVE' %}text-success{% elif scoring.short_term_potential == 'NEUTRAL' %}text-body{% else %}text-warning-emphasis{% endif %}">
+                            {{ scoring.short_term_potential }}
+                        </strong>
+                    </div>
+                    <div class="flex-fill border-start ps-2">
+                        <span class="d-block text-muted">Long-Term (1-3Y):</span>
+                        <strong class="{% if scoring.long_term_potential == 'POSITIVE' %}text-success{% elif scoring.long_term_potential == 'NEUTRAL' %}text-body{% else %}text-warning-emphasis{% endif %}">
+                            {{ scoring.long_term_potential }}
+                        </strong>
+                    </div>
                 </div>
+
+                <a href="{% url 'ipo:detail' ipo.symbol %}?tab=scoring"
+                   class="btn btn-sm btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-1"
+                   hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=scoring"
+                   hx-target="#main-content" hx-push-url="true">
+                    <span>View 7-Pillar Factor Breakdown &amp; Radar</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
         {% endif %}
@@ -637,6 +678,229 @@
             <p class="small text-muted mb-0">Use the external links in the overview tab to access SEBI and NSE prospectus filings.</p>
         </div>
         {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- TAB CONTENT 5: QUANTITATIVE RESEARCH & SCORING (Phase C) -->
+{% if active_tab == 'scoring' %}
+<div class="row g-4 mb-4">
+    <!-- Executive Assessment Banner -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center p-3 text-primary" style="width: 72px; height: 72px;">
+                            <span class="fs-3 fw-bold num-mono">{{ scoring.overall_score|floatformat:0 }}</span>
+                        </div>
+                        <div>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                <h4 class="fw-bold mb-0 text-body">Institutional Quantitative Evaluation</h4>
+                                <span class="badge {{ recommendation_badge }} px-3 py-1.5 fs-6 fw-semibold">
+                                    {{ scoring.get_recommendation_display }}
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                7-Pillar weighted multi-factor scoring model calibrated per Section 9 of IPO Research Framework.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge bg-body-secondary text-body border px-2.5 py-1.5 small">
+                            <i class="bi bi-shield-check text-success me-1"></i>Confidence: <strong>{{ scoring.confidence_level }}</strong>
+                        </span>
+                        <span class="badge bg-body-secondary text-body border px-2.5 py-1.5 small">
+                            <i class="bi bi-file-earmark-check text-primary me-1"></i>Disclosed Data: <strong>{{ scoring.data_completeness_percent }}%</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-chat-left-quote text-primary fs-5 mt-0.5"></i>
+                        <div>
+                            <span class="fw-semibold text-body d-block small mb-1">Quantitative Research Synthesis:</span>
+                            <p class="text-muted small mb-0">{{ scoring.scoring_rationale }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3-Horizon Assessment Cards -->
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold text-uppercase">Listing Day Gain</span>
+                                <span class="badge {% if scoring.listing_gain_potential == 'HIGH' %}bg-success-subtle text-success border border-success-subtle{% elif scoring.listing_gain_potential == 'MODERATE' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %}">
+                                    {{ scoring.listing_gain_potential }}
+                                </span>
+                            </div>
+                            <span class="small text-muted d-block">
+                                Based on subscription demand multiple, anchor book quality, and valuation margin of safety.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold text-uppercase">Short-Term (1-3 Mos)</span>
+                                <span class="badge {% if scoring.short_term_potential == 'POSITIVE' %}bg-success-subtle text-success border border-success-subtle{% elif scoring.short_term_potential == 'NEUTRAL' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                                    {{ scoring.short_term_potential }}
+                                </span>
+                            </div>
+                            <span class="small text-muted d-block">
+                                Based on post-listing float absorption, revenue momentum, and anchor investor lock-in expirations.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded-3 border bg-body h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small fw-semibold text-uppercase">Long-Term (1-3 Yrs)</span>
+                                <span class="badge {% if scoring.long_term_potential == 'POSITIVE' %}bg-success-subtle text-success border border-success-subtle{% elif scoring.long_term_potential == 'NEUTRAL' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                                    {{ scoring.long_term_potential }}
+                                </span>
+                            </div>
+                            <span class="small text-muted d-block">
+                                Grounded in operating ROCE, structural balance sheet leverage, and industry barrier moats.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Column: The 7 Pillar Breakdown Cards -->
+    <div class="col-12 col-xl-7">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0 text-body">7-Pillar Quantitative Factor Analysis</h5>
+                    <span class="text-muted small">Individual pillar evaluations out of 100 with assigned portfolio weightings</span>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">100% Calibrated</span>
+            </div>
+            <div class="card-body px-4 py-2">
+                {% for pillar in scoring_pillars %}
+                <div class="py-3 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi {{ pillar.icon }} text-primary"></i>
+                            <strong class="text-body">{{ pillar.name }}</strong>
+                            <span class="badge bg-secondary-subtle text-secondary small border" style="font-size: 0.72rem;">Weight: {{ pillar.weight }}</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="fs-6 fw-bold num-mono {% if pillar.score >= 80 %}text-success{% elif pillar.score >= 65 %}text-primary{% elif pillar.score >= 50 %}text-warning-emphasis{% else %}text-danger{% endif %}">
+                                {{ pillar.score|floatformat:1 }}
+                            </span>
+                            <span class="text-muted small">/100</span>
+                        </div>
+                    </div>
+                    <div class="progress mb-1" style="height: 6px;">
+                        <div class="progress-bar {% if pillar.score >= 80 %}bg-success{% elif pillar.score >= 65 %}bg-primary{% elif pillar.score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                             role="progressbar"
+                             style="width: {{ pillar.score }}%;"
+                             aria-valuenow="{{ pillar.score }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"></div>
+                    </div>
+                    <small class="text-muted d-block" style="font-size: 0.76rem;">{{ pillar.description }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: SVG Radar Chart + Strengths & Risks -->
+    <div class="col-12 col-xl-5">
+        <!-- SVG Spider/Radar Chart Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Factor Radar Comparison</h5>
+                <span class="text-muted small">Multi-dimensional polygon vs benchmark frontier</span>
+            </div>
+            <div class="card-body p-3 text-center">
+                {% if radar_geometry %}
+                <svg viewBox="0 0 320 280" class="w-100" style="max-height: 280px;" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Concentric Grid Polygons -->
+                    {% for poly in radar_geometry.grid_polygons %}
+                    <polygon points="{{ poly }}" fill="none" stroke="currentColor" stroke-opacity="0.15" stroke-dasharray="2,2" stroke-width="1" />
+                    {% endfor %}
+
+                    <!-- Axis lines & Labels -->
+                    {% for axis in radar_geometry.axes %}
+                    <line x1="160" y1="140" x2="{{ axis.x_outer }}" y2="{{ axis.y_outer }}" stroke="currentColor" stroke-opacity="0.2" stroke-width="1" />
+                    <text x="{{ axis.x_label }}" y="{{ axis.y_label }}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="currentColor" opacity="0.75" class="fw-semibold">
+                        {{ axis.name }}
+                    </text>
+                    {% endfor %}
+
+                    <!-- Data Polygon -->
+                    <polygon points="{{ radar_geometry.data_polygon }}" fill="rgba(37, 99, 235, 0.25)" stroke="#2563eb" stroke-width="2.5" />
+                </svg>
+                <div class="d-flex justify-content-center align-items-center gap-3 mt-2 small text-muted">
+                    <span class="d-inline-flex align-items-center gap-1">
+                        <span class="d-inline-block rounded-circle bg-primary" style="width: 10px; height: 10px;"></span>
+                        <span>Company Frontier</span>
+                    </span>
+                    <span class="d-inline-flex align-items-center gap-1">
+                        <span class="d-inline-block border border-secondary" style="width: 10px; height: 1px;"></span>
+                        <span>Grid Levels (25, 50, 75, 100)</span>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Strengths & Catalysts Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-success d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Key Strengths &amp; Catalysts</span>
+                </h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                {% if scoring.strengths_list %}
+                <ul class="list-unstyled mb-0 small">
+                    {% for item in scoring.strengths_list %}
+                    <li class="d-flex align-items-start gap-2 mb-2 text-body">
+                        <i class="bi bi-check-circle-fill text-success mt-0.5 flex-shrink-0"></i>
+                        <span>{{ item }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <span class="text-muted small">No specific strengths flagged.</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Risk Factors & Headwinds Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-danger d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Headwinds &amp; Key Risks</span>
+                </h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                {% if scoring.risks_list %}
+                <ul class="list-unstyled mb-0 small">
+                    {% for item in scoring.risks_list %}
+                    <li class="d-flex align-items-start gap-2 mb-2 text-body">
+                        <i class="bi bi-exclamation-octagon-fill text-danger mt-0.5 flex-shrink-0"></i>
+                        <span>{{ item }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <span class="text-muted small">No critical risks flagged.</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}

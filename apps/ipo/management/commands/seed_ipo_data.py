@@ -17,11 +17,11 @@ from apps.ipo.models import (
     IPOFundamentals,
     IPOGMPRecord,
     IPOMaster,
-    IPOScoring,
     IPOStatus,
     IPOSubscriptionSnapshot,
     IssueType,
 )
+from services.ipo.scoring import evaluate_ipo_scoring
 
 
 class Command(BaseCommand):
@@ -1101,8 +1101,8 @@ class Command(BaseCommand):
             fund_info = item.pop("fundamentals", None)
             docs_info = item.pop("documents", None)
             gmp_val = item.pop("gmp", None)
-            score_val = item.pop("score", None)
-            rec_val = item.pop("recommendation", "CONSIDER_APPLYING")
+            item.pop("score", None)
+            item.pop("recommendation", None)
             item.pop("current_market_price", None)
             item.pop("total_gain_since_listing", None)
 
@@ -1164,25 +1164,6 @@ class Command(BaseCommand):
                         defaults=doc,
                     )
 
-            # Seed score if provided
-            if score_val:
-                IPOScoring.objects.update_or_create(
-                    ipo=ipo,
-                    defaults={
-                        "overall_score": score_val,
-                        "business_score": Decimal("80.00"),
-                        "financials_score": Decimal("75.00"),
-                        "valuation_score": Decimal("70.00"),
-                        "growth_score": Decimal("85.00"),
-                        "governance_score": Decimal("80.00"),
-                        "structure_score": Decimal("75.00"),
-                        "demand_score": Decimal("85.00"),
-                        "recommendation": rec_val,
-                        "listing_gain_potential": "HIGH" if score_val >= 80 else "MODERATE",
-                        "scoring_rationale": f"Calculated based on {ipo.company_name} RHP parameters and market demand.",
-                    },
-                )
-
             # Seed GMP if provided
             if gmp_val:
                 price = ipo.effective_upper_price
@@ -1198,6 +1179,9 @@ class Command(BaseCommand):
                         "is_unofficial": True,
                     },
                 )
+
+            # Evaluate transparent 7-pillar quantitative scoring and horizon evaluations (Phase C)
+            evaluate_ipo_scoring(ipo, save=True)
 
             count += 1
 

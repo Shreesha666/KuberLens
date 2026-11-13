@@ -91,3 +91,4 @@ def compute_financial_metrics(fundamentals: IPOFundamentals | None, ipo: IPOMast
         "pe_diff_percent": pe_diff_pct,
         "peers": fundamentals.peer_comparison_data or [],
     }
+

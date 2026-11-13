@@ -283,8 +283,20 @@ class IPOScoring(AuditedModel):
     )
 
     listing_gain_potential = models.CharField(max_length=20, default="MODERATE")  # HIGH, MODERATE, LOW
-    short_term_potential = models.CharField(max_length=20, default="MODERATE")
-    long_term_potential = models.CharField(max_length=20, default="POSITIVE")
+    short_term_potential = models.CharField(max_length=20, default="MODERATE")  # POSITIVE, NEUTRAL, CAUTION
+    long_term_potential = models.CharField(max_length=20, default="POSITIVE")  # POSITIVE, NEUTRAL, CAUTION
+    confidence_level = models.CharField(
+        max_length=20,
+        choices=[
+            ("HIGH", "High Confidence"),
+            ("MEDIUM", "Medium Confidence"),
+            ("LOW", "Low Confidence"),
+        ],
+        default="HIGH",
+    )
+    data_completeness_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("100.00"))
+    strengths_list = models.JSONField(default=list, blank=True)
+    risks_list = models.JSONField(default=list, blank=True)
     scoring_rationale = models.TextField(blank=True, default="")
 
     class Meta:

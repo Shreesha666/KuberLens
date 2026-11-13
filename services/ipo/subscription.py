@@ -74,3 +74,4 @@ def get_subscription_summary(ipo: IPOMaster) -> dict[str, Any]:
         "momentum_class": momentum_class,
         "is_oversubscribed": latest.total_subscription > Decimal("1.00"),
     }
+

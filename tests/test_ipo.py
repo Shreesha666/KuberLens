@@ -790,4 +790,87 @@ class TestIPOIntelligenceModule:
         assert res.context["performance_metrics"]["listing_gain_percent"] == Decimal("66.67")
         assert "Listing Day vs Current Market Return" in res.content.decode()
 
+    def test_ipos_markets_sync_service_and_view(self, client: Client, db, monkeypatch):
+        """Verifies ipos.markets sync logic, data model upsert, and IPOSyncView HTMX response."""
+        from services.ipo.ipos_markets_client import IPOSMarketsClient
+        from services.ipo.sync import sync_ipos_markets
+
+        mock_overview = {
+            "counts": {"total": 1, "mainboard": 1, "sme": 0},
+            "open": [
+                {
+                    "slug": "mock-solar-energy-limited",
+                    "name": "Mock Solar Energy Limited",
+                    "board": "mainboard",
+                    "stage": "open",
+                    "symbol": "MOCKSOLAR",
+                    "open": "2026-11-10",
+                    "close": "2026-11-14",
+                    "listing": "2026-11-20",
+                    "band": "100-110",
+                    "price": 110.0,
+                    "size": 500.0,
+                    "sub": 4.5,
+                }
+            ],
+            "upcoming": [],
+            "recent": [],
+        }
+
+        mock_detail = {
+            "slug": "mock-solar-energy-limited",
+            "display": "Mock Solar Energy Limited",
+            "isin": "INE00MOCK123",
+            "symbols": {"nse": "MOCKSOLAR"},
+            "board": "mainboard",
+            "stage": "open",
+            "open_date": "2026-11-10",
+            "close_date": "2026-11-14",
+            "listing_date": "2026-11-20",
+            "issue_price": 110.0,
+            "price_band": {"min": 100.0, "max": 110.0},
+            "lot_size": 100,
+            "issue_size_cr": 500.0,
+            "fresh_issue_cr": 350.0,
+            "ofs_cr": 150.0,
+            "subscription": {
+                "latest": {
+                    "total_times": 4.5,
+                    "categories": {
+                        "Qualified Institutional Buyers(QIBs)": {"times": 6.2},
+                        "Non Institutional Investors": {"times": 3.8},
+                        "Retail Individual Investors(RIIs)": {"times": 2.1},
+                    },
+                }
+            },
+        }
+
+        fake_client = IPOSMarketsClient()
+        monkeypatch.setattr(fake_client, "get_overview", lambda: mock_overview)
+        monkeypatch.setattr(fake_client, "get_issue_detail", lambda slug: mock_detail)
+
+        stats = sync_ipos_markets(client=fake_client, live_only=False, detail_limit=5)
+        assert stats["created"] == 1
+        assert stats["errors"] == 0
+
+        synced_ipo = IPOMaster.objects.get(symbol="MOCKSOLAR")
+        assert synced_ipo.company_name == "Mock Solar Energy Limited"
+        assert synced_ipo.price_band_min == Decimal("100.00")
+        assert synced_ipo.price_band_max == Decimal("110.00")
+        assert synced_ipo.lot_size == 100
+
+        # Check subscription snapshot was seeded
+        sub = IPOSubscriptionSnapshot.objects.get(ipo=synced_ipo)
+        assert sub.total_subscription == Decimal("4.50")
+        assert sub.qib_subscription == Decimal("6.20")
+
+        # Test IPOSyncView with HTMX
+        sync_url = reverse("ipo:sync")
+        with monkeypatch.context() as m:
+            m.setattr("services.ipo.sync.sync_ipos_markets", lambda **kwargs: {"created": 0, "updated": 1, "errors": 0})
+            htmx_res = client.post(sync_url, HTTP_HX_REQUEST="true")
+            assert htmx_res.status_code == 200
+            assert "IPO Intelligence Centre" in htmx_res.content.decode()
+
+
 

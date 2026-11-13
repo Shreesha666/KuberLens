@@ -840,3 +840,28 @@ class IPOComparisonView(HTMXResponseMixin, TemplateView):
         return context
 
 
+class IPOSyncView(View):
+    """
+    Triggers live ingestion from ipos.markets and re-renders the dashboard partial.
+    """
+    def post(self, request, *args, **kwargs):
+        from services.ipo.sync import sync_ipos_markets
+        try:
+            stats = sync_ipos_markets(live_only=False, detail_limit=30)
+            messages.success(
+                request,
+                f"Live Primary Market Sync: {stats['created']} new issues added, {stats['updated']} updated from ipos.markets."
+            )
+        except Exception as e:
+            messages.error(request, f"Live sync failed: {e}")
+
+        if request.headers.get("HX-Request"):
+            from django.shortcuts import render
+            dashboard_view = IPODashboardView()
+            dashboard_view.request = request
+            context = dashboard_view.get_context_data()
+            return render(request, "ipo/partials/dashboard_partial.html", context)
+        return redirect("ipo:dashboard")
+
+
+

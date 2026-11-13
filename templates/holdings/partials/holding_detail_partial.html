@@ -1,32 +1,104 @@
 {% load core_tags %}
-<!-- Holding Detail Header & Breadcrumb -->
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-    <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1 small">
-                <li class="breadcrumb-item"><a href="{% url 'portfolio:overview' %}" class="text-decoration-none" hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">Portfolio</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'holdings:list' %}" class="text-decoration-none" hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">Holdings</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ holding.listing.symbol }}</li>
-            </ol>
-        </nav>
-        <div class="d-flex align-items-center gap-3">
-            {% stock_logo holding.listing size=44 css_class="p-1" %}
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <h1 class="h3 fw-bold text-body mb-0">{{ holding.listing.instrument.display_name }}</h1>
-                <span class="badge bg-primary text-white fw-bold">{{ holding.listing.symbol }}</span>
-                <span class="badge bg-secondary-subtle text-body border">{{ holding.listing.exchange.code }}</span>
-                <span class="badge bg-light text-secondary border">{{ holding.listing.instrument.sector }}</span>
+<!-- Holding Detail Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item"><a href="{% url 'portfolio:overview' %}" class="text-decoration-none" hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">Portfolio</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'holdings:list' %}" class="text-decoration-none" hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">Holdings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ holding.listing.symbol }}</li>
+    </ol>
+</nav>
+
+<!-- Stock Header (Unified with Research Profile) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
+                {% stock_logo holding.listing size=52 css_class="p-1" %}
+                <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <h1 class="h3 fw-bold mb-0 text-body">{{ holding.listing.instrument.display_name }}</h1>
+                        <span class="badge bg-primary text-white fw-bold">{{ holding.listing.symbol }}</span>
+                        <span class="badge bg-secondary-subtle text-body border">{{ holding.listing.exchange.code }}</span>
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">{{ holding.listing.instrument.sector }}</span>
+                        <span class="badge bg-light text-secondary border">{{ holding.listing.instrument.get_market_cap_category_display }}</span>
+                    </div>
+                    <div class="text-muted small">
+                        {{ holding.listing.instrument.legal_name }} &bull; ISIN: <span class="num-mono">{{ holding.listing.instrument.isin }}</span> &bull; Industry: {{ holding.listing.instrument.industry }}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#transactionCollapse" aria-expanded="false" aria-controls="transactionCollapse">
+                            <i class="bi bi-plus-circle"></i> Log Transaction
+                        </button>
+                        <a href="{% url 'holdings:add_transaction' %}?symbol={{ holding.listing.symbol }}"
+                           class="btn btn-sm btn-outline-primary"
+                           hx-get="{% url 'holdings:add_transaction' %}?symbol={{ holding.listing.symbol }}"
+                           hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-cart-plus"></i> Buy New Lot
+                        </a>
+                        <a href="{% url 'stocks:stock_detail' holding.listing.symbol %}"
+                           class="btn btn-sm btn-outline-secondary"
+                           hx-get="{% url 'stocks:stock_detail' holding.listing.symbol %}"
+                           hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-graph-up"></i> Technical Chart
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price & Quote Provenance Banner -->
+            <div class="text-md-end">
+                {% if quote %}
+                <div class="d-flex align-items-baseline justify-content-md-end gap-2">
+                    <span class="h2 fw-bold num-mono text-body mb-0">₹{{ quote.price|floatformat:2 }}</span>
+                    <span class="fs-5 num-mono {% if quote.change >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
+                        {% if quote.change >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ quote.change|floatformat:2 }} ({{ quote.change_percent|floatformat:2 }}%)
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-md-end gap-2 mt-1">
+                    <!-- 2D Market Data Provenance Badges -->
+                    <span class="badge {% if quote.source_type == 'DIRECT' %}bg-success-subtle text-success border border-success-subtle{% elif quote.source_type == 'DELAYED' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} small">
+                        <i class="bi bi-broadcast"></i> {{ quote.source_type }}
+                        {% if quote.configured_delay_minutes > 0 %}({{ quote.configured_delay_minutes }}m delay){% endif %}
+                    </span>
+                    <span class="badge {% if quote.freshness_status == 'FRESH' %}bg-success text-white{% elif quote.freshness_status == 'CACHED' %}bg-info text-white{% elif quote.freshness_status == 'STALE' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %} small">
+                        {{ quote.freshness_status }}
+                    </span>
+                    <span class="text-muted small" style="font-size: 0.75rem;">
+                        {{ quote.source_provider }} &bull; {{ quote.retrieved_at|date:"H:i:s" }} IST
+                    </span>
+                </div>
+                {% else %}
+                <div class="d-flex align-items-baseline justify-content-md-end gap-2">
+                    <span class="h2 fw-bold num-mono text-body mb-0">₹{{ holding.current_price|floatformat:2 }}</span>
+                </div>
+                <div class="text-muted small mt-1">Stored position price</div>
+                {% endif %}
             </div>
         </div>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{% url 'stocks:stock_detail' holding.listing.symbol %}" class="btn btn-outline-secondary"
-           hx-get="{% url 'stocks:stock_detail' holding.listing.symbol %}" hx-target="#main-content" hx-push-url="true">
-            <i class="bi bi-graph-up"></i> Technical Chart
-        </a>
-        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#transactionCollapse" aria-expanded="false" aria-controls="transactionCollapse">
-            <i class="bi bi-plus-circle"></i> Log Transaction
-        </button>
+
+        <!-- Quick Metrics Bar -->
+        <div class="row g-2 pt-3 border-top border-secondary border-opacity-10 small">
+            <div class="col-6 col-md-3">
+                <span class="text-muted d-block">Day Range</span>
+                <span class="fw-semibold num-mono">
+                    {% if quote and quote.low and quote.high %}₹{{ quote.low|floatformat:1 }} - ₹{{ quote.high|floatformat:1 }}{% else %}—{% endif %}
+                </span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="text-muted d-block">52-Week Range</span>
+                <span class="fw-semibold num-mono">
+                    {% if low_52w and high_52w %}₹{{ low_52w|floatformat:1 }} - ₹{{ high_52w|floatformat:1 }}{% else %}—{% endif %}
+                </span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="text-muted d-block">Volume</span>
+                <span class="fw-semibold num-mono">{% if quote and quote.volume %}{{ quote.volume }}{% else %}—{% endif %}</span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="text-muted d-block">Prev Close</span>
+                <span class="fw-semibold num-mono">{% if quote and quote.previous_close %}₹{{ quote.previous_close|floatformat:2 }}{% else %}—{% endif %}</span>
+            </div>
+        </div>
     </div>
 </div>
 

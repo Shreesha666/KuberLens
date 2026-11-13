@@ -4,11 +4,12 @@ Provides positions summary, detailed FIFO lot inspection, transaction history,
 and dual-perspective recommendations.
 """
 import logging
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
+from django.db.models import Max, Min, Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -24,7 +25,7 @@ from apps.holdings.models import (
     TransactionType,
 )
 from apps.instruments.models import ExchangeListing
-from apps.market.models import MarketQuote
+from apps.market.models import HistoricalCandle, MarketQuote
 from apps.portfolio.models import Portfolio
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 from services.market_data.service import MarketDataService
@@ -168,6 +169,29 @@ class HoldingDetailView(LoginRequiredMixin, HTMXResponseMixin, DetailView):
         listing = holding.listing
 
         context["page_title"] = f"Holding: {listing.symbol} - {listing.instrument.display_name}"
+        context["listing"] = listing
+
+        # 0. Retrieve Current Market Quote & 52-Week Range for Stock Header
+        try:
+            quote = MarketDataService.get_quote(listing)
+        except Exception as e:
+            logger.warning("Could not fetch quote for %s: %s", listing.symbol, e)
+            quote = MarketQuote.objects.filter(listing=listing).order_by("-retrieved_at").first()
+        context["quote"] = quote
+
+        one_year_ago = timezone.now() - timedelta(days=365)
+        candles_qs = HistoricalCandle.objects.filter(
+            listing=listing,
+            interval="1d",
+            timestamp__gte=one_year_ago,
+        )
+        if candles_qs.exists():
+            agg = candles_qs.aggregate(high_52w=Max("high"), low_52w=Min("low"))
+            context["high_52w"] = agg.get("high_52w")
+            context["low_52w"] = agg.get("low_52w")
+        else:
+            context["high_52w"] = None
+            context["low_52w"] = None
 
         # 1. Open FIFO Lots
         context["open_lots"] = FIFOAccountingEngine.get_open_lots(portfolio, listing)
@@ -203,6 +227,7 @@ class HoldingDetailView(LoginRequiredMixin, HTMXResponseMixin, DetailView):
             technical=technical,
             fundamental=fundamental,
             portfolio_total_value=total_portfolio_val,
+            quote=quote,
         )
         context["recommendations"] = recommendations
         context["technical"] = technical

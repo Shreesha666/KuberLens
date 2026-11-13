@@ -222,12 +222,12 @@ def compare_ipos(symbols: list[str]) -> dict[str, Any]:
             "help_text": "Total issue demand multiple (x)",
             "values": [
                 f"{ipo.latest_subscription.total_subscription:.2f}x"
-                if hasattr(ipo, "latest_subscription") and ipo.latest_subscription
+                if getattr(ipo, "latest_subscription", None) and ipo.latest_subscription.total_subscription is not None
                 else "Awaiting Bidding"
                 for ipo in ipos
             ],
             "raw_values": [
-                float(ipo.latest_subscription.total_subscription) if hasattr(ipo, "latest_subscription") and ipo.latest_subscription else 0.0
+                float(ipo.latest_subscription.total_subscription) if getattr(ipo, "latest_subscription", None) and ipo.latest_subscription.total_subscription is not None else 0.0
                 for ipo in ipos
             ],
             "higher_is_better": True,
@@ -238,7 +238,7 @@ def compare_ipos(symbols: list[str]) -> dict[str, Any]:
             "help_text": "RII category demand multiple (x)",
             "values": [
                 f"{ipo.latest_subscription.retail_subscription:.2f}x"
-                if hasattr(ipo, "latest_subscription") and ipo.latest_subscription
+                if getattr(ipo, "latest_subscription", None) and ipo.latest_subscription.retail_subscription is not None
                 else "N/A"
                 for ipo in ipos
             ],
@@ -251,7 +251,7 @@ def compare_ipos(symbols: list[str]) -> dict[str, Any]:
             "help_text": "Qualified Institutional Buyers subscription multiple",
             "values": [
                 f"{ipo.latest_subscription.qib_subscription:.2f}x"
-                if hasattr(ipo, "latest_subscription") and ipo.latest_subscription
+                if getattr(ipo, "latest_subscription", None) and ipo.latest_subscription.qib_subscription is not None
                 else "N/A"
                 for ipo in ipos
             ],
@@ -341,28 +341,49 @@ def compare_ipos(symbols: list[str]) -> dict[str, Any]:
         leader_fund = getattr(leader, "fundamentals", None)
         second_fund = getattr(second, "fundamentals", None)
         if leader_fund and second_fund:
-            if (leader_fund.revenue_cagr_3yr or 0) > (second_fund.revenue_cagr_3yr or 0):
+            leader_cagr = leader_fund.revenue_cagr_3yr
+            second_cagr = second_fund.revenue_cagr_3yr
+            if leader_cagr is not None and second_cagr is not None:
+                if leader_cagr > second_cagr:
+                    insights.append(
+                        f"**Growth Advantage**: {leader.symbol} demonstrates superior top-line expansion with a 3-year revenue CAGR of "
+                        f"**{leader_cagr:+.1f}%** vs **{second_cagr:+.1f}%** for {second.symbol}."
+                    )
+                elif second_cagr > leader_cagr:
+                    insights.append(
+                        f"**Growth Note**: {second.symbol} delivered faster historical 3-year revenue growth ({second_cagr:+.1f}% vs {leader_cagr:+.1f}%), "
+                        f"though {leader.symbol} compensates with higher margin resilience and balance sheet health."
+                    )
+            elif leader_cagr is not None:
                 insights.append(
-                    f"**Growth Advantage**: {leader.symbol} demonstrates superior top-line expansion with a 3-year revenue CAGR of "
-                    f"**{leader_fund.revenue_cagr_3yr:+.1f}%** vs **{second_fund.revenue_cagr_3yr:+.1f}%** for {second.symbol}."
-                )
-            elif (second_fund.revenue_cagr_3yr or 0) > (leader_fund.revenue_cagr_3yr or 0):
-                insights.append(
-                    f"**Growth Note**: {second.symbol} delivered faster historical 3-year revenue growth ({second_fund.revenue_cagr_3yr:+.1f}% vs {leader_fund.revenue_cagr_3yr:+.1f}%), "
-                    f"though {leader.symbol} compensates with higher margin resilience and balance sheet health."
+                    f"**Growth Track Record**: {leader.symbol} delivered historical 3-year revenue CAGR of **{leader_cagr:+.1f}%**."
                 )
 
             # Valuation & Debt comparison
-            if (leader_fund.post_issue_pe or 0) < (second_fund.post_issue_pe or 999) and (leader_fund.post_issue_pe or 0) > 0:
-                insights.append(
-                    f"**Valuation Comfort**: {leader.symbol} trades at a more conservative multiple of **{leader_fund.post_issue_pe:.1f}x P/E** "
-                    f"compared to {second.symbol}'s **{second_fund.post_issue_pe:.1f}x P/E**."
-                )
+            leader_pe = leader_fund.post_issue_pe
+            second_pe = second_fund.post_issue_pe
+            if leader_pe is not None and second_pe is not None and leader_pe > 0 and second_pe > 0:
+                if leader_pe < second_pe:
+                    insights.append(
+                        f"**Valuation Comfort**: {leader.symbol} trades at a more conservative multiple of **{leader_pe:.1f}x P/E** "
+                        f"compared to {second.symbol}'s **{second_pe:.1f}x P/E**."
+                    )
+                elif second_pe < leader_pe:
+                    insights.append(
+                        f"**Valuation Note**: {second.symbol} trades at **{second_pe:.1f}x P/E** vs {leader.symbol}'s **{leader_pe:.1f}x P/E**."
+                    )
 
-            if (leader_fund.debt_equity_ratio or 0) < (second_fund.debt_equity_ratio or 99):
-                insights.append(
-                    f"**Balance Sheet Quality**: {leader.symbol} operates with lower leverage (D/E: **{leader_fund.debt_equity_ratio:.2f}x** vs **{second_fund.debt_equity_ratio:.2f}x**)."
-                )
+            leader_de = leader_fund.debt_equity_ratio
+            second_de = second_fund.debt_equity_ratio
+            if leader_de is not None and second_de is not None:
+                if leader_de < second_de:
+                    insights.append(
+                        f"**Balance Sheet Quality**: {leader.symbol} operates with lower leverage (D/E: **{leader_de:.2f}x** vs **{second_de:.2f}x**)."
+                    )
+                elif second_de < leader_de:
+                    insights.append(
+                        f"**Leverage Comparison**: {second.symbol} maintains a cleaner balance sheet (D/E: **{second_de:.2f}x** vs **{leader_de:.2f}x**)."
+                    )
 
     comparison_narrative = "\n\n".join(insights)
 

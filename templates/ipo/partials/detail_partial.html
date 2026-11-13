@@ -261,7 +261,7 @@
                             <span class="num-mono fw-bold">{{ ipo.retail_quota_percent }}% of net offer</span>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ ipo.retail_quota_percent }}%"></div>
+                            <div class="progress-bar bg-success" role="progressbar" style="--progress-width: {{ ipo.retail_quota_percent }}%; width: var(--progress-width, 0%);"></div>
                         </div>
                     </div>
                     <div>
@@ -270,7 +270,7 @@
                             <span class="num-mono fw-bold">{{ ipo.qib_quota_percent }}% of net offer</span>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ ipo.qib_quota_percent }}%"></div>
+                            <div class="progress-bar bg-primary" role="progressbar" style="--progress-width: {{ ipo.qib_quota_percent }}%; width: var(--progress-width, 0%);"></div>
                         </div>
                     </div>
                     <div>
@@ -279,7 +279,7 @@
                             <span class="num-mono fw-bold">{{ ipo.nii_quota_percent }}% of net offer</span>
                         </div>
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ ipo.nii_quota_percent }}%"></div>
+                            <div class="progress-bar bg-info" role="progressbar" style="--progress-width: {{ ipo.nii_quota_percent }}%; width: var(--progress-width, 0%);"></div>
                         </div>
                     </div>
                 </div>
@@ -832,7 +832,7 @@
                     <div class="progress mb-1" style="height: 6px;">
                         <div class="progress-bar {% if pillar.score >= 80 %}bg-success{% elif pillar.score >= 65 %}bg-primary{% elif pillar.score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
                              role="progressbar"
-                             style="width: {{ pillar.score }}%;"
+                             style="--progress-width: {{ pillar.score }}%; width: var(--progress-width, 0%);"
                              aria-valuenow="{{ pillar.score }}"
                              aria-valuemin="0"
                              aria-valuemax="100"></div>

@@ -259,7 +259,11 @@
                                             </span>
                                             <div class="progress flex-fill" style="height: 5px; max-width: 80px;">
                                                 <div class="progress-bar {% if s.probability_percent >= 70 %}bg-success{% else %}bg-primary{% endif %}"
-                                                     style="width: {{ s.probability_percent }}%;"></div>
+                                                     role="progressbar"
+                                                     aria-valuenow="{{ s.probability_percent }}"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100"
+                                                     style="--progress-width: {{ s.probability_percent }}%; width: var(--progress-width, 0%);"></div>
                                             </div>
                                         </div>
                                     </td>

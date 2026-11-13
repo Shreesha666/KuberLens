@@ -200,10 +200,8 @@
                        hx-target="#main-content"
                        hx-push-url="true"
                        class="setup-item d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-2.5 min-w-0">
-                            <div class="setup-symbol-box">
-                                {{ setup.listing.symbol|slice:":4" }}
-                            </div>
+                        <div class="d-flex align-items-center min-w-0">
+                            {% stock_logo setup.listing size=44 css_class="me-3 p-1 rounded-3 shadow-xs" %}
                             <div class="min-w-0">
                                 <div class="d-flex align-items-center gap-1.5 text-truncate">
                                     <span class="fw-bold text-primary">{{ setup.listing.symbol }}</span>
@@ -223,7 +221,7 @@
                             </div>
                         </div>
 
-                        <div class="text-end ps-2 flex-shrink-0">
+                        <div class="text-end ps-3 flex-shrink-0">
                             <div class="fw-bold num-mono text-dark" style="font-size: 0.9375rem;">
                                 ₹{{ setup.current_price|floatformat:2 }}
                             </div>
@@ -290,10 +288,8 @@
                                        hx-get="{% url 'stocks:stock_detail' h.listing.symbol %}"
                                        hx-target="#main-content"
                                        hx-push-url="true"
-                                       class="text-decoration-none d-flex align-items-center gap-2">
-                                        <div class="rounded-2 bg-light border p-1 d-flex align-items-center justify-content-center fw-bold text-secondary" style="width: 28px; height: 28px; font-size: 0.7rem;">
-                                            {{ h.listing.symbol|slice:":3" }}
-                                        </div>
+                                       class="text-decoration-none d-flex align-items-center">
+                                        {% stock_logo h.listing size=34 css_class="me-3 p-0.5 rounded-2 shadow-xs" %}
                                         <div>
                                             <div class="fw-bold text-primary">{{ h.listing.symbol }}</div>
                                             <div class="text-muted" style="font-size: 0.72rem;">{{ h.listing.instrument.name|truncatechars:20 }}</div>
@@ -350,15 +346,18 @@
                 <div class="d-flex flex-column gap-2 flex-grow-1">
                     {% for ipo in active_ipos %}
                     <div class="setup-item d-flex justify-content-between align-items-center p-2.5">
-                        <div class="min-w-0">
-                            <div class="d-flex align-items-center gap-1.5">
-                                <span class="fw-bold text-dark">{{ ipo.symbol }}</span>
-                                <span class="badge {% if ipo.status == 'LIVE' %}bg-success{% else %}bg-primary{% endif %} bg-opacity-10 {% if ipo.status == 'LIVE' %}text-success{% else %}text-primary{% endif %} py-0.5 px-1.5" style="font-size: 0.65rem;">
-                                    {{ ipo.get_status_display }}
-                                </span>
-                            </div>
-                            <div class="text-muted text-truncate mt-0.5" style="font-size: 0.72rem; max-width: 220px;">
-                                {{ ipo.company_name }}
+                        <div class="d-flex align-items-center min-w-0">
+                            {% stock_logo ipo.symbol size=36 css_class="me-3 p-0.5 rounded-2 shadow-xs" %}
+                            <div class="min-w-0">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <span class="fw-bold text-dark">{{ ipo.symbol }}</span>
+                                    <span class="badge {% if ipo.status == 'LIVE' %}bg-success{% else %}bg-primary{% endif %} bg-opacity-10 {% if ipo.status == 'LIVE' %}text-success{% else %}text-primary{% endif %} py-0.5 px-1.5" style="font-size: 0.65rem;">
+                                        {{ ipo.get_status_display }}
+                                    </span>
+                                </div>
+                                <div class="text-muted text-truncate mt-0.5" style="font-size: 0.72rem; max-width: 200px;">
+                                    {{ ipo.company_name }}
+                                </div>
                             </div>
                         </div>
 

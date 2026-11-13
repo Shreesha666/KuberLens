@@ -2,14 +2,16 @@
 # Indian Stock Market Research & Intelligence Platform
 
 **Document Type:** Master Product & Technical Specification  
-**Application:** Personal Indian Stock Market Research and Intelligence Platform  
+**Application:** Personal Indian Stock Market Research, Portfolio & Primary Market Intelligence Platform  
 **Backend:** Python + Django  
 **Frontend:** Django Templates + Bootstrap 5 + HTMX  
+**Frontend Charting:** TradingView Lightweight Charts (stock & technical charts) + Apache ECharts (dashboard & financial analytics)  
+**Typography System:** CoolAdmin-inspired Hierarchy + Inter Variable Font + Tabular Numerals (`tabular-nums`)  
 **Database:** PostgreSQL  
 **Background Processing:** Celery + Redis  
-**Initial Market Data:** Jugaad-Data + Yahoo Finance  
+**Market Data Providers:** Jugaad-Data + Yahoo Finance + ipos.markets REST API + NSE India / BSE India / SEBI  
 **Future Broker Integration:** Zerodha Kite Connect  
-**Initial Market Coverage:** NSE and BSE equities  
+**Market Coverage:** NSE and BSE equities + Mainboard & SME IPOs (NSE Emerge / BSE SME)  
 **Future Market Coverage:** Futures and Options  
 **Architecture:** Django Modular Monolith  
 **Development Environment:** Local-first, production-ready design
@@ -18,7 +20,7 @@
 
 # 1. PROJECT VISION
 
-Build a comprehensive Indian stock market research, portfolio management, technical analysis and AI-assisted investment intelligence platform.
+Build a comprehensive Indian stock market research, portfolio management, technical analysis, primary market (IPO) intelligence, and AI-assisted investment platform.
 
 The application should help the user make informed investment and trading decisions using:
 
@@ -26,6 +28,7 @@ The application should help the user make informed investment and trading decisi
 - Historical price analysis.
 - Technical indicators.
 - Fundamental analysis.
+- Primary market (IPO) research, canonical lifecycle tracking, live subscription analytics, valuation, allotment planning, and listing performance.
 - Portfolio and existing holdings analysis.
 - Stock screening.
 - Swing trading opportunities.
@@ -36,16 +39,17 @@ The application should help the user make informed investment and trading decisi
 - Alerts and notifications.
 - Strategy backtesting.
 
-The platform must support both existing investors and new investment opportunities.
+The platform must support both existing investors and new investment opportunities across secondary and primary markets.
 
 It must distinguish between:
 1. A stock that the user already owns.
 2. A stock that the user is considering buying.
 3. A stock that the user is monitoring for swing trading.
+4. An upcoming, live, or closed IPO that the user is evaluating or bidding on.
 
-These situations require different analysis and recommendations.
+These situations require different analysis, metrics, and recommendations.
 
-The platform is intended for personal research and decision support. It must not automatically execute trades.
+The platform is intended for personal research and decision support. It must not automatically execute trades or submit bids.
 
 ---
 
@@ -62,15 +66,17 @@ The platform is intended for personal research and decision support. It must not
 9. Keep external data providers behind adapters.
 10. Keep financial calculations deterministic and testable.
 11. Use background processing for expensive operations.
-12. Store historical market data in PostgreSQL.
+12. Store historical market and IPO data in PostgreSQL.
 13. Use Redis for caching and Celery task coordination.
 14. Maintain a provider-independent data model.
 15. Make all major features independently testable.
 16. Avoid duplicated business logic and circular dependencies.
-17. Never fabricate market data.
+17. Never fabricate market or IPO data.
 18. Display data source and freshness.
 19. Preserve historical portfolio transactions.
 20. Keep broker integration optional.
+21. Enforce strict numerical readability with tabular numerals across all financial values.
+22. Strictly separate charting roles: TradingView Lightweight Charts for price/technical charts, Apache ECharts for dashboard and analytical visualizations.
 
 ---
 
@@ -83,15 +89,19 @@ The platform is intended for personal research and decision support. It must not
 | Frontend | Django Templates |
 | UI Framework | Bootstrap 5 |
 | Dynamic navigation | HTMX |
-| Browser scripting | JavaScript |
+| Browser scripting | JavaScript (ES6+) |
+| Technical Price Charts | TradingView Lightweight Charts (v4.x/v5.x) |
+| Dashboard & Analytics Charts | Apache ECharts (v5.x) |
+| Typography System | Inter Variable Font + CoolAdmin-inspired Hierarchy + Tabular Numerals (`font-variant-numeric: tabular-nums`) |
 | API framework | Django REST Framework |
 | Database | PostgreSQL |
 | Cache | Redis |
 | Background tasks | Celery |
 | Scheduler | Celery Beat |
+| Secondary Market Data | Jugaad-Data + Yahoo Finance |
+| Primary Market / IPO Data | ipos.markets REST API + NSE India + BSE India + SEBI |
 | Data analysis | Pandas, NumPy |
 | Technical analysis | pandas-ta / TA-Lib where available |
-| Charts | Lightweight Charts / Plotly |
 | AI integration | Provider-independent AI service |
 | Testing | Pytest / Django Test Framework |
 | Code quality | Ruff / Black |
@@ -137,6 +147,7 @@ indian_stock_intelligence/
 │   ├── fundamental_analysis/
 │   ├── portfolio/
 │   ├── holdings/
+│   ├── ipo/
 │   ├── trading/
 │   ├── screener/
 │   ├── watchlists/
@@ -160,6 +171,12 @@ indian_stock_intelligence/
 │   │       ├── jugaad/
 │   │       ├── yahoo/
 │   │       └── zerodha/
+│   ├── ipo_providers/
+│   │   ├── base.py
+│   │   ├── ipos_markets.py
+│   │   ├── nse.py
+│   │   ├── bse.py
+│   │   └── sebi.py
 │   ├── ai_providers/
 │   ├── news_providers/
 │   └── broker_providers/
@@ -168,6 +185,17 @@ indian_stock_intelligence/
 │   ├── market_data/
 │   ├── indicators/
 │   ├── fundamentals/
+│   ├── ipo/
+│   │   ├── lifecycle.py
+│   │   ├── subscription.py
+│   │   ├── research.py
+│   │   ├── valuation.py
+│   │   ├── scoring.py
+│   │   ├── planner.py
+│   │   ├── allotment.py
+│   │   ├── comparison.py
+│   │   ├── performance.py
+│   │   └── sync.py
 │   ├── portfolio/
 │   ├── risk/
 │   ├── recommendations/
@@ -176,11 +204,26 @@ indian_stock_intelligence/
 ├── templates/
 │   ├── base/
 │   ├── components/
+│   ├── ipo/
+│   │   ├── dashboard.html
+│   │   ├── issues_list.html
+│   │   ├── calendar.html
+│   │   ├── bid_planner.html
+│   │   ├── applications.html
+│   │   ├── performance.html
+│   │   ├── comparison.html
+│   │   ├── detail.html
+│   │   └── partials/
 │   └── errors/
 │
 ├── static/
 │   ├── css/
+│   │   ├── typography.css
+│   │   └── custom.css
 │   ├── js/
+│   │   ├── charts-lightweight.js
+│   │   ├── charts-echarts.js
+│   │   └── htmx-lifecycle.js
 │   ├── images/
 │   └── vendor/
 │
@@ -195,28 +238,29 @@ indian_stock_intelligence/
 
 | Django app | Responsibility |
 |---|---|
-| core | Shared utilities, base functionality |
+| core | Shared utilities, base functionality, mixins |
 | accounts | User authentication and preferences |
-| dashboard | Main dashboard |
-| market | Market overview and indices |
+| dashboard | Executive market dashboard |
+| market | Market overview, indices, sector metrics |
 | instruments | Exchange and instrument master |
-| stocks | Stock profiles and stock search |
-| technical_analysis | Technical indicators and signals |
-| fundamental_analysis | Financial metrics and valuation |
-| portfolio | Portfolio management |
-| holdings | Existing holdings and transactions |
-| trading | Swing trading and trade journal |
-| screener | Custom stock screening |
-| watchlists | User watchlists |
-| ai_analysis | AI stock research |
-| ml_engine | Machine learning |
-| news | News and corporate events |
-| alerts | Price and technical alerts |
-| backtesting | Historical strategy testing |
-| brokers | Broker connectivity |
-| reports | Reports and exports |
-| notifications | In-app and external notifications |
-| settings_app | Application and provider settings |
+| stocks | Stock profiles, search, fundamentals, financials |
+| technical_analysis | Technical indicators, overlays, signals |
+| fundamental_analysis | Financial metrics, ratios, peer valuation |
+| portfolio | Portfolio management, asset allocation |
+| holdings | Existing holdings, buy/sell transactions |
+| ipo | IPO Intelligence Centre: canonical lifecycle, live subscription analytics, fundamental valuation, quantitative scoring, bid planner, allotment probability, and listing performance |
+| trading | Swing trading, trade setups, position sizing, trade journal |
+| screener | Custom stock screening, saved presets |
+| watchlists | User watchlists, alerts monitoring |
+| ai_analysis | AI stock research and multi-perspective insights |
+| ml_engine | Machine learning models, price predictions |
+| news | Financial news and corporate action calendar |
+| alerts | Price, technical, and portfolio alerts |
+| backtesting | Historical strategy backtesting and drawdown analysis |
+| brokers | Broker connectivity (Zerodha Kite) |
+| reports | Analytical reports, PDF/CSV exports |
+| notifications | In-app and external user notifications |
+| settings_app | Application configuration, provider health |
 
 Every app must have clearly defined responsibilities.
 
@@ -256,6 +300,16 @@ Only the central content section should update during normal module navigation.
 - Sector Analysis
 - News & Events
 
+**IPO INTELLIGENCE**
+- IPO Dashboard
+- Primary Issues Desk (Catalog & Filters)
+- IPO Calendar
+- Bid Planner & Lot Calculator
+- Allotment Tracker
+- Listing Performance
+- Compare IPOs
+- Fundamental Research & Valuation
+
 **MY INVESTMENTS**
 - Portfolio Overview
 - My Holdings
@@ -275,9 +329,9 @@ Only the central content section should update during normal module navigation.
 - Alerts & Notifications
 
 **SYSTEM**
-- Data Sources
+- Data Sources & Health
 - Broker Connections
-- Reports
+- Reports & Exports
 - Application Settings
 
 ## 5.3 Dynamic module navigation
@@ -297,13 +351,13 @@ Requirements:
 1. Clicking a sidebar link loads the module into `#main-content`.
 2. The sidebar remains unchanged.
 3. The header remains unchanged.
-4. Update browser URL using history support.
+4. Update browser URL using history support (`hx-push-url="true"`).
 5. Highlight the active navigation item.
 6. Show loading indicators.
 7. Support browser back and forward.
 8. Support direct access to every module URL.
 9. Support full-page fallback if HTMX is unavailable.
-10. Return partial templates for HTMX requests and full templates for normal requests.
+10. Return partial templates for HTMX requests and full templates for normal requests (`HTMXResponseMixin`).
 
 Use a shared base template.
 
@@ -314,30 +368,178 @@ Do not create a separate HTML shell for every Django app.
 Include:
 
 - Application logo and title.
-- Market status.
-- NIFTY 50.
-- SENSEX.
-- NIFTY BANK.
-- Global stock search.
-- Notifications.
-- Data freshness indicator.
-- User settings.
+- Market status indicator (Market Open / Closed with countdown).
+- Major Indian indices: NIFTY 50, SENSEX, NIFTY BANK.
+- Global stock and IPO search bar.
+- Notifications dropdown with unread badge.
+- Data freshness indicator and sync status.
+- User settings and profile menu.
 
 Do not hardcode market values.
 
-## 5.5 Design
+## 5.5 Typography and Text Styling System (CoolAdmin Reference)
 
-- Professional financial dashboard.
-- Responsive desktop and tablet design.
-- Light and dark modes.
-- Clear financial typography.
-- Green for positive values.
-- Red for negative values.
-- Neutral information styling.
-- Reusable cards, tables and charts.
-- Loading skeletons.
-- Friendly empty states.
-- Clear source and timestamp labels.
+The visual design system adopts **ONLY** the typography system and text styling inspired by the CoolAdmin template (`typo.html`), preserving the existing Tabler / Bootstrap 5 shell, HTMX navigation, cards, widgets, and layout.
+
+### A. Strict Scope
+- **Adopt typography and text styling only.**
+- Do not copy CoolAdmin's layout, dashboard structure, cards, or widgets.
+- Maintain consistent font rendering and hierarchy across all Django applications.
+
+### B. Font Family & Rendering
+- **Primary Font Family:** Inter variable font (`Inter`, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif).
+- **Fallback Stack:** Standard system sans-serif fonts.
+- **Rendering:** Anti-aliased font smoothing (`-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;`).
+
+### C. Typography Scale & Hierarchy
+Adopt a strict typographic hierarchy:
+
+| Element | CSS Selector / Class | Font Size | Font Weight | Line Height | Usage |
+|---|---|---|---|---|---|
+| Page Title | `h1`, `.h1` | 1.75rem – 2.0rem (28–32px) | 700 (Bold) | 1.25 | Primary module page titles |
+| Section Header | `h2`, `.h2` | 1.375rem – 1.5rem (22–24px) | 600–700 | 1.3 | Major module sections & panels |
+| Subsection Title | `h3`, `.h3` | 1.125rem – 1.25rem (18–20px) | 600 (Semibold) | 1.35 | Widget headers, card titles |
+| Component Header | `h4`–`h6` | 0.9375rem – 1.0rem (15–16px) | 600 (Semibold) | 1.4 | Table titles, group captions |
+| Body Text | `p`, `body` | 0.875rem (14px) | 400 (Regular) | 1.5 | Standard body descriptions |
+| Small / Meta | `small`, `.small` | 0.75rem – 0.8125rem (12–13px) | 400–500 | 1.4 | Timestamps, subtitles, badges |
+| Micro / Captions | `.text-xs` | 0.6875rem (11px) | 500 (Medium) | 1.3 | Footnotes, tag labels, exchange indicators |
+
+### D. Centralized Design Tokens & Color Palette
+Centralize all typography variables in a shared stylesheet (`static/css/typography.css`):
+
+```css
+:root {
+    --font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-family-mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+    --font-size-xs: 0.6875rem;   /* 11px */
+    --font-size-sm: 0.75rem;     /* 12px */
+    --font-size-base: 0.875rem;  /* 14px */
+    --font-size-md: 0.9375rem;   /* 15px */
+    --font-size-lg: 1.0rem;      /* 16px */
+    --font-size-xl: 1.25rem;     /* 20px */
+    --font-size-2xl: 1.5rem;     /* 24px */
+    --font-size-3xl: 1.75rem;    /* 28px */
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --line-height-base: 1.5;
+    --line-height-heading: 1.25;
+
+    /* Semantic Text Colors */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-disabled: #94a3b8;
+    --text-link: #0284c7;
+
+    /* Financial Semantic Colors */
+    --color-positive: #10b981;       /* Bullish / Profit / Gain */
+    --color-negative: #ef4444;       /* Bearish / Loss / Drawdown */
+    --color-warning: #f59e0b;        /* Caution / Pending / Allotment Finalized */
+    --color-info: #0284c7;           /* Neutral / Informational / Active Bids */
+}
+```
+
+### E. Financial Data Typography & Tabular Numerals
+Because this is a professional financial intelligence platform, numeric readability is paramount:
+
+1. **Tabular Numerals:** Always use tabular numbers for financial and statistical figures to prevent horizontal jitter when values update and ensure vertical alignment in tables:
+   ```css
+   .num-mono, .financial-value {
+       font-variant-numeric: tabular-nums;
+       font-feature-settings: "tnum" 1;
+       font-family: var(--font-family-mono);
+   }
+   ```
+2. **Numbers Requiring Tabular Styling:**
+   - Stock prices, day changes, and percentage moves.
+   - Portfolio current values, invested amounts, and unrealized/realized P&L.
+   - Financial ratios: P/E, P/B, EV/EBITDA, ROE, ROCE, Debt/Equity.
+   - Trading levels: Entry price, Stop Loss, Target 1, Target 2.
+   - Primary market figures: IPO price bands, lot sizes, min application investment, issue size in ₹ Cr, subscription multiples, and GMP.
+3. **Table Column Alignment:** Numerical columns (prices, quantities, amounts, percentages) must be right-aligned (`text-end`).
+4. **Indian Currency Notation:**
+   - Standardize amounts using the Indian numbering format (`₹XX,XX,XXX.XX` via `intcomma_inr`).
+   - For issue sizes and market caps, express values in `₹... Cr` with the currency symbol and `Cr` unit styled in clean sans-serif outside monospace numerals to avoid character clipping.
+
+### F. Component-Level Typography
+- **Tables:** Headings in uppercase, muted small (`0.75rem`), letter-spaced (`0.05em`), font weight 600. Table cells in 0.875rem body text.
+- **Form Controls:** Labels in 0.8125rem font-weight 500 (`text-secondary`); input placeholders in muted italic/normal; helper text in 0.75rem.
+- **Breadcrumbs:** Clean inline paths with small font size (`0.8125rem`), active page in bold body color.
+- **Badges & Status Labels:** Compact padding (`px-2 py-0.5`), font weight 600, font size `0.72rem–0.75rem`, border-radius matching design system.
+- **Empty States:** Clear bold title (`h5 fw-bold`), muted supportive text (`small text-muted`), actionable reset button.
+
+---
+
+## 5.6 Dual-Engine Charting Architecture (Lightweight Charts + Apache ECharts)
+
+The platform enforces a strict dual-library charting architecture:
+
+| Library | Role | Scope & Use Cases |
+|---|---|---|
+| **TradingView Lightweight Charts** (v4.x/v5.x) | Primary Stock & Technical Price Charts | Candlesticks, OHLC, volume histogram (synchronized pane), SMA 20/50/200, EMA 9/20/50, Bollinger Bands, separate panes for RSI 14 & MACD, trading level overlays (Entry, Target 1, Target 2, Stop Loss), crosshair tooltips, time/price scales, zoom/scroll, and post-listing price history for listed IPOs. |
+| **Apache ECharts** (v5.x) | Dashboard Analytics & Visualizations | Executive dashboard charts, portfolio allocation donuts, sector exposure bars, market breadth (advance/decline), stock performance comparisons, sector heatmaps, backtesting equity curves & drawdown distributions, and IPO subscription velocity & 7-factor radar scoring charts. |
+
+### A. Strict Charting Restrictions
+- **Lightweight Charts** is the mandatory engine for stock price and technical charts.
+- **Apache ECharts** is the mandatory engine for general financial analytics and multi-dimensional dashboards.
+- **Never** use ECharts to duplicate the main candlestick chart.
+- **Never** introduce paid or closed-source charting alternatives (e.g. TradingView Advanced Charts paid library, Highcharts commercial license).
+- **Never** introduce mock or synthetic candle data.
+
+### B. TradingView Lightweight Charts Specification
+1. **Chart Header & Toolbar:**
+   - Stock name, symbol, and exchange badge (NSE/BSE).
+   - Live / last close price, absolute change, percentage change.
+   - Market data source and freshness timestamp.
+   - Timeframe selector: `1D`, `1W`, `1M`.
+   - Chart type toggle: Candlestick, Line, Area.
+   - Indicator dropdown: SMA 20, SMA 50, EMA 20, Bollinger Bands, RSI 14, MACD.
+   - Controls: Reset zoom, crosshair toggle, fullscreen.
+2. **Main Price Chart:**
+   - Candlesticks: Up candle `#10b981`, Down candle `#ef4444`, clean subtle grid lines.
+   - SMA Overlays: SMA 20 (Blue `#3b82f6`), SMA 50 (Orange `#f97316`).
+   - Price scale on right side; time scale on bottom with Indian market trading hours (09:15 – 15:30 IST).
+   - Interactive crosshair with floating price and date markers.
+   - Top-left floating OHLC legend showing values at crosshair position.
+3. **Synchronized Volume Pane:**
+   - Volume histogram rendered in an independent synchronized pane directly below price.
+   - Green/red bars matching candlestick direction; independent volume scale.
+4. **Trading Level Overlays:**
+   - Target 1: Green dashed horizontal line (`#10b981`).
+   - Target 2: Teal dashed horizontal line (`#14b8a6`).
+   - Stop Loss: Red dashed horizontal line (`#ef4444`).
+   - Entry Price: Neutral blue/gray line (`#64748b`).
+   - Explicit price labels on the right-hand price scale.
+5. **Separate Indicator Panes:**
+   - RSI 14: Dedicated bottom pane with overbought (70) and oversold (30) threshold lines.
+   - MACD (12, 26, 9): Dedicated pane with MACD line, signal line, and momentum histogram.
+
+### C. Apache ECharts Specification
+1. **Portfolio Asset Allocation:** Donut chart with inner radius 55%, outer radius 75%, showing asset classes, sectors, and top 10 holdings with custom tooltip formatting.
+2. **Sector Exposure & Heatmap:** Interactive treemap or bar charts showing portfolio weight vs benchmark weight.
+3. **Market Breadth:** Advance/decline ratio bar, 52-week highs vs lows comparison.
+4. **IPO Subscription Velocity:** Stacked category subscription bars (QIB, NII, Retail) across issue days.
+5. **IPO Quantitative Scoring Radar:** 7-axis radar chart displaying scores for Business, Financials, Valuation, Growth, Governance, Issue Structure, and Demand.
+6. **Backtesting Performance:** Equity curve with underwater drawdown chart and benchmark comparison line.
+
+### D. HTMX Chart Lifecycle & Clean Teardown Protocol
+Because the application uses HTMX for dynamic partial page swaps, frontend charting must strictly adhere to the chart lifecycle to prevent memory leaks and zombie event listeners:
+
+1. **Initialization:** Charts must initialize on `htmx:afterSwap` and `htmx:load` events, targeting container elements present in the swapped DOM.
+2. **Disposal & Teardown:**
+   - Before `#main-content` is swapped out (`htmx:beforeSwap`), all active chart instances must be cleanly disposed:
+     - Lightweight Charts: `chartInstance.remove(); chartInstance = null;`
+     - ECharts: `echartsInstance.dispose(); echartsInstance = null;`
+3. **Resize Observers:** Attach a `ResizeObserver` to the chart container rather than global window listeners to guarantee responsive re-rendering when sidebars collapse or window dimensions change.
+4. **History Restoration:** When navigating via browser back/forward buttons (`htmx:historyRestore`), re-initialize the chart instances from the restored DOM container.
+5. **Theme Synchronization:** Chart themes (light / dark) must listen to theme toggle events and update grid lines, background colors, and crosshairs without reloading the page.
+
+---
 
 ---
 
@@ -983,7 +1185,151 @@ These recommendations may be different.
 
 ---
 
-# 13. STOCK SCREENER MODULE
+# 13. IPO RESEARCH & INTELLIGENCE CENTRE
+
+## 13.1 Role & Objective
+Build an end-to-end primary market research and intelligence centre covering the complete Indian IPO lifecycle across both:
+- **Mainboard IPOs** (NSE and BSE)
+- **SME IPOs** (NSE Emerge and BSE SME)
+
+The module provides deterministic fundamental research, time-series subscription tracking, quantitative scoring, lot-sizing bid calculators, allotment probability estimation, personal application management, and post-listing performance tracking.
+
+## 13.2 Canonical IPO Lifecycle & Status Machine
+Track the entire regulatory and offering lifecycle with strict status transitions:
+1. `DRHP_FILED` — Draft Red Herring Prospectus submitted to SEBI.
+2. `SEBI_APPROVED` — SEBI observation / exchange in-principle approval issued.
+3. `ANNOUNCED` / `UPCOMING` — Price band, lot size, and issue dates scheduled.
+4. `LIVE` — Bidding window open (accepting bids).
+5. `CLOSED` — Bidding window closed; book building concluded.
+6. `ALLOTMENT_FINALIZED` — Basis of allotment approved by exchange & registrar.
+7. `REFUND_INITIATED` — UPI mandate unblocking / escrow refunds released.
+8. `DEMAT_TRANSFER` — Shares credited to successful applicants' demat accounts.
+9. `LISTED` — First day of trading on secondary exchange; post-listing performance begins.
+10. `WITHDRAWN` / `CANCELLED` / `POSTPONED` — Issues retracted or deferred.
+
+## 13.3 Data Ingestion & Multi-Provider Architecture
+Support automated ingestion with zero hardcoded or synthetic data:
+- **Primary Source Adapter:** REST client for `https://ipos.markets` (`/data/issues_index.json`, `/data/overview.json`, `/data/issues/<symbol>.json`) capturing:
+  - Complete live and upcoming pipeline (145+ issues including DRHPs).
+  - Benchmark listed debut issues with verified historical open, close, and listing dates.
+  - Subscription snapshots, issue price bands, lot sizes, issue sizes in ₹ Cr.
+- **Official Exchange & Regulatory Fallbacks:**
+  - NSE India: `https://www.nseindia.com/market-data/all-upcoming-issues-ipo`
+  - BSE India: Public issues portal
+  - SEBI: DRHP and regulatory observation repository
+  - Registrar portals: Link Intime, KFin Technologies, Bigshare, Skyline.
+- **Source Reliability Hierarchy:**
+  `OFFICIAL_EXCHANGE` > `OFFICIAL_REGULATOR` > `OFFICIAL_ISSUER` > `OFFICIAL_REGISTRAR` > `THIRD_PARTY` > `UNOFFICIAL_MARKET_ESTIMATE`.
+- **Audit & Sync:** Automated sync via `sync_ipo_data` management command, periodic Celery tasks, and HTMX one-click sync button in the dashboard. Never fabricate dates (`today - timedelta`); all dates must be authentic ISO calendar dates.
+
+## 13.4 IPO Master Data Model (`IPOMaster`)
+The canonical master record includes:
+- **Identity:** `symbol`, `company_name`, `isin`, `issue_type` (`MAINBOARD`, `SME`), `exchange` (`NSE`, `BSE`, `BOTH`), `sector`, `industry`, `description`.
+- **Status & Timeline:** `status`, `drhp_filing_date`, `sebi_approval_date`, `open_date`, `close_date`, `allotment_date`, `refund_date`, `demat_credit_date`, `listing_date`.
+- **Issue Structure & Capital:** `price_band_min`, `price_band_max`, `issue_price`, `lot_size`, `min_investment`, `total_issue_size_cr`, `fresh_issue_cr`, `offer_for_sale_cr`, `total_shares_offered`.
+- **Quotas & Dilution:** `retail_quota_percent` (min 35% for profitability route, min 10% for QIB route), `qib_quota_percent`, `nii_quota_percent`, `employee_quota_percent`, `promoter_holding_pre_issue`, `promoter_holding_post_issue`.
+- **Key Parties & Filings:** `lead_managers`, `registrar`, `registrar_portal_url`, `drhp_url`, `rhp_url`, `prospectus_url`, `official_exchange_url`.
+- **Listing Metrics:** `listing_day_open`, `listing_day_close`, `listing_day_high`, `listing_day_low`, `listing_day_gain_percent`, `current_market_price`, `total_gain_since_listing`.
+
+## 13.5 Fundamental Research & Valuation Engine (`IPOFundamentals`)
+Extract and compute financial metrics from official RHP/DRHP disclosures:
+- **Multi-Year Financials:** 3-year history for Revenue, EBITDA, PAT, EPS, Net Worth, Total Borrowings, Operating Cash Flow, Free Cash Flow.
+- **Growth & Margins:** 3-year Revenue CAGR, PAT CAGR, EBITDA Margin %, PAT Margin %.
+- **Return & Solvency Ratios:** ROE %, ROCE %, Debt-to-Equity, Interest Coverage Ratio, Asset Turnover.
+- **Valuation Benchmarks:** Post-issue P/E, P/B, EV/EBITDA, Market Cap at cut-off price, comparison against listed peer industry P/E (discount/premium %).
+- **Proceeds Allocation:** Fresh issue capital breakdown across Capex, Debt Repayment, Working Capital, and General Corporate Purposes (GCP capped at 25% by SEBI regulations).
+- **Governance & Risk Factors:** Related-party transactions, outstanding promoter litigation, customer/supplier concentration, auditor qualifications.
+
+## 13.6 Quantitative Scoring & Recommendation Engine
+A transparent, deterministic 7-dimension scoring model (0–100 scale):
+1. **Business Quality & Competitive Moat (20%)** — Market positioning, industry tailwinds, customer concentration.
+2. **Financial Strength & Cash Generation (20%)** — Revenue CAGR, EBITDA margins, RoNW/ROE, operating cash flow positivity.
+3. **Valuation & Peer Pricing (20%)** — Post-issue P/E vs industry median, P/B vs peers, discount/premium.
+4. **Growth Potential (15%)** — Historical addressable market expansion, capacity utilization.
+5. **Management & Corporate Governance (10%)** — Promoter track record, litigation quantum, audit remarks.
+6. **Issue Structure & Use of Proceeds (10%)** — Proportion of fresh issue vs OFS, debt retirement priority.
+7. **Demand & Subscription Velocity (5%)** — QIB demand momentum, institutional backing.
+
+### Recommendation Classes:
+- `STRONG_RESEARCH_CANDIDATE` (Score >= 80)
+- `CONSIDER_APPLYING` (Score 65–79)
+- `APPLY_WITH_CAUTION` (Score 50–64)
+- `AVOID` (Score < 50)
+- `INSUFFICIENT_DATA` (Incomplete RHP disclosures or missing financials)
+
+### Multi-Horizon Assessments:
+Evaluate and report separately on:
+- **Listing Gain Potential** (Driven by demand momentum, valuation gap, and market sentiment).
+- **Short-Term Horizon** (1–3 months post-listing price discovery).
+- **Long-Term Investment Potential** (3–5 years business compounding fundamentals).
+
+Generate 7-axis geometry for Apache ECharts Radar visualization.
+
+## 13.7 Live Subscription Analytics (`IPOSubscriptionSnapshot`)
+Capture time-series subscription snapshots across the bidding window:
+- Category breakdowns: QIB (Anchor + Regular), NII (sNII for ₹2L–₹10L, bNII for >₹10L), Retail Individual Investors (RII), Employees, Existing Shareholders.
+- Metrics recorded: Shares offered, shares bid, subscription multiple (x), total valid applications received, cut-off bid share.
+- Visualizations: Day-wise demand curves, category progress bars, institutional momentum indicators.
+
+## 13.8 Grey Market Premium (GMP) Analytics (`IPOGMPRecord`)
+Optional tracking of informal market sentiment:
+- Fields: Reported GMP (₹), source/collector name, observation timestamp, estimated listing price (`price_band_max + gmp`), estimated listing gain %.
+- **Mandatory Disclaimers:** GMP is strictly unofficial, unregulated, and subject to speculative manipulation. It must never be combined with official exchange subscription data without explicit disclaimers and must remain user-toggleable.
+
+## 13.9 Interactive Bid Planner & Lot Calculator
+An interactive financial planning calculator for investors:
+- **Investor Categories:**
+  - Retail Individual Investor (RII): Application amount <= ₹2,00,000.
+  - Small Non-Institutional Investor (sNII): ₹2,00,000 < Amount <= ₹10,00,000.
+  - Big Non-Institutional Investor (bNII): Amount > ₹10,00,000.
+- **Calculations:**
+  - Exact minimum lot investment (`price_band_max * lot_size`).
+  - Maximum allowable lots within user's capital budget for selected category.
+  - Total blocked capital via ASBA / UPI mandate.
+  - Scenario outcomes at +10%, +25%, +50%, and -10% listing day pricing.
+- **Strict Limitation:** Analysis and planning tool only. Never submit bids or interface directly with banking/UPI payment gateways.
+
+## 13.10 Retail Allotment Probability Engine
+Deterministic simulation of retail allotment probability based on official SEBI basis-of-allotment mechanisms:
+- In oversubscribed retail issues, SEBI mandates a computer-generated lottery where each successful retail applicant receives exactly one minimum lot.
+- Formula:
+  $$\text{Allotment Probability} = \min\left(1.0, \frac{\text{Total Retail Lots Available}}{\text{Total Valid Retail Applications}}\right)$$
+- Accounts for valid application counts vs raw subscription multiples.
+- Emphasizes that applying for multiple retail lots does NOT increase allotment probability under lottery rules; applying from multiple family accounts (distinct PANs) is the only legitimate method. Never suggest multiple applications under a single PAN (invalidates the bid).
+
+## 13.11 Personal Allotment & Application Tracker (`IPOApplication`)
+Personal journal for logging applications and monitoring outcomes:
+- Tracks: IPO, Investor category, Application number, Bid price, Lots applied, Amount blocked, UPI mandate status (`PENDING`, `APPROVED`, `FAILED`), Allotment status (`APPLIED`, `ALLOTTED`, `PARTIALLY_ALLOTTED`, `NOT_ALLOTTED`, `REFUNDED`), Demat credit confirmation.
+- **Portfolio Integration:** One-click conversion of successful allotments into active `Holding` records in `apps.holdings`, preserving cost basis, allotment transaction date, and initial allocation weight.
+
+## 13.12 Post-Listing Performance Analytics (`IPOListingPerformance`)
+Tracks secondary market performance following market debut:
+- Listing Day Metrics: Day-1 open price, day-1 high, day-1 low, day-1 close, listing day gain % vs issue price.
+- Multi-Horizon Returns: Performance tracked across 1 Week, 1 Month, 3 Months, 6 Months, and 1 Year against NIFTY 50 and sector benchmarks.
+- Current Market Price (CMP) and total gain % since debut.
+- TradingView Lightweight Charts for daily post-listing price history.
+
+## 13.13 Primary Issues Desk Catalog & Pagination
+The catalog at `/ipo/issues/` presents a searchable, filterable directory of all issues:
+- **Tab Filters:** `All`, `Live / Open`, `Upcoming Pipeline`, `Closed / Listed`.
+- **Segment Filters:** `All Segments`, `Mainboard Only`, `SME Only`.
+- **Fast Search:** Instant substring search across symbol, company name, sector, and industry.
+- **Sorting:** By issue open date, issue size (Cr), listing gain %, or alphabetical name.
+- **Server-Side Pagination:** 15 issues per page with elided navigation (`page_range`), entry summaries (`Showing 1 to 15 of 162 issues`), full query parameter preservation across page jumps (`tab`, `type`, `q`, `sort`, `page`), and HTMX push URL navigation (`hx-push-url="true"`).
+
+## 13.14 IPO Calendar
+Chronological month and week views displaying key event dates: DRHP filings, issue opening, issue closing, allotment finalization, refund releases, demat transfers, and listing debuts.
+
+## 13.15 Executive Dashboard UI
+The central dashboard at `/ipo/` provides high-level market visibility:
+- **Executive KPI Cards:** Live & Open Issues count, Upcoming Pipeline count, Total Pipeline Issue Size (₹ Cr formatted with `intcomma_inr`), Average Debut Return %.
+- **Live & Upcoming Spotlight:** Quick-action table with pricing strips, lot sizes, dates, and direct links to issue profiles.
+- **Recent Listings Debut:** Card-based showcase of recent exchange debuts with issue price, opening price, issue size, and day-1 gains.
+- **Real-Time Data Sync:** Visual sync indicator and HTMX button triggering live fetch from `ipos.markets`.
+
+---
+
+# 14. STOCK SCREENER MODULE
 
 Create configurable screening.
 
@@ -1026,7 +1372,7 @@ Allow users to:
 
 ---
 
-# 14. WATCHLIST MODULE
+# 15. WATCHLIST MODULE
 
 Support multiple watchlists.
 
@@ -1051,7 +1397,7 @@ Features:
 
 ---
 
-# 15. TRADING AND SWING TRADING MODULE
+# 16. TRADING AND SWING TRADING MODULE
 
 Primary trading horizon: 1–8 weeks.
 
@@ -1132,7 +1478,7 @@ Store:
 
 ---
 
-# 16. FUTURES AND OPTIONS ARCHITECTURE
+# 17. FUTURES AND OPTIONS ARCHITECTURE
 
 Prepare the system for F&O without making it part of the first release.
 
@@ -1161,7 +1507,7 @@ Important:
 
 ---
 
-# 17. AI STOCK ANALYSIS MODULE
+# 18. AI STOCK ANALYSIS MODULE
 
 Build an AI research service that consumes structured data.
 
@@ -1243,7 +1589,7 @@ Keep the AI provider configurable.
 
 ---
 
-# 18. MACHINE LEARNING MODULE
+# 19. MACHINE LEARNING MODULE
 
 Introduce ML only after reliable historical data is available.
 
@@ -1274,7 +1620,7 @@ Never display predictions as guaranteed future prices.
 
 ---
 
-# 19. NEWS AND CORPORATE EVENTS
+# 20. NEWS AND CORPORATE EVENTS
 
 Support:
 
@@ -1305,7 +1651,7 @@ Respect content licensing and source terms.
 
 ---
 
-# 20. ALERTS AND NOTIFICATIONS
+# 21. ALERTS AND NOTIFICATIONS
 
 ## Price alerts
 
@@ -1348,7 +1694,7 @@ Prevent duplicate notifications for unchanged alert conditions.
 
 ---
 
-# 21. BACKTESTING MODULE
+# 22. BACKTESTING MODULE
 
 Support:
 
@@ -1388,7 +1734,7 @@ Clearly show assumptions and limitations.
 
 ---
 
-# 22. ZERODHA KITE CONNECT — FUTURE INTEGRATION
+# 23. ZERODHA KITE CONNECT — FUTURE INTEGRATION
 
 Zerodha Kite Connect must be optional.
 
@@ -1426,7 +1772,7 @@ Verify current Kite API documentation, availability, pricing, permissions and ra
 
 ---
 
-# 23. REPORTS MODULE
+# 24. REPORTS MODULE
 
 Generate:
 
@@ -1450,7 +1796,7 @@ Include:
 
 ---
 
-# 24. DATABASE ARCHITECTURE
+# 25. DATABASE ARCHITECTURE
 
 Use PostgreSQL.
 
@@ -1470,6 +1816,13 @@ TechnicalIndicatorSnapshot
 Portfolio
 Holding
 HoldingTransaction
+IPOMaster
+IPOFundamentals
+IPOSubscriptionSnapshot
+IPOGMPRecord
+IPODocument
+IPOApplication
+IPOListingPerformance
 Watchlist
 WatchlistItem
 Trade
@@ -1507,7 +1860,7 @@ Do not delete historical transactions when shares are sold.
 
 ---
 
-# 25. BACKGROUND PROCESSING
+# 26. BACKGROUND PROCESSING
 
 Use Celery + Redis.
 
@@ -1518,6 +1871,10 @@ Background tasks:
 - Quote refresh.
 - Technical indicator calculation.
 - Fundamental refresh.
+- IPO catalog and upcoming pipeline synchronization (`sync_ipos_markets_task`).
+- Live IPO subscription snapshot polling during bidding hours (10:00 – 17:00 IST).
+- Post-listing market price and CMP synchronization.
+- IPO milestone and schedule alert triggers.
 - Screener execution.
 - AI analysis.
 - News collection.
@@ -1538,7 +1895,7 @@ Do not block normal page requests with long-running tasks.
 
 ---
 
-# 26. API ARCHITECTURE
+# 27. API ARCHITECTURE
 
 Use Django REST Framework.
 
@@ -1548,6 +1905,7 @@ Suggested endpoints:
 /api/v1/market/
 /api/v1/instruments/
 /api/v1/stocks/
+/api/v1/ipo/
 /api/v1/portfolio/
 /api/v1/holdings/
 /api/v1/watchlists/
@@ -1571,7 +1929,7 @@ Requirements:
 
 ---
 
-# 27. SECURITY
+# 28. SECURITY
 
 Implement:
 
@@ -1592,7 +1950,7 @@ Do not use DEBUG=True in production.
 
 ---
 
-# 28. TESTING
+# 29. TESTING
 
 ## Unit tests
 
@@ -1604,12 +1962,20 @@ Do not use DEBUG=True in production.
 - Screener conditions.
 - Provider normalisation.
 - Data validation.
+- IPO lifecycle transitions and milestone calculation.
+- IPO subscription snapshot and velocity calculations.
+- IPO financial ratio and valuation metrics.
+- IPO 7-factor quantitative scoring engine.
+- IPO bid planner lot limits and blocked funds.
+- Retail allotment probability mathematical bounds.
+- IPO issues list pagination slicing and query preservation.
 
 ## Integration tests
 
 - Database operations.
 - Jugaad adapter.
 - Yahoo adapter.
+- `ipos.markets` REST API client and sync service.
 - Future Kite adapter.
 - Celery tasks.
 - HTMX navigation.
@@ -1624,6 +1990,8 @@ Do not use DEBUG=True in production.
 - Direct URLs.
 - Responsive layouts.
 - Loading and error states.
+- TradingView Lightweight Charts initialization and cleanup.
+- Apache ECharts initialization and cleanup.
 
 Use mocked provider responses in automated tests.
 
@@ -1631,7 +1999,7 @@ Tests must not depend on live market availability.
 
 ---
 
-# 29. LOGGING AND MONITORING
+# 30. LOGGING AND MONITORING
 
 Track:
 
@@ -1643,6 +2011,7 @@ Track:
 - AI provider errors.
 - Slow requests.
 - Data freshness.
+- IPO sync health and stale prospectus alerts.
 
 Create an administrative data-source health view.
 
@@ -1650,7 +2019,7 @@ Do not log secrets.
 
 ---
 
-# 30. ENVIRONMENT CONFIGURATION
+# 31. ENVIRONMENT CONFIGURATION
 
 Example `.env.example`:
 
@@ -1663,10 +2032,14 @@ DATABASE_URL=postgresql://user:password@localhost:5432/stock_intelligence
 
 REDIS_URL=redis://localhost:6379/0
 
-# Initial market data
+# Secondary market data
 ENABLE_JUGAAD_DATA=True
 ENABLE_YAHOO_FINANCE=True
 MARKET_DATA_PROVIDER_PRIORITY=jugaad,yahoo
+
+# Primary market (IPO) data
+ENABLE_IPOS_MARKETS=True
+IPOS_MARKETS_BASE_URL=https://ipos.markets
 
 # Future broker integration
 ENABLE_ZERODHA=False
@@ -1680,6 +2053,7 @@ AI_API_KEY=
 # Data configuration
 MARKET_DATA_CACHE_TTL=60
 HISTORICAL_DATA_CACHE_TTL=86400
+IPO_DATA_CACHE_TTL=300
 ```
 
 Do not commit the actual `.env` file.
@@ -1688,7 +2062,7 @@ Provide setup instructions for macOS and Linux.
 
 ---
 
-# 31. IMPLEMENTATION ROADMAP
+# 32. IMPLEMENTATION ROADMAP
 
 ## Phase 1 — Django foundation
 
@@ -1719,18 +2093,19 @@ The application starts and navigation works without reloading the common shell.
 Acceptance:
 Historical NSE stock data can be imported and viewed, with source and freshness recorded.
 
-## Phase 3 — Stock research
+## Phase 3 — Stock research & Chart UI
 
 - Instrument master.
 - Stock search.
 - Stock detail.
-- Historical charts.
-- Technical indicators.
+- TradingView Lightweight Charts integration for price and volume.
+- Technical indicators and signal overlays.
 - Fundamental data model.
 - Sector analysis.
+- CoolAdmin-inspired typography system with tabular numerals.
 
 Acceptance:
-A user can search a stock and inspect available historical, technical and fundamental information.
+A user can search a stock and inspect available historical, technical and fundamental information with interactive Lightweight Charts.
 
 ## Phase 4 — Portfolio
 
@@ -1739,11 +2114,27 @@ A user can search a stock and inspect available historical, technical and fundam
 - Holdings.
 - Average price.
 - P&L.
-- Portfolio analytics.
+- Portfolio analytics (Apache ECharts donut & exposure widgets).
 - Existing-holder recommendations.
 
 Acceptance:
 Portfolio calculations are accurate and transaction history is preserved.
+
+## Phase 4B — Primary Market & IPO Intelligence Centre
+
+- Canonical IPO Master data model and lifecycle transitions.
+- `ipos.markets` REST ingestion and official exchange adapters.
+- Primary Issues Desk with server-side pagination, search, segment and tab filters.
+- Live subscription velocity tracking and category breakdowns.
+- Fundamental financial research and peer valuation engine.
+- 7-factor quantitative scoring and multi-horizon recommendation engine.
+- Interactive bid planner and lottery-based retail allotment probability engine.
+- Personal application journal with one-click portfolio conversion.
+- Post-listing performance tracking and TradingView chart integration.
+- Executive dashboard with CoolAdmin typography and Apache ECharts widgets.
+
+Acceptance:
+Users can inspect upcoming/live/closed IPOs, calculate bid capital, estimate allotment odds, review quantitative scores, and track post-listing gains.
 
 ## Phase 5 — Screener and watchlists
 
@@ -1823,7 +2214,7 @@ Optional integrations work without making the application dependent on them.
 
 ---
 
-# 32. CRITICAL BUSINESS RULES
+# 33. CRITICAL BUSINESS RULES
 
 1. Existing holdings must always be considered in stock analysis.
 2. Existing-holder and new-investor recommendations must be separate.
@@ -1840,10 +2231,15 @@ Optional integrations work without making the application dependent on them.
 13. The application must work without Zerodha.
 14. Keep AI and data providers replaceable.
 15. Do not implement all phases simultaneously.
+16. Never fabricate IPO data or dates. All issue dates, price bands, lot sizes, and issue sizes must come from verified sources (`ipos.markets`, NSE/BSE, SEBI).
+17. Grey Market Premium (GMP) is strictly unofficial and unregulated. It must never be presented as an official indicator or guaranteed price discovery and must remain toggleable.
+18. Never guarantee IPO allotment or promise listing gains. Transparently state the lottery basis for oversubscribed retail applications.
+19. Financial numbers must always use tabular figures (`tabular-nums`) and standard Indian numbering (`₹... Cr` formatted with `intcomma_inr`).
+20. Dual charting separation is strict: TradingView Lightweight Charts for stock/IPO price history; Apache ECharts for dashboard analytics. Never use commercial/paid alternatives or duplicate the candlestick engine.
 
 ---
 
-# 33. GOOGLE ANTIGRAVITY IMPLEMENTATION INSTRUCTIONS
+# 34. GOOGLE ANTIGRAVITY IMPLEMENTATION INSTRUCTIONS
 
 Act as a senior software architect and experienced Django developer.
 
@@ -1925,7 +2321,7 @@ Maintain:
 
 ---
 
-# 34. DEFINITION OF DONE
+# 35. DEFINITION OF DONE
 
 The initial usable application must have:
 
@@ -1938,6 +2334,11 @@ The initial usable application must have:
 - Browser history support.
 - Jugaad-Data integration.
 - Yahoo Finance integration.
+- Primary Market / IPO Intelligence Centre (`ipos.markets` + NSE/BSE feeds, canonical lifecycle, subscription analytics, valuation engine, quantitative scoring, bid planner, allotment tracker, post-listing performance).
+- Primary Issues Desk with server-side pagination, search, and segment filtering.
+- TradingView Lightweight Charts integration for stock price and technical charts.
+- Apache ECharts integration for dashboard analytics and radar visualizations.
+- CoolAdmin-inspired typography system with Inter font, strict hierarchy, and tabular numerals.
 - Common market data service.
 - Historical data storage.
 - Data validation.
@@ -1960,13 +2361,14 @@ The initial usable application must have:
 
 ---
 
-# 35. FINAL ARCHITECTURAL DIRECTION
+# 36. FINAL ARCHITECTURAL DIRECTION
 
 Build a dependable Django modular monolith.
 
 Initial data providers:
 - Jugaad-Data: primary Indian NSE data provider where supported.
 - Yahoo Finance: secondary historical data provider.
+- `ipos.markets`: primary Indian IPO intelligence data provider.
 
 Future provider:
 - Zerodha Kite Connect: optional broker and market data integration.

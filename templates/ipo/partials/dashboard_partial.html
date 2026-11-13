@@ -4,7 +4,7 @@
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <h1 class="h3 fw-bold text-body mb-0">IPO Intelligence Centre</h1>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2 py-1">
                 <i class="bi bi-rocket-takeoff me-1"></i>Primary Market
             </span>
         </div>
@@ -14,12 +14,12 @@
         </p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'ipo:calendar' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2"
+        <a href="{% url 'ipo:calendar' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
            hx-get="{% url 'ipo:calendar' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-calendar3"></i>
             <span>IPO Calendar</span>
         </a>
-        <a href="{% url 'ipo:issues' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+        <a href="{% url 'ipo:issues' %}" class="btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm"
            hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-grid-3x3-gap"></i>
             <span>View All Issues ({{ all_count|default:"10" }})</span>
@@ -31,83 +31,80 @@
 <div class="row g-3 mb-4">
     <!-- Card 1: Live Open Issues -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-            <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase tracking-wider">Live &amp; Open Issues</span>
-                    <div class="p-2 rounded-3 bg-success-subtle text-success">
-                        <i class="bi bi-broadcast fs-5"></i>
-                    </div>
-                </div>
-                <div class="fs-3 fw-bold num-mono text-body mb-1">{{ live_count }}</div>
-                <div class="d-flex align-items-center gap-2 text-muted small">
-                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Accepting Bids</span>
-                    <span>&bull;</span>
-                    <a href="{% url 'ipo:issues' %}?tab=live" class="text-decoration-none" hx-get="{% url 'ipo:issues' %}?tab=live" hx-target="#main-content" hx-push-url="true">View &rarr;</a>
+        <div class="stat-card-elevated border-accent-success h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Live &amp; Open Issues</span>
+                <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-broadcast fs-5"></i>
                 </div>
             </div>
-            <div class="position-absolute bottom-0 start-0 end-0 bg-success" style="height: 3px;"></div>
+            <div class="fs-2 fw-bold num-mono text-body mb-1" style="font-size: 1.75rem;">{{ live_count }}</div>
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
+                <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Accepting Bids</span>
+                <a href="{% url 'ipo:issues' %}?tab=live" class="text-primary text-decoration-none fw-semibold"
+                   hx-get="{% url 'ipo:issues' %}?tab=live" hx-target="#main-content" hx-push-url="true">
+                    View &rarr;
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Card 2: Upcoming Pipeline -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-            <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase tracking-wider">Upcoming Pipeline</span>
-                    <div class="p-2 rounded-3 bg-primary-subtle text-primary">
-                        <i class="bi bi-hourglass-split fs-5"></i>
-                    </div>
-                </div>
-                <div class="fs-3 fw-bold num-mono text-body mb-1">{{ upcoming_count }}</div>
-                <div class="d-flex align-items-center gap-2 text-muted small">
-                    <span>Approved &amp; Scheduled</span>
-                    <span>&bull;</span>
-                    <a href="{% url 'ipo:issues' %}?tab=upcoming" class="text-decoration-none" hx-get="{% url 'ipo:issues' %}?tab=upcoming" hx-target="#main-content" hx-push-url="true">Inspect &rarr;</a>
+        <div class="stat-card-elevated border-accent-primary h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Upcoming Pipeline</span>
+                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-hourglass-split fs-5"></i>
                 </div>
             </div>
-            <div class="position-absolute bottom-0 start-0 end-0 bg-primary" style="height: 3px;"></div>
+            <div class="fs-2 fw-bold num-mono text-body mb-1" style="font-size: 1.75rem;">{{ upcoming_count }}</div>
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+                <span>Approved &amp; Scheduled</span>
+                <a href="{% url 'ipo:issues' %}?tab=upcoming" class="text-primary text-decoration-none fw-semibold"
+                   hx-get="{% url 'ipo:issues' %}?tab=upcoming" hx-target="#main-content" hx-push-url="true">
+                    Inspect &rarr;
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Card 3: Capital Mobilized -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-            <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase tracking-wider">Total Issue Size</span>
-                    <div class="p-2 rounded-3 bg-info-subtle text-info">
-                        <i class="bi bi-currency-rupee fs-5"></i>
-                    </div>
-                </div>
-                <div class="fs-3 fw-bold num-mono text-body mb-1">₹{{ total_mobilized_cr|floatformat:0 }} Cr</div>
-                <div class="d-flex align-items-center gap-2 text-muted small">
-                    <span>Mainboard: <strong>{{ mainboard_count }}</strong></span>
-                    <span>&bull;</span>
-                    <span>SME: <strong>{{ sme_count }}</strong></span>
+        <div class="stat-card-elevated border-accent-info h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Total Issue Size</span>
+                <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-currency-rupee fs-5"></i>
                 </div>
             </div>
-            <div class="position-absolute bottom-0 start-0 end-0 bg-info" style="height: 3px;"></div>
+            <div class="fs-2 fw-bold num-mono text-body mb-1" style="font-size: 1.75rem;">₹{{ total_mobilized_cr|floatformat:0 }} Cr</div>
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+                <span>Mainboard: <strong class="text-secondary">{{ mainboard_count }}</strong></span>
+                <span>SME: <strong class="text-secondary">{{ sme_count }}</strong></span>
+            </div>
         </div>
     </div>
 
     <!-- Card 4: Average Listing Day Gain -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-            <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase tracking-wider">Avg Listing Gain</span>
-                    <div class="p-2 rounded-3 bg-warning-subtle text-warning-emphasis">
-                        <i class="bi bi-graph-up-arrow fs-5"></i>
-                    </div>
+        <div class="stat-card-elevated border-accent-warning h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted small fw-semibold text-uppercase tracking-wider" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Avg Debut Return</span>
+                <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-graph-up-arrow fs-5"></i>
                 </div>
-                <div class="fs-3 fw-bold num-mono {% if avg_listing_gain >= 0 %}text-gain{% else %}text-loss{% endif %} mb-1">
-                    {% if avg_listing_gain >= 0 %}+{% endif %}{{ avg_listing_gain|floatformat:1 }}%
-                </div>
-                <div class="text-muted small">Across {{ listed_count }} recent debuts</div>
             </div>
-            <div class="position-absolute bottom-0 start-0 end-0 bg-warning" style="height: 3px;"></div>
+            <div class="fs-2 fw-bold num-mono {% if avg_listing_gain >= 0 %}text-gain{% else %}text-loss{% endif %} mb-1" style="font-size: 1.75rem;">
+                {% if avg_listing_gain >= 0 %}+{% endif %}{{ avg_listing_gain|floatformat:1 }}%
+            </div>
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+                <span>Across {{ listed_count }} recent debuts</span>
+                <a href="{% url 'ipo:performance' %}" class="text-primary text-decoration-none fw-semibold"
+                   hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">
+                    Returns Desk &rarr;
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -116,88 +113,123 @@
 <div class="row g-4 mb-4">
     <!-- Left: Spotlight Issues Table -->
     <div class="col-12 col-xl-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                    <h5 class="fw-bold mb-0 text-body">Live &amp; Upcoming Issues Spotlight</h5>
-                    <span class="text-muted small">Verified issue timelines, price bands, and minimum application lots</span>
+        <div class="stat-card-elevated h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary p-1.5 rounded-3">
+                        <i class="bi bi-stars fs-6"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-bold mb-0" style="font-size: var(--font-size-md, 1rem);">Live &amp; Upcoming Issues Spotlight</h5>
+                        <span class="text-muted" style="font-size: var(--font-size-xs, 0.72rem);">Verified issue timelines, price bands, and minimum application lots</span>
+                    </div>
                 </div>
-                <a href="{% url 'ipo:issues' %}" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                <a href="{% url 'ipo:issues' %}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
                    hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">
                     <span>Full Issues Desk</span>
                     <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
-            <div class="card-body px-0 py-2">
+
+            <div class="table-responsive flex-grow-1">
                 {% if spotlight_issues %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-muted small text-uppercase">
-                            <tr>
-                                <th class="ps-4">Company &amp; Symbol</th>
-                                <th>Type / Exchange</th>
-                                <th class="text-end">Price Band</th>
-                                <th class="text-end">Min Inv (Lot)</th>
-                                <th class="text-end">Issue Size</th>
-                                <th class="text-center">Dates (Open - Close)</th>
-                                <th class="text-center pe-4">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ipo in spotlight_issues %}
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-3">
-                                        {% stock_logo ipo.symbol size=36 css_class="p-1 flex-shrink-0" %}
-                                        <div class="text-truncate" style="max-width: 200px;">
-                                            <a href="{% url 'ipo:detail' ipo.symbol %}"
-                                               class="text-decoration-none fw-bold text-body hover-primary text-truncate d-block"
-                                               hx-get="{% url 'ipo:detail' ipo.symbol %}"
-                                               hx-target="#main-content" hx-push-url="true">
-                                                {{ ipo.symbol }}
-                                            </a>
-                                            <div class="text-muted small text-truncate" title="{{ ipo.company_name }}">
-                                                {{ ipo.company_name }}
-                                            </div>
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted small border-secondary border-opacity-25" style="font-size: var(--font-size-xs, 0.72rem);">
+                            <th class="ps-2">COMPANY &amp; SYMBOL</th>
+                            <th>TYPE</th>
+                            <th class="text-end">PRICE BAND</th>
+                            <th class="text-end">MIN LOT (INR)</th>
+                            <th class="text-end">ISSUE SIZE</th>
+                            <th class="text-center">TIMELINE</th>
+                            <th class="text-center pe-2">ACTION / STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ipo in spotlight_issues %}
+                        <tr>
+                            <!-- Company Logo & Symbol -->
+                            <td class="ps-2">
+                                <a href="{% url 'ipo:detail' ipo.symbol %}"
+                                   class="text-decoration-none d-flex align-items-center"
+                                   hx-get="{% url 'ipo:detail' ipo.symbol %}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    {% stock_logo ipo.symbol size=36 css_class="me-3 p-1 rounded-2 shadow-xs" %}
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-primary">{{ ipo.symbol }}</div>
+                                        <div class="text-muted text-truncate" style="font-size: 0.72rem; max-width: 170px;" title="{{ ipo.company_name }}">
+                                            {{ ipo.company_name }}
                                         </div>
                                     </div>
-                                </td>
-                                <td>
-                                    <span class="badge {% if ipo.issue_type == 'MAINBOARD' %}bg-primary-subtle text-primary{% else %}bg-warning-subtle text-warning-emphasis{% endif %} border small">
+                                </a>
+                            </td>
+
+                            <!-- Type & Exchange -->
+                            <td>
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <span class="badge {% if ipo.issue_type == 'MAINBOARD' %}bg-primary{% else %}bg-warning{% endif %} bg-opacity-10 {% if ipo.issue_type == 'MAINBOARD' %}text-primary{% else %}text-warning{% endif %} py-1 px-1.5" style="font-size: 0.68rem;">
                                         {{ ipo.get_issue_type_display }}
                                     </span>
-                                    <span class="badge bg-light text-secondary border small">{{ ipo.exchange }}</span>
-                                </td>
-                                <td class="text-end num-mono fw-bold">
-                                    {{ ipo.price_band_display }}
-                                </td>
-                                <td class="text-end num-mono">
-                                    <div>₹{{ ipo.calculated_min_investment|floatformat:0 }}</div>
-                                    <small class="text-muted" style="font-size: 0.72rem;">{{ ipo.lot_size }} shares</small>
-                                </td>
-                                <td class="text-end num-mono fw-semibold text-body">
-                                    ₹{{ ipo.total_issue_size_cr|floatformat:1 }} Cr
-                                </td>
-                                <td class="text-center num-mono small text-muted">
-                                    {% if ipo.open_date and ipo.close_date %}
-                                    <div>{{ ipo.open_date|date:"d M" }} - {{ ipo.close_date|date:"d M Y" }}</div>
-                                    {% else %}
-                                    <span>TBA</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center pe-4">
-                                    <a href="{% url 'ipo:detail' ipo.symbol %}"
-                                       class="badge text-decoration-none {% if ipo.status == 'LIVE' %}bg-success text-white{% elif ipo.status == 'UPCOMING' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} px-2.5 py-1"
-                                       hx-get="{% url 'ipo:detail' ipo.symbol %}"
-                                       hx-target="#main-content" hx-push-url="true">
-                                        {{ ipo.get_status_display }}
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </td>
+
+                            <!-- Price Band (Single clean row) -->
+                            <td class="text-end num-mono fw-bold text-dark text-nowrap">
+                                ₹{{ ipo.price_band_min|floatformat:0 }} – ₹{{ ipo.price_band_max|floatformat:0 }}
+                            </td>
+
+                            <!-- Min Investment & Lot Size -->
+                            <td class="text-end num-mono text-nowrap">
+                                <div class="fw-bold text-secondary">₹{{ ipo.calculated_min_investment|floatformat:0 }}</div>
+                                <span class="text-muted small" style="font-size: 0.7rem;">{{ ipo.lot_size }} shares</span>
+                            </td>
+
+                            <!-- Total Issue Size (Cr) -->
+                            <td class="text-end num-mono fw-bold text-body text-nowrap">
+                                ₹{{ ipo.total_issue_size_cr|floatformat:1 }} Cr
+                            </td>
+
+                            <!-- Open & Close Dates (Protected against ugly wrapping) -->
+                            <td class="text-center num-mono text-nowrap">
+                                {% if ipo.open_date and ipo.close_date %}
+                                <div class="fw-medium text-dark" style="font-size: 0.75rem;">
+                                    {{ ipo.open_date|date:"d M" }} – {{ ipo.close_date|date:"d M Y" }}
+                                </div>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">TBA</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Primary Action / Status Button -->
+                            <td class="text-center pe-2 text-nowrap">
+                                {% if ipo.status == 'LIVE' %}
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}"
+                                   class="btn btn-sm btn-success text-white py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs"
+                                   style="font-size: 0.72rem; font-weight: 600;"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    <i class="bi bi-lightning-fill"></i>
+                                    <span>Plan Bid</span>
+                                </a>
+                                {% elif ipo.status == 'UPCOMING' %}
+                                <a href="{% url 'ipo:detail' ipo.symbol %}"
+                                   class="btn btn-sm btn-outline-primary py-1 px-2.5 d-inline-flex align-items-center gap-1"
+                                   style="font-size: 0.72rem; font-weight: 500;"
+                                   hx-get="{% url 'ipo:detail' ipo.symbol %}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    <span>Research</span>
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary py-1 px-2" style="font-size: 0.7rem;">
+                                    {{ ipo.get_status_display }}
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
                 <div class="text-center py-5 text-muted">
                     <i class="bi bi-briefcase fs-1 d-block mb-2 text-secondary opacity-50"></i>
@@ -209,45 +241,72 @@
         </div>
     </div>
 
-    <!-- Right: Recent Listings Debut Performance -->
+    <!-- Right: Recent Listings Debut Performance (Completely Redesigned) -->
     <div class="col-12 col-xl-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
-                <h5 class="fw-bold mb-0 text-body">Recent Listings Debut</h5>
-                <span class="text-muted small">Day-1 listing gains and historical pricing</span>
+        <div class="stat-card-elevated h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning bg-opacity-10 text-warning p-1.5 rounded-3">
+                        <i class="bi bi-trophy fs-6"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-bold mb-0" style="font-size: var(--font-size-md, 1rem);">Recent Listings Debut</h5>
+                        <span class="text-muted" style="font-size: var(--font-size-xs, 0.72rem);">Day-1 listing gains &amp; performance</span>
+                    </div>
+                </div>
+                <a href="{% url 'ipo:performance' %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                   hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">
+                    <span>Performance</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
-            <div class="card-body px-4 py-2">
+
+            <div class="d-flex flex-column gap-3 flex-grow-1">
                 {% if recent_listings %}
-                <div class="d-flex flex-column gap-3 py-1">
                     {% for item in recent_listings %}
-                    <div class="p-2.5 rounded border border-secondary-subtle bg-body-tertiary">
-                        <div class="d-flex justify-content-between align-items-start mb-1.5">
-                            <div class="d-flex align-items-center gap-2">
-                                {% stock_logo item.symbol size=28 css_class="p-0.5" %}
-                                <div>
-                                    <a href="{% url 'ipo:detail' item.symbol %}"
-                                       class="text-decoration-none fw-bold text-body hover-primary small d-block"
-                                       hx-get="{% url 'ipo:detail' item.symbol %}"
-                                       hx-target="#main-content" hx-push-url="true">
-                                        {{ item.symbol }}
-                                    </a>
-                                    <span class="text-muted" style="font-size: 0.72rem;">{{ item.listing_date|date:"d M Y" }}</span>
+                    <a href="{% url 'ipo:detail' item.symbol %}"
+                       hx-get="{% url 'ipo:detail' item.symbol %}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       class="setup-item d-block">
+                        <!-- Top Header: Logo, Symbol, Date, and Listing Gain Pill -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center min-w-0">
+                                {% stock_logo item.symbol size=38 css_class="p-1 rounded-2 shadow-xs" %}
+                                <div class="min-w-0">
+                                    <div class="d-flex align-items-center text-truncate">
+                                        <span class="fw-bold text-dark fs-6">{{ item.symbol }}</span>
+                                    </div>
+                                    <div class="text-muted text-truncate mt-0.5" style="font-size: 0.72rem; max-width: 150px;">
+                                        {{ item.listing_date|date:"d M Y" }} &bull; {{ item.company_name }}
+                                    </div>
                                 </div>
                             </div>
-                            <div class="text-end">
-                                <span class="badge {% if item.listing_day_gain_percent >= 0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} num-mono">
-                                    {% if item.listing_day_gain_percent >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ item.listing_day_gain_percent|floatformat:1 }}%
+
+                            <div class="text-end ps-2 flex-shrink-0">
+                                <span class="badge {% if item.listing_day_gain_percent >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if item.listing_day_gain_percent >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono py-1 px-2" style="font-size: 0.75rem;">
+                                    <i class="bi {% if item.listing_day_gain_percent >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %} me-0.5"></i>{% if item.listing_day_gain_percent >= 0 %}+{% endif %}{{ item.listing_day_gain_percent|floatformat:1 }}%
                                 </span>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center small text-muted pt-1 border-top border-secondary-subtle" style="font-size: 0.75rem;">
-                            <span>Issue: <strong class="num-mono text-body">₹{{ item.issue_price|floatformat:0 }}</strong></span>
-                            <span>Day 1 Open: <strong class="num-mono text-body">₹{{ item.listing_day_open|floatformat:0 }}</strong></span>
-                            <span>Size: <strong class="num-mono text-body">₹{{ item.total_issue_size_cr|floatformat:0 }} Cr</strong></span>
+
+                        <!-- Bottom Strip: 3-Box Financial Micro-Metrics -->
+                        <div class="row g-1 mt-2.5 pt-2 border-top border-secondary border-opacity-10 text-center">
+                            <div class="col-4 border-end border-secondary border-opacity-10 text-start ps-1">
+                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Issue Price</div>
+                                <div class="fw-bold num-mono text-secondary" style="font-size: 0.8125rem;">₹{{ item.issue_price|floatformat:0 }}</div>
+                            </div>
+                            <div class="col-4 border-end border-secondary border-opacity-10">
+                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Day 1 Open</div>
+                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.listing_day_open|floatformat:0 }}</div>
+                            </div>
+                            <div class="col-4 text-end pe-1">
+                                <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.03em;">Issue Size</div>
+                                <div class="fw-bold num-mono text-dark" style="font-size: 0.8125rem;">₹{{ item.total_issue_size_cr|floatformat:0 }} Cr</div>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
-                </div>
                 {% else %}
                 <div class="text-center py-5 text-muted small">
                     <i class="bi bi-clock-history fs-2 d-block mb-2 text-secondary opacity-50"></i>
@@ -255,13 +314,13 @@
                 </div>
                 {% endif %}
             </div>
-            <div class="card-footer bg-transparent border-0 px-4 pb-3 pt-0">
-                <a href="{% url 'ipo:issues' %}?tab=closed" class="btn btn-sm btn-outline-secondary w-100"
+
+            <div class="pt-3 border-top border-secondary border-opacity-10 mt-auto">
+                <a href="{% url 'ipo:issues' %}?tab=closed" class="btn btn-sm btn-outline-secondary w-100 py-1.5 fw-semibold"
                    hx-get="{% url 'ipo:issues' %}?tab=closed" hx-target="#main-content" hx-push-url="true">
-                    View All Historical Listings
+                    View All Historical Listings &rarr;
                 </a>
             </div>
         </div>
     </div>
 </div>
-

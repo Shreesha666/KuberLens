@@ -125,6 +125,54 @@ class TestPortfolioViews:
         assert "holdings/partials/holding_detail_partial.html" in [t.name for t in resp_htmx.templates]
         assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
 
+    def test_add_transaction_view_get_full_and_htmx(self, view_setup):
+        client = view_setup["client"]
+        url = reverse("holdings:add_transaction")
+
+        # Full page direct load
+        resp_full = client.get(url)
+        assert resp_full.status_code == 200
+        assert "holdings/add_transaction.html" in [t.name for t in resp_full.templates]
+        content_full = resp_full.content.decode()
+        assert "Add Investment &amp; Record Transaction" in content_full or "Add Investment & Record Transaction" in content_full
+        assert "Estimated Total Capital Outlay" in content_full
+
+        # HTMX partial load
+        resp_htmx = client.get(url, HTTP_HX_REQUEST="true")
+        assert resp_htmx.status_code == 200
+        assert "holdings/partials/add_transaction_partial.html" in [t.name for t in resp_htmx.templates]
+        assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
+
+    def test_add_transaction_view_get_with_prefilled_symbol(self, view_setup):
+        client = view_setup["client"]
+        listing = view_setup["listing"]
+        url = f"{reverse('holdings:add_transaction')}?symbol={listing.symbol}"
+
+        resp = client.get(url)
+        assert resp.status_code == 200
+        content = resp.content.decode()
+        assert listing.symbol in content
+        assert "stock-info-banner" in content
+
+    def test_add_investment_and_buy_stock_navigation_links(self, view_setup):
+        client = view_setup["client"]
+        listing = view_setup["listing"]
+
+        # 1. Portfolio Overview has "Add Investment" link
+        resp_overview = client.get(reverse("portfolio:overview"))
+        assert resp_overview.status_code == 200
+        assert reverse("holdings:add_transaction") in resp_overview.content.decode()
+
+        # 2. Holdings list has "Buy New Stock" link
+        resp_holdings = client.get(reverse("holdings:list"))
+        assert resp_holdings.status_code == 200
+        assert reverse("holdings:add_transaction") in resp_holdings.content.decode()
+
+        # 3. Stock detail has "Add to Portfolio" link with pre-filled symbol
+        resp_stock = client.get(reverse("stocks:stock_detail", kwargs={"symbol": listing.symbol}))
+        assert resp_stock.status_code == 200
+        assert f"{reverse('holdings:add_transaction')}?symbol={listing.symbol}" in resp_stock.content.decode()
+
     def test_add_transaction_post_and_htmx_redirect(self, view_setup):
         client = view_setup["client"]
         listing = view_setup["listing"]

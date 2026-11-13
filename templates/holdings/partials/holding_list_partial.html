@@ -19,8 +19,8 @@
            hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-wallet2"></i> Portfolio Overview
         </a>
-        <a href="{% url 'stocks:stock_list' %}" class="btn btn-primary"
-           hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'holdings:add_transaction' %}" class="btn btn-primary"
+           hx-get="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-plus-lg"></i> Buy New Stock
         </a>
     </div>
@@ -162,10 +162,20 @@
             <i class="bi bi-collection fs-1 d-block mb-2 text-secondary opacity-50"></i>
             <h5 class="fw-bold text-body">No Open Positions</h5>
             <p class="text-muted small mb-3">You currently have no equity positions in this portfolio.</p>
-            <a href="{% url 'stocks:stock_list' %}" class="btn btn-primary"
-               hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
-                Discover Stocks to Buy
-            </a>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{% url 'holdings:add_transaction' %}" class="btn btn-primary"
+                   hx-get="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true">
+                    <i class="bi bi-plus-lg"></i> Add Investment
+                </a>
+                <a href="{% url 'portfolio:import_holdings' %}" class="btn btn-outline-secondary"
+                   hx-get="{% url 'portfolio:import_holdings' %}" hx-target="#main-content" hx-push-url="true">
+                    <i class="bi bi-file-earmark-arrow-up"></i> Import CSV
+                </a>
+                <a href="{% url 'stocks:stock_list' %}" class="btn btn-outline-secondary"
+                   hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
+                    <i class="bi bi-search"></i> Discover Stocks
+                </a>
+            </div>
         </div>
         {% endif %}
     </div>

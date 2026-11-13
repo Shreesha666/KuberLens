@@ -16,6 +16,22 @@
                     <div class="text-muted small">
                         {{ listing.instrument.legal_name }} &bull; ISIN: <span class="num-mono">{{ listing.instrument.isin }}</span> &bull; Industry: {{ listing.instrument.industry }}
                     </div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
+                           class="btn btn-sm btn-primary"
+                           hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
+                           hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-plus-circle"></i> Add to Portfolio
+                        </a>
+                        {% if holding %}
+                        <a href="{% url 'holdings:detail' listing.symbol %}"
+                           class="btn btn-sm btn-outline-success"
+                           hx-get="{% url 'holdings:detail' listing.symbol %}"
+                           hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-wallet2"></i> View Holding ({{ holding.total_quantity }} shares)
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -207,6 +223,16 @@
                 <div class="text-muted small pt-2 border-top d-flex justify-content-between align-items-center" style="font-size: 0.75rem;">
                     <span>Time Horizon: <strong class="text-body">{{ recommendations.new_investor.suitable_horizon }}</strong></span>
                     <span class="text-muted">Calculated with 0 Chronological Look-Ahead</span>
+                </div>
+
+                <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-muted extra-small">Ready to execute entry plan?</span>
+                    <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
+                       class="btn btn-sm btn-outline-primary"
+                       hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
+                       hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-cart-plus"></i> Buy & Record in Portfolio
+                    </a>
                 </div>
             </div>
         </div>

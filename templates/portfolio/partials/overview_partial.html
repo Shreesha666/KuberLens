@@ -13,8 +13,8 @@
            hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-list-columns-reverse"></i> View All Holdings
         </a>
-        <a href="{% url 'stocks:stock_list' %}" class="btn btn-primary"
-           hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
+        <a href="{% url 'holdings:add_transaction' %}" class="btn btn-primary"
+           hx-get="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-plus-lg"></i> Add Investment
         </a>
     </div>
@@ -153,11 +153,18 @@
                 {% else %}
                 <div class="text-center py-5 text-muted">
                     <i class="bi bi-briefcase fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                    <p class="mb-2">No active stock holdings found in this portfolio.</p>
-                    <a href="{% url 'stocks:stock_list' %}" class="btn btn-sm btn-outline-primary"
-                       hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
-                        Explore stocks to invest
-                    </a>
+                    <h5 class="fw-bold text-body">No Active Stock Holdings</h5>
+                    <p class="text-muted small mb-3">Start building your portfolio by recording an investment or importing from CSV.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{% url 'holdings:add_transaction' %}" class="btn btn-sm btn-primary"
+                           hx-get="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-plus-lg"></i> Add Investment
+                        </a>
+                        <a href="{% url 'portfolio:import_holdings' %}" class="btn btn-sm btn-outline-secondary"
+                           hx-get="{% url 'portfolio:import_holdings' %}" hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Import CSV
+                        </a>
+                    </div>
                 </div>
                 {% endif %}
             </div>

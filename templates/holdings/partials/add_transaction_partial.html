@@ -1,0 +1,313 @@
+{% load core_tags %}
+<!-- Add Investment Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'portfolio:overview' %}" class="text-decoration-none"
+                       hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-push-url="true">Portfolio</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'holdings:list' %}" class="text-decoration-none"
+                       hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">Holdings</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Add Investment</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold text-body mb-1">
+            <i class="bi bi-plus-circle text-primary me-1"></i> Add Investment & Record Transaction
+        </h1>
+        <p class="text-muted small mb-0">
+            Manually log a single stock buy, sell, or corporate action. The deterministic FIFO accounting engine reconciles open lots, cost basis, and live P&L automatically.
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'portfolio:import_holdings' %}" class="btn btn-outline-secondary"
+           hx-get="{% url 'portfolio:import_holdings' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-file-earmark-arrow-up"></i> Import CSV
+        </a>
+        <a href="{% url 'stocks:stock_list' %}" class="btn btn-outline-secondary"
+           hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-search"></i> Explore Stocks
+        </a>
+        <a href="{% url 'holdings:list' %}" class="btn btn-outline-primary"
+           hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-list-columns-reverse"></i> View Holdings
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-body">Transaction Form</h5>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        {{ portfolio.name }} ({{ portfolio.currency }})
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'holdings:add_transaction' %}"
+                      hx-post="{% url 'holdings:add_transaction' %}" hx-target="#main-content" hx-push-url="true"
+                      id="add-transaction-form">
+                    {% csrf_token %}
+
+                    <!-- Stock / Instrument Selection -->
+                    <div class="mb-4">
+                        <label for="stock-select" class="form-label fw-semibold text-body">
+                            Select Stock / Instrument <span class="text-danger">*</span>
+                        </label>
+                        <select name="symbol" id="stock-select" class="form-select form-select-lg" required
+                                onchange="onStockSelectChange(this)">
+                            <option value="">-- Choose a stock from tradeable universe --</option>
+                            {% for l in listings %}
+                            <option value="{{ l.symbol }}"
+                                    data-price="{% if l.latest_quote_price %}{{ l.latest_quote_price|floatformat:2 }}{% endif %}"
+                                    data-name="{{ l.instrument.display_name }}"
+                                    data-sector="{{ l.instrument.sector }}"
+                                    data-exchange="{{ l.exchange.code }}"
+                                    {% if selected_symbol == l.symbol %}selected{% endif %}>
+                                {{ l.symbol }} &bull; {{ l.instrument.display_name }} ({{ l.exchange.code }}){% if l.latest_quote_price %} &bull; ₹{{ l.latest_quote_price|floatformat:2 }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted">
+                            Can't find a symbol? Discover tickers in <a href="{% url 'stocks:stock_list' %}" hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true">Stock Intelligence</a>.
+                        </div>
+                    </div>
+
+                    <!-- Selected Stock Info Banner (when pre-selected or selected via dropdown) -->
+                    {% if selected_listing %}
+                    <div class="p-3 mb-4 rounded border bg-light d-flex align-items-center justify-content-between gap-3" id="stock-info-banner">
+                        <div class="d-flex align-items-center gap-3">
+                            {% stock_logo selected_listing size=44 css_class="p-1" %}
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-0.5">
+                                    <h6 class="fw-bold mb-0 text-body">{{ selected_listing.instrument.display_name }}</h6>
+                                    <span class="badge bg-primary text-white fw-bold">{{ selected_listing.symbol }}</span>
+                                    <span class="badge bg-secondary-subtle text-body border">{{ selected_listing.exchange.code }}</span>
+                                    <span class="badge bg-info-subtle text-info-emphasis border">{{ selected_listing.instrument.sector }}</span>
+                                </div>
+                                <div class="text-muted extra-small">
+                                    {{ selected_listing.instrument.legal_name }} &bull; ISIN: {{ selected_listing.instrument.isin }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            {% if prefill_price %}
+                            <span class="text-muted extra-small d-block">Market LTP</span>
+                            <span class="fw-bold num-mono text-body fs-5">₹{{ prefill_price|floatformat:2 }}</span>
+                            {% endif %}
+                            {% if current_holding %}
+                            <div class="badge bg-success-subtle text-success border border-success-subtle mt-1">
+                                Currently own {{ current_holding.total_quantity }} shares @ Avg ₹{{ current_holding.average_buy_price|floatformat:2 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Transaction Core Inputs -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
+                            <label for="tx-type" class="form-label small fw-semibold text-muted">Transaction Type <span class="text-danger">*</span></label>
+                            <select name="transaction_type" id="tx-type" class="form-select" required onchange="calculateOutlay()">
+                                {% for val, label in transaction_types %}
+                                <option value="{{ val }}" {% if val == 'BUY' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="tx-qty" class="form-label small fw-semibold text-muted">Quantity (Shares) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" id="tx-qty" name="quantity" class="form-control num-mono"
+                                       value="10" min="1" step="1" required oninput="calculateOutlay()">
+                                <button type="button" class="btn btn-outline-secondary" onclick="addQty(10)">+10</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="addQty(50)">+50</button>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="tx-price" class="form-label small fw-semibold text-muted">Executed Price (₹) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.05" min="0" id="tx-price" name="price" class="form-control num-mono"
+                                       value="{% if prefill_price %}{{ prefill_price|floatformat:2 }}{% endif %}"
+                                       placeholder="0.00" required oninput="calculateOutlay()">
+                                {% if prefill_price %}
+                                <button type="button" class="btn btn-outline-primary"
+                                        onclick="document.getElementById('tx-price').value = '{{ prefill_price|floatformat:2 }}'; calculateOutlay();"
+                                        title="Fill current Market LTP">
+                                    LTP
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charges & Execution Details -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6 col-md-3">
+                            <label for="tx-brokerage" class="form-label small fw-semibold text-muted">Brokerage (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" min="0" id="tx-brokerage" name="brokerage"
+                                       class="form-control num-mono" value="20.00" oninput="calculateOutlay()">
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="tx-taxes" class="form-label small fw-semibold text-muted">STT & Taxes (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" min="0" id="tx-taxes" name="statutory_taxes"
+                                       class="form-control num-mono" value="15.00" oninput="calculateOutlay()">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="tx-date" class="form-label small fw-semibold text-muted">Execution Date & Time</label>
+                            <input type="datetime-local" id="tx-date" name="executed_at" class="form-control"
+                                   value="{{ default_executed_at }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Investment Notes -->
+                    <div class="mb-4">
+                        <label for="tx-notes" class="form-label small fw-semibold text-muted">Notes / Investment Thesis</label>
+                        <input type="text" id="tx-notes" name="notes" class="form-control"
+                               placeholder="e.g. Fundamental long-term compounder, Swing breakout above 20 EMA, SIP tranche...">
+                        <div class="form-text small text-muted">Optional notes saved in your trade log for audit and strategy review.</div>
+                    </div>
+
+                    <!-- Dynamic Investment Outlay Summary -->
+                    <div class="card border border-primary border-opacity-25 bg-primary bg-opacity-10 mb-4">
+                        <div class="card-body p-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <div>
+                                    <span class="text-muted small d-block">Estimated Total Capital Outlay</span>
+                                    <span class="h4 fw-bold num-mono text-primary mb-0" id="total-outlay-display">₹0.00</span>
+                                </div>
+                                <div class="text-md-end text-muted small">
+                                    <span id="breakdown-display">0 shares &times; ₹0.00 + ₹35.00 fees</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Buttons -->
+                    <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                        <a href="{% url 'holdings:list' %}" class="btn btn-outline-secondary"
+                           hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-push-url="true">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-check-lg me-1"></i> Record Investment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Help & Accounting Info Sidebar -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h6 class="fw-bold mb-0 text-body">
+                    <i class="bi bi-info-circle text-info me-1"></i> How Portfolio Accounting Works
+                </h6>
+            </div>
+            <div class="card-body p-4 small text-muted">
+                <div class="mb-3">
+                    <strong class="text-body d-block mb-1">1. First-In, First-Out (FIFO) Lots</strong>
+                    <p class="mb-0">Every buy transaction creates an immutable tax lot. When you record a sell order, lots are relinquished in chronological order to compute exact realized gains.</p>
+                </div>
+                <div class="mb-3">
+                    <strong class="text-body d-block mb-1">2. Capitalized Acquisition Costs</strong>
+                    <p class="mb-0">Brokerage and statutory taxes (STT, stamp duty, GST) are automatically factored into your effective cost basis per share.</p>
+                </div>
+                <div>
+                    <strong class="text-body d-block mb-1">3. Corporate Actions Supported</strong>
+                    <p class="mb-0">Log stock splits, zero-cost bonus shares, and dividend cash payouts directly using the transaction type selector.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-body mb-2">
+                    <i class="bi bi-file-earmark-spreadsheet text-success me-1"></i> Have Multiple Stocks?
+                </h6>
+                <p class="small text-muted mb-3">
+                    If you have a portfolio export from Zerodha, Groww, AngelOne, or Upstox, you can import all positions at once using CSV import.
+                </p>
+                <a href="{% url 'portfolio:import_holdings' %}" class="btn btn-outline-success btn-sm w-100"
+                   hx-get="{% url 'portfolio:import_holdings' %}" hx-target="#main-content" hx-push-url="true">
+                    <i class="bi bi-upload"></i> Go to Bulk CSV Import
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function onStockSelectChange(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.price) {
+        const priceInput = document.getElementById('tx-price');
+        if (!priceInput.value || priceInput.value === '0.00' || priceInput.value === '0') {
+            priceInput.value = parseFloat(opt.dataset.price).toFixed(2);
+        }
+    }
+    calculateOutlay();
+}
+
+function addQty(delta) {
+    const qtyInput = document.getElementById('tx-qty');
+    let current = parseInt(qtyInput.value) || 0;
+    qtyInput.value = Math.max(1, current + delta);
+    calculateOutlay();
+}
+
+function calculateOutlay() {
+    const qtyInput = document.getElementById('tx-qty');
+    const priceInput = document.getElementById('tx-price');
+    const brokInput = document.getElementById('tx-brokerage');
+    const taxInput = document.getElementById('tx-taxes');
+    const typeSelect = document.getElementById('tx-type');
+
+    const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+    const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+    const brok = parseFloat(brokInput ? brokInput.value : 0) || 0;
+    const taxes = parseFloat(taxInput ? taxInput.value : 0) || 0;
+    const isSell = typeSelect && typeSelect.value === 'SELL';
+
+    const gross = qty * price;
+    let total = 0;
+    if (isSell) {
+        total = Math.max(0, gross - brok - taxes);
+    } else {
+        total = gross + brok + taxes;
+    }
+
+    const totalEl = document.getElementById('total-outlay-display');
+    const breakdownEl = document.getElementById('breakdown-display');
+
+    if (totalEl) {
+        totalEl.textContent = '₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    if (breakdownEl) {
+        const feeStr = (brok + taxes).toFixed(2);
+        if (isSell) {
+            breakdownEl.textContent = `${qty} shares × ₹${price.toFixed(2)} - ₹${feeStr} fees (Net Proceeds)`;
+        } else {
+            breakdownEl.textContent = `${qty} shares × ₹${price.toFixed(2)} + ₹${feeStr} fees`;
+        }
+    }
+}
+
+// Initial calculation on render
+setTimeout(calculateOutlay, 50);
+</script>
+

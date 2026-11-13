@@ -211,6 +211,7 @@ class IPOFundamentals(AuditedModel):
     post_issue_pe = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     post_issue_pb = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     peer_industry_pe = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    peer_comparison_data = models.JSONField(default=list, blank=True)
 
     # Narrative highlights
     key_strengths = models.TextField(blank=True, default="")
@@ -222,6 +223,37 @@ class IPOFundamentals(AuditedModel):
 
     def __str__(self):
         return f"{self.ipo.symbol} Fundamentals (FY Latest: ₹{self.revenue_fy_latest or 0} Cr)"
+
+
+class DocumentType(models.TextChoices):
+    DRHP = "DRHP", "Draft Red Herring Prospectus (DRHP)"
+    RHP = "RHP", "Red Herring Prospectus (RHP)"
+    PROSPECTUS = "PROSPECTUS", "Final Prospectus"
+    PRICE_BAND_AD = "PRICE_BAND_AD", "Price Band Advertisement"
+    ANCHOR_ALLOCATION = "ANCHOR_ALLOCATION", "Anchor Investor Allocation"
+    BASIS_OF_ALLOTMENT = "BASIS_OF_ALLOTMENT", "Basis of Allotment Document"
+    OTHER = "OTHER", "Other Regulatory Filing"
+
+
+class IPODocument(AuditedModel):
+    """
+    Official regulatory filings and prospectus documents.
+    """
+    ipo = models.ForeignKey(IPOMaster, on_delete=models.CASCADE, related_name="documents")
+    doc_type = models.CharField(max_length=30, choices=DocumentType.choices, default=DocumentType.RHP)
+    title = models.CharField(max_length=255)
+    file_url = models.URLField(max_length=500)
+    filing_date = models.DateField(null=True, blank=True)
+    file_size_mb = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    is_verified = models.BooleanField(default=True)
+    source = models.CharField(max_length=100, default="SEBI / Exchange")
+
+    class Meta:
+        db_table = "ipo_document"
+        ordering = ["-filing_date", "doc_type"]
+
+    def __str__(self):
+        return f"{self.ipo.symbol} - {self.get_doc_type_display()}"
 
 
 class IPOScoring(AuditedModel):
@@ -340,3 +372,4 @@ class IPOApplication(AuditedModel):
 
     def __str__(self):
         return f"{self.user} - {self.ipo.symbol} ({self.lots_applied} Lots) - {self.allotment_status}"
+

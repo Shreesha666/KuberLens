@@ -1,4 +1,4 @@
-{% load core_tags %}
+{% load core_tags humanize %}
 <!-- IPO Detail Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0 small">
@@ -104,7 +104,7 @@
             <div class="card-body p-3">
                 <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Issue Size</span>
                 <span class="fs-4 fw-bold num-mono text-body">₹{{ ipo.total_issue_size_cr|floatformat:1 }} Cr</span>
-                <div class="text-muted small mt-1">Primary &amp; secondary issue</div>
+                <div class="text-muted small mt-1">Total capital mobilized</div>
             </div>
         </div>
     </div>
@@ -129,17 +129,57 @@
     <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
-                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Promoter Dilution</span>
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Promoter Stake Dilution</span>
                 <span class="fs-4 fw-bold num-mono text-body">
                     {% if ipo.promoter_holding_pre_issue %}{{ ipo.promoter_holding_pre_issue|floatformat:1 }}% &rarr; {{ ipo.promoter_holding_post_issue|floatformat:1 }}%{% else %}N/A{% endif %}
                 </span>
-                <div class="text-muted small mt-1">Post-issue promoter stake</div>
+                <div class="text-muted small mt-1">Post-issue promoter holding</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Two-Column Issue Intelligence Layout -->
+<!-- Sub-Navigation Tabs (Phase B) -->
+<ul class="nav nav-pills mb-4 gap-2 bg-body-tertiary p-2 rounded-3 border border-secondary-subtle">
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'overview' %}active fw-semibold{% endif %}"
+           href="{% url 'ipo:detail' ipo.symbol %}?tab=overview"
+           hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=overview"
+           hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-info-circle me-1"></i> Issue Overview
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'subscription' %}active fw-semibold{% endif %}"
+           href="{% url 'ipo:detail' ipo.symbol %}?tab=subscription"
+           hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=subscription"
+           hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-bar-chart-steps me-1"></i> Subscription Analytics
+            {% if latest_subscription %}
+            <span class="badge {% if active_tab == 'subscription' %}bg-white text-primary{% else %}bg-primary text-white{% endif %} ms-1">{{ latest_subscription.total_subscription }}x</span>
+            {% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'fundamentals' %}active fw-semibold{% endif %}"
+           href="{% url 'ipo:detail' ipo.symbol %}?tab=fundamentals"
+           hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=fundamentals"
+           hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-graph-up-arrow me-1"></i> Fundamentals &amp; Peer Valuation
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'documents' %}active fw-semibold{% endif %}"
+           href="{% url 'ipo:detail' ipo.symbol %}?tab=documents"
+           hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=documents"
+           hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-file-earmark-lock2 me-1"></i> Regulatory Vault ({{ documents|length }})
+        </a>
+    </li>
+</ul>
+
+<!-- TAB CONTENT 1: OVERVIEW -->
+{% if active_tab == 'overview' %}
 <div class="row g-4 mb-4">
     <!-- Left Column: Business Description & Reservations -->
     <div class="col-12 col-xl-8">
@@ -204,47 +244,6 @@
             </div>
         </div>
 
-        <!-- Subscription Snapshot (if available) -->
-        {% if latest_subscription %}
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="fw-bold mb-0 text-body">Live Subscription Demand Snapshot</h5>
-                    <span class="text-muted small">Category bidding multiples as of {{ latest_subscription.snapshot_timestamp|date:"d M Y H:i" }} IST</span>
-                </div>
-                <span class="badge bg-primary text-white px-2 py-1">Day {{ latest_subscription.day_number }}</span>
-            </div>
-            <div class="card-body px-4 py-3">
-                <div class="row g-3 text-center">
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-body-tertiary border">
-                            <span class="text-muted small text-uppercase d-block">QIB Multiple</span>
-                            <span class="fs-4 fw-bold num-mono text-body">{{ latest_subscription.qib_subscription }}x</span>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-body-tertiary border">
-                            <span class="text-muted small text-uppercase d-block">NII / HNI Multiple</span>
-                            <span class="fs-4 fw-bold num-mono text-body">{{ latest_subscription.nii_subscription }}x</span>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-body-tertiary border">
-                            <span class="text-muted small text-uppercase d-block">Retail Multiple</span>
-                            <span class="fs-4 fw-bold num-mono text-body">{{ latest_subscription.retail_subscription }}x</span>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="p-2 rounded bg-primary-subtle border border-primary-subtle">
-                            <span class="text-primary small text-uppercase fw-semibold d-block">Total Demand</span>
-                            <span class="fs-4 fw-bold num-mono text-primary">{{ latest_subscription.total_subscription }}x</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
         <!-- Listing Day Debut Stats (if listed) -->
         {% if ipo.listing_day_open %}
         <div class="card border-0 shadow-sm mb-4">
@@ -303,35 +302,6 @@
             </div>
         </div>
 
-        <!-- Official Prospectus & Filings Card -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
-                <h5 class="fw-bold mb-0 text-body">Official Filings &amp; Documents</h5>
-            </div>
-            <div class="card-body px-4 py-2">
-                <div class="d-flex flex-column gap-2">
-                    {% if ipo.rhp_url %}
-                    <a href="{{ ipo.rhp_url }}" target="_blank" rel="noopener noreferrer" class="p-2 rounded border bg-body-tertiary text-decoration-none d-flex align-items-center justify-content-between hover-primary">
-                        <span class="small fw-semibold text-body"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Red Herring Prospectus (RHP)</span>
-                        <i class="bi bi-box-arrow-up-right text-muted small"></i>
-                    </a>
-                    {% endif %}
-                    {% if ipo.drhp_url %}
-                    <a href="{{ ipo.drhp_url }}" target="_blank" rel="noopener noreferrer" class="p-2 rounded border bg-body-tertiary text-decoration-none d-flex align-items-center justify-content-between hover-primary">
-                        <span class="small fw-semibold text-body"><i class="bi bi-file-earmark-text text-primary me-2"></i>Draft Red Herring Prospectus (DRHP)</span>
-                        <i class="bi bi-box-arrow-up-right text-muted small"></i>
-                    </a>
-                    {% endif %}
-                    {% if ipo.official_exchange_url %}
-                    <a href="{{ ipo.official_exchange_url }}" target="_blank" rel="noopener noreferrer" class="p-2 rounded border bg-body-tertiary text-decoration-none d-flex align-items-center justify-content-between hover-primary">
-                        <span class="small fw-semibold text-body"><i class="bi bi-globe text-success me-2"></i>Official Exchange Issue Page</span>
-                        <i class="bi bi-box-arrow-up-right text-muted small"></i>
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
         <!-- Quantitative Research Score Card (if computed) -->
         {% if scoring %}
         <div class="card border-0 shadow-sm mb-4">
@@ -349,7 +319,7 @@
                     {{ scoring.scoring_rationale }}
                 </div>
                 <div class="small d-flex justify-content-between text-muted border-top pt-2">
-                    <span>Listing Gain Potential: <strong class="text-body">{{ scoring.listing_gain_potential }}</strong></span>
+                    <span>Listing Gain: <strong class="text-body">{{ scoring.listing_gain_potential }}</strong></span>
                     <span>Long-Term: <strong class="text-body">{{ scoring.long_term_potential }}</strong></span>
                 </div>
             </div>
@@ -357,3 +327,316 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
+
+<!-- TAB CONTENT 2: SUBSCRIPTION ANALYTICS (Phase B) -->
+{% if active_tab == 'subscription' %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h5 class="fw-bold mb-0 text-body">Live Bidding &amp; Category Subscription Timeseries</h5>
+            <span class="text-muted small">Category bidding multiples and demand momentum snapshots</span>
+        </div>
+        {% if subscription_summary.has_data %}
+        <span class="badge {{ subscription_summary.momentum_class }} border px-2.5 py-1">
+            <i class="bi bi-activity me-1"></i>{{ subscription_summary.momentum_label }}
+        </span>
+        {% endif %}
+    </div>
+    <div class="card-body px-0 py-2">
+        {% if subscription_snapshots %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Day / Observation</th>
+                        <th class="text-end">QIB (50%)</th>
+                        <th class="text-end">NII / HNI (15%)</th>
+                        <th class="text-end">Retail (35%)</th>
+                        <th class="text-end">Total Multiple</th>
+                        <th class="text-end">Applications</th>
+                        <th class="text-center pe-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for snap in subscription_snapshots %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold text-body">Day {{ snap.day_number }}</span>
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">{{ snap.snapshot_timestamp|date:"d M Y H:i" }} IST</small>
+                        </td>
+                        <td class="text-end num-mono fw-semibold">
+                            {{ snap.qib_subscription|floatformat:2 }}x
+                        </td>
+                        <td class="text-end num-mono fw-semibold">
+                            {{ snap.nii_subscription|floatformat:2 }}x
+                        </td>
+                        <td class="text-end num-mono fw-semibold">
+                            {{ snap.retail_subscription|floatformat:2 }}x
+                        </td>
+                        <td class="text-end num-mono fw-bold fs-6 {% if snap.total_subscription >= 1 %}text-success{% else %}text-body{% endif %}">
+                            {{ snap.total_subscription|floatformat:2 }}x
+                        </td>
+                        <td class="text-end num-mono text-muted">
+                            {% if snap.total_applications %}{{ snap.total_applications|intcomma|default:snap.total_applications }}{% else %}—{% endif %}
+                        </td>
+                        <td class="text-center pe-4">
+                            {% if snap.total_subscription >= 1.0 %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Over-Subscribed</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border">Subscribing</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-clock-history fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            <h6 class="fw-bold text-body">No Bidding Snapshots Recorded Yet</h6>
+            <p class="small text-muted mb-0">Subscription tracking begins on the issue opening date ({{ ipo.open_date|date:"d M Y"|default:"TBA" }}).</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- TAB CONTENT 3: FUNDAMENTALS & PEER VALUATION (Phase B) -->
+{% if active_tab == 'fundamentals' %}
+{% if fundamentals %}
+<div class="row g-4 mb-4">
+    <!-- Financial Statements Extract -->
+    <div class="col-12 col-xl-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Audited Financial Performance (₹ Crores)</h5>
+                <span class="text-muted small">Extracted from Red Herring Prospectus (RHP) financial statements</span>
+            </div>
+            <div class="card-body px-0 py-2">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Metric</th>
+                                <th class="text-end">FY-2</th>
+                                <th class="text-end">FY-1</th>
+                                <th class="text-end pe-4">FY Latest</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="ps-4 fw-semibold text-body">Revenue from Operations</td>
+                                <td class="text-end num-mono">₹{{ fundamentals.revenue_fy_prev2|floatformat:1|default:"—" }}</td>
+                                <td class="text-end num-mono">₹{{ fundamentals.revenue_fy_prev1|floatformat:1|default:"—" }}</td>
+                                <td class="text-end num-mono fw-bold pe-4">₹{{ fundamentals.revenue_fy_latest|floatformat:1|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 text-body">Operating EBITDA</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono fw-semibold pe-4">₹{{ fundamentals.ebitda_latest|floatformat:1|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 text-body">Profit After Tax (PAT)</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono fw-semibold pe-4">₹{{ fundamentals.pat_latest|floatformat:1|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 text-body">Total Net Worth</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono pe-4">₹{{ fundamentals.net_worth|floatformat:1|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 text-body">Total Borrowings (Debt)</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono text-muted">—</td>
+                                <td class="text-end num-mono pe-4">₹{{ fundamentals.total_borrowings|floatformat:1|default:"0.0" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Strategic Narrative Highlights -->
+                <div class="px-4 pt-3">
+                    {% if fundamentals.key_strengths %}
+                    <div class="mb-3">
+                        <span class="fw-semibold text-success small d-block mb-1"><i class="bi bi-shield-check me-1"></i>Key Business Strengths:</span>
+                        <p class="small text-body mb-0">{{ fundamentals.key_strengths }}</p>
+                    </div>
+                    {% endif %}
+                    {% if fundamentals.key_risks %}
+                    <div class="mb-2">
+                        <span class="fw-semibold text-danger small d-block mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Key Risk Factors:</span>
+                        <p class="small text-body mb-0">{{ fundamentals.key_risks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Ratios & Peer Benchmarks -->
+    <div class="col-12 col-xl-4">
+        <!-- Ratios Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Key Operational Ratios</h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">3-Year Revenue CAGR</span>
+                    <strong class="num-mono {% if research_metrics.cagr_3yr >= 15 %}text-success{% else %}text-body{% endif %}">
+                        {% if research_metrics.cagr_3yr %}+{{ research_metrics.cagr_3yr|floatformat:1 }}%{% else %}—{% endif %}
+                    </strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">EBITDA Margin</span>
+                    <strong class="num-mono text-body">{{ research_metrics.ebitda_margin|floatformat:1|default:"—" }}%</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">PAT Margin</span>
+                    <strong class="num-mono text-body">{{ research_metrics.pat_margin|floatformat:1|default:"—" }}%</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">Return on Equity (ROE)</span>
+                    <strong class="num-mono text-body">{{ fundamentals.roe_percent|floatformat:1|default:"—" }}%</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">Return on Capital (ROCE)</span>
+                    <strong class="num-mono text-body">{{ fundamentals.roce_percent|floatformat:1|default:"—" }}%</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span class="text-muted small">Debt / Equity Ratio</span>
+                    <strong class="num-mono text-body">{{ research_metrics.debt_to_equity|floatformat:2|default:"0.00" }}x</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Valuation Benchmark Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Valuation vs. Listed Peers</h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">Post-Issue P/E</span>
+                    <strong class="num-mono text-primary fs-5">{{ fundamentals.post_issue_pe|floatformat:1|default:"—" }}x</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted small">Sector Industry P/E</span>
+                    <strong class="num-mono text-body">{{ fundamentals.peer_industry_pe|floatformat:1|default:"—" }}x</strong>
+                </div>
+                <div class="py-2">
+                    <span class="badge {{ research_metrics.valuation_badge }} w-100 py-1.5 small">
+                        {{ research_metrics.valuation_status }}
+                    </span>
+                </div>
+                {% if research_metrics.peers %}
+                <div class="mt-3 pt-2 border-top">
+                    <span class="text-muted small fw-semibold d-block mb-2">Key Listed Sector Peers:</span>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless align-middle mb-0" style="font-size: 0.8rem;">
+                            <thead class="text-muted border-bottom">
+                                <tr>
+                                    <th>Peer Name</th>
+                                    <th class="text-end">P/E</th>
+                                    <th class="text-end">P/B</th>
+                                    <th class="text-end">ROE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for peer in research_metrics.peers %}
+                                <tr>
+                                    <td class="fw-medium text-body">{{ peer.name }}</td>
+                                    <td class="text-end num-mono">{{ peer.pe|default:"—" }}x</td>
+                                    <td class="text-end num-mono">{{ peer.pb|default:"—" }}x</td>
+                                    <td class="text-end num-mono">{{ peer.roe|default:"—" }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm p-5 text-center text-muted">
+    <i class="bi bi-file-earmark-spreadsheet fs-1 d-block mb-2 text-secondary opacity-50"></i>
+    <h5 class="fw-bold text-body">Financial Data Under Review</h5>
+    <p class="small text-muted mb-0">Audited 3-year financial statements are currently being extracted from the official Red Herring Prospectus.</p>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- TAB CONTENT 4: REGULATORY DOCUMENT VAULT (Phase B) -->
+{% if active_tab == 'documents' %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-body">Official Regulatory Filings &amp; Document Vault</h5>
+            <span class="text-muted small">SEBI and Stock Exchange certified prospectuses, addendums, and allotment bases</span>
+        </div>
+        <span class="badge bg-secondary-subtle text-secondary border">{{ documents|length }} Documents</span>
+    </div>
+    <div class="card-body px-0 py-2">
+        {% if documents %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Document Type</th>
+                        <th>Document Title</th>
+                        <th>Filing Date</th>
+                        <th>Size</th>
+                        <th>Source</th>
+                        <th class="text-center pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
+                                {{ doc.get_doc_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong class="text-body small d-block">{{ doc.title }}</strong>
+                        </td>
+                        <td class="num-mono small text-muted">
+                            {{ doc.filing_date|date:"d M Y"|default:"Official Filing" }}
+                        </td>
+                        <td class="num-mono small text-muted">
+                            {% if doc.file_size_mb %}{{ doc.file_size_mb }} MB{% else %}—{% endif %}
+                        </td>
+                        <td class="small text-muted">
+                            {{ doc.source }}
+                        </td>
+                        <td class="text-center pe-4">
+                            <a href="{{ doc.file_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                <span>Open PDF</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-file-earmark-pdf fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            <h6 class="fw-bold text-body">No Uploaded Regulatory Documents Yet</h6>
+            <p class="small text-muted mb-0">Use the external links in the overview tab to access SEBI and NSE prospectus filings.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

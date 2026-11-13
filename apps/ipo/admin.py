@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from apps.ipo.models import (
     IPOApplication,
+    IPODocument,
     IPOFundamentals,
     IPOGMPRecord,
     IPOMaster,
@@ -42,6 +43,13 @@ class IPOScoringAdmin(admin.ModelAdmin):
 class IPOGMPRecordAdmin(admin.ModelAdmin):
     list_display = ("ipo", "reported_gmp", "estimated_listing_price", "estimated_gain_percent", "source_name", "observed_at")
     search_fields = ("ipo__symbol",)
+
+
+@admin.register(IPODocument)
+class IPODocumentAdmin(admin.ModelAdmin):
+    list_display = ("ipo", "doc_type", "title", "filing_date", "is_verified", "source")
+    list_filter = ("doc_type", "is_verified")
+    search_fields = ("ipo__symbol", "title")
 
 
 @admin.register(IPOApplication)

@@ -13,6 +13,8 @@ from django.views.generic import DetailView, TemplateView
 from apps.core.mixins import HTMXResponseMixin
 from apps.ipo.models import IPOMaster, IPOStatus, IssueType
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
+from services.ipo.research import compute_financial_metrics
+from services.ipo.subscription import get_subscription_summary
 
 
 class IPODashboardView(HTMXResponseMixin, TemplateView):
@@ -214,11 +216,71 @@ class IPOCalendarView(HTMXResponseMixin, TemplateView):
         return context
 
 
+class IPOResearchListView(HTMXResponseMixin, TemplateView):
+    """
+    IPO Fundamental Research & Valuation Directory:
+    Compares company financials, 3-year revenue CAGR, operating margins,
+    and valuation multiples across all active issues.
+    """
+    template_name = "ipo/research_list.html"
+    partial_template_name = "ipo/partials/research_list_partial.html"
+    active_nav = "ipo_research"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "IPO Fundamental Research & Valuation"
+        context["active_nav"] = "ipo_research"
+
+        sort_by = self.request.GET.get("sort", "score_desc")
+        sector_filter = self.request.GET.get("sector", "all")
+
+        ipos_qs = (
+            IPOMaster.objects.all()
+            .select_related("fundamentals", "scoring", "listing")
+            .prefetch_related("subscriptions")
+        )
+
+        if sector_filter and sector_filter != "all":
+            ipos_qs = ipos_qs.filter(sector=sector_filter)
+
+        items = []
+        for ipo in ipos_qs:
+            fund = getattr(ipo, "fundamentals", None)
+            metrics = compute_financial_metrics(fund, ipo)
+            score_obj = getattr(ipo, "scoring", None)
+            sub_summary = get_subscription_summary(ipo)
+
+            items.append({
+                "ipo": ipo,
+                "fundamentals": fund,
+                "metrics": metrics,
+                "score": score_obj.overall_score if score_obj else Decimal("0.00"),
+                "recommendation": score_obj.get_recommendation_display() if score_obj else "Under Review",
+                "total_subscription": sub_summary["latest"].total_subscription if sub_summary["latest"] else None,
+            })
+
+        # Sorting
+        if sort_by == "cagr_desc":
+            items.sort(key=lambda x: (x["metrics"]["cagr_3yr"] or Decimal("-999.0")), reverse=True)
+        elif sort_by == "pe_asc":
+            items.sort(key=lambda x: (x["fundamentals"].post_issue_pe if x["fundamentals"] and x["fundamentals"].post_issue_pe else Decimal("9999.0")))
+        elif sort_by == "size_desc":
+            items.sort(key=lambda x: (x["ipo"].total_issue_size_cr or Decimal("0.0")), reverse=True)
+        else:  # score_desc
+            items.sort(key=lambda x: x["score"], reverse=True)
+
+        context["research_items"] = items
+        context["sectors"] = sorted({i.sector for i in IPOMaster.objects.exclude(sector="")})
+        context["current_sector"] = sector_filter
+        context["sort_by"] = sort_by
+        return context
+
+
 class IPODetailView(HTMXResponseMixin, DetailView):
     """
     Comprehensive IPO Research Profile:
     Issue specs, price bands, lot allocations, timeline progress stepper,
-    intermediaries, and document links.
+    intermediaries, live subscription momentum, and extracted financial fundamentals.
     """
     model = IPOMaster
     template_name = "ipo/detail.html"
@@ -228,29 +290,38 @@ class IPODetailView(HTMXResponseMixin, DetailView):
 
     def get_object(self, queryset=None):
         symbol = self.kwargs.get("symbol", "").upper()
-        return get_object_or_404(IPOMaster.objects.select_related("listing"), symbol=symbol)
+        return get_object_or_404(
+            IPOMaster.objects.select_related("listing", "fundamentals", "scoring"),
+            symbol=symbol,
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ipo = self.object
+        active_tab = self.request.GET.get("tab", "overview").lower()
+
         context["page_title"] = f"{ipo.company_name} ({ipo.symbol}) - IPO Profile"
         context["active_nav"] = "ipo_issues"
+        context["active_tab"] = active_tab
         context["status_badge"] = get_status_badge_class(ipo.status)
         context["timeline_steps"] = get_timeline_milestones(ipo)
 
-        # Related models
+        # 1. Subscription Analytics (Phase B)
+        sub_summary = get_subscription_summary(ipo)
+        context["subscription_summary"] = sub_summary
         context["subscription_snapshots"] = list(ipo.subscriptions.order_by("-day_number"))
-        context["latest_subscription"] = context["subscription_snapshots"][0] if context["subscription_snapshots"] else None
+        context["latest_subscription"] = sub_summary["latest"]
+
+        # 2. Fundamentals & Financial Extraction (Phase B)
+        fund = getattr(ipo, "fundamentals", None)
+        context["fundamentals"] = fund
+        context["research_metrics"] = compute_financial_metrics(fund, ipo)
+
+        # 3. Regulatory Documents Vault (Phase B)
+        context["documents"] = list(ipo.documents.order_by("-filing_date", "doc_type"))
+
+        # 4. Scoring & GMP
+        context["scoring"] = getattr(ipo, "scoring", None)
         context["latest_gmp"] = ipo.gmp_records.order_by("-observed_at").first()
-
-        try:
-            context["scoring"] = ipo.scoring
-        except Exception:
-            context["scoring"] = None
-
-        try:
-            context["fundamentals"] = ipo.fundamentals
-        except Exception:
-            context["fundamentals"] = None
 
         return context

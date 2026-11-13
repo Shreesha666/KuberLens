@@ -68,3 +68,4 @@ def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
         },
     ]
     return steps
+

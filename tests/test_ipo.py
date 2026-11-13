@@ -1,6 +1,7 @@
 """
-Automated tests for IPO Intelligence Module (Phase A).
-Validates models, lifecycle calculations, views, HTMX partials, and seed data.
+Automated tests for IPO Intelligence Module (Phase A & Phase B).
+Validates models, lifecycle calculations, subscription analytics, fundamental research,
+tabbed detail profiles, views, HTMX partials, and seed data.
 """
 from datetime import timedelta
 from decimal import Decimal
@@ -11,13 +12,23 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.ipo.models import IPOMaster, IPOStatus, IssueType
+from apps.ipo.models import (
+    DocumentType,
+    IPODocument,
+    IPOFundamentals,
+    IPOMaster,
+    IPOStatus,
+    IPOSubscriptionSnapshot,
+    IssueType,
+)
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
+from services.ipo.research import compute_financial_metrics
+from services.ipo.subscription import get_subscription_summary
 
 
 @pytest.fixture
 def ipo_dataset(db):
-    """Creates a sample dataset of Mainboard and SME IPOs in different lifecycle stages."""
+    """Creates a sample dataset of Mainboard and SME IPOs with fundamentals and subscription snapshots."""
     today = timezone.now().date()
     live_ipo = IPOMaster.objects.create(
         symbol="TESTLIVE",
@@ -37,8 +48,62 @@ def ipo_dataset(db):
         lot_size=100,
         min_investment=Decimal("11000.00"),
         total_issue_size_cr=Decimal("500.00"),
-        fresh_issue_cr=Decimal("500.00"),
-        offer_for_sale_cr=Decimal("0.00"),
+        fresh_issue_cr=Decimal("350.00"),
+        offer_for_sale_cr=Decimal("150.00"),
+    )
+
+    # Seed multi-day subscription snapshots for live IPO
+    IPOSubscriptionSnapshot.objects.create(
+        ipo=live_ipo,
+        day_number=1,
+        qib_subscription=Decimal("0.50"),
+        nii_subscription=Decimal("1.20"),
+        retail_subscription=Decimal("2.00"),
+        total_subscription=Decimal("1.10"),
+        total_applications=150000,
+    )
+    IPOSubscriptionSnapshot.objects.create(
+        ipo=live_ipo,
+        day_number=2,
+        qib_subscription=Decimal("5.00"),
+        nii_subscription=Decimal("12.50"),
+        retail_subscription=Decimal("6.20"),
+        total_subscription=Decimal("7.30"),
+        total_applications=480000,
+    )
+
+    # Seed fundamentals for live IPO
+    IPOFundamentals.objects.create(
+        ipo=live_ipo,
+        revenue_fy_prev2=Decimal("100.00"),
+        revenue_fy_prev1=Decimal("150.00"),
+        revenue_fy_latest=Decimal("225.00"),
+        ebitda_latest=Decimal("45.00"),
+        pat_latest=Decimal("25.00"),
+        net_worth=Decimal("300.00"),
+        total_borrowings=Decimal("90.00"),
+        cash_flow_operations=Decimal("35.00"),
+        free_cash_flow=Decimal("15.00"),
+        roe_percent=Decimal("18.50"),
+        roce_percent=Decimal("22.00"),
+        post_issue_pe=Decimal("24.00"),
+        peer_industry_pe=Decimal("35.00"),
+        peer_comparison_data=[
+            {"name": "Peer Energy A", "pe": 34.0, "pb": 4.5, "roe": 14.0, "ev_ebitda": 16.0, "revenue_cr": 1200.0},
+        ],
+        key_strengths="Robust renewable pipeline and established utility contracts.",
+        key_risks="Grid curtailment risk and interest rate sensitivity.",
+        use_of_proceeds="Solar project expansion in Rajasthan.",
+    )
+
+    # Seed document for live IPO
+    IPODocument.objects.create(
+        ipo=live_ipo,
+        doc_type=DocumentType.RHP,
+        title="Test Live Energies - Red Herring Prospectus",
+        file_url="https://example.com/rhp.pdf",
+        filing_date=today - timedelta(days=5),
+        file_size_mb=Decimal("12.50"),
     )
 
     upcoming_ipo = IPOMaster.objects.create(
@@ -55,6 +120,8 @@ def ipo_dataset(db):
         price_band_max=Decimal("220.00"),
         lot_size=50,
         total_issue_size_cr=Decimal("300.00"),
+        fresh_issue_cr=Decimal("100.00"),
+        offer_for_sale_cr=Decimal("200.00"),
     )
 
     sme_ipo = IPOMaster.objects.create(
@@ -85,7 +152,7 @@ def ipo_dataset(db):
 
 @pytest.mark.django_db
 class TestIPOIntelligenceModule:
-    """Tests for IPO models, lifecycle domain logic, and views."""
+    """Tests for IPO models, lifecycle domain logic, research analytics, and views."""
 
     def test_ipo_master_properties(self, ipo_dataset):
         live = ipo_dataset["live"]
@@ -110,6 +177,59 @@ class TestIPOIntelligenceModule:
         assert "bg-success" in get_status_badge_class("LIVE")
         assert "bg-primary" in get_status_badge_class("UPCOMING")
         assert "bg-dark" in get_status_badge_class("LISTED")
+
+    def test_subscription_analytics_service(self, ipo_dataset):
+        """Tests time-series subscription aggregation, delta calculation, and momentum classification."""
+        live = ipo_dataset["live"]
+        summary = get_subscription_summary(live)
+        assert summary["has_data"] is True
+        assert summary["latest"].total_subscription == Decimal("7.30")
+        assert summary["snapshots_count"] == 2
+        assert summary["is_oversubscribed"] is True
+
+        # Delta calculation verification (Day 2 - Day 1: 7.30 - 1.10 = 6.20x)
+        assert summary["history"][0]["delta"] == Decimal("1.10")
+        assert summary["history"][1]["delta"] == Decimal("6.20")
+        assert summary["momentum_label"] == "Steady Demand Growth"
+
+        # Test IPO without snapshots
+        upcoming = ipo_dataset["upcoming"]
+        empty_summary = get_subscription_summary(upcoming)
+        assert empty_summary["has_data"] is False
+        assert empty_summary["momentum_label"] == "No Bids Recorded"
+
+    def test_financial_research_metrics_computation(self, ipo_dataset):
+        """Tests 3-year CAGR, margin derivation, debt-to-equity, and peer valuation benchmarking."""
+        live = ipo_dataset["live"]
+        fund = live.fundamentals
+        metrics = compute_financial_metrics(fund, live)
+
+        assert metrics["has_fundamentals"] is True
+        # Revenue went from 100 to 225 over 2 periods: sqrt(225/100) - 1 = 1.5 - 1 = 50.0%
+        assert metrics["cagr_3yr"] == Decimal("50.0")
+        # EBITDA margin = 45 / 225 = 20.0%
+        assert metrics["ebitda_margin"] == Decimal("20.0")
+        # PAT margin = 25 / 225 = 11.11%
+        assert metrics["pat_margin"] == Decimal("11.11")
+        # Debt to equity = 90 / 300 = 0.30
+        assert metrics["debt_to_equity"] == Decimal("0.30")
+        # Fresh issue ratio = 350 / 500 = 70.0%
+        assert metrics["fresh_issue_ratio"] == Decimal("70.0")
+        assert metrics["ofs_ratio"] == Decimal("30.0")
+        # Valuation: 24.0 vs peer 35.0 -> (24 - 35) / 35 = -31.4% (Attractive Valuation)
+        assert "Attractive Valuation" in metrics["valuation_status"]
+        assert metrics["pe_diff_percent"] == Decimal("-31.4")
+        assert len(metrics["peers"]) == 1
+
+    def test_ipo_document_and_fundamentals_models(self, ipo_dataset):
+        """Tests model relations and representation strings for IPODocument and IPOFundamentals."""
+        live = ipo_dataset["live"]
+        doc = live.documents.first()
+        assert "TESTLIVE" in str(doc)
+        assert doc.get_doc_type_display() == "Red Herring Prospectus (RHP)"
+
+        fund = live.fundamentals
+        assert "TESTLIVE Fundamentals" in str(fund)
 
     def test_ipo_dashboard_view_full_page_and_htmx(self, client: Client, ipo_dataset):
         url = reverse("ipo:dashboard")
@@ -155,6 +275,31 @@ class TestIPOIntelligenceModule:
         assert "TESTUPCOMING" in content_search
         assert "TESTLIVE" not in content_search
 
+    def test_ipo_research_list_view_and_sorting(self, client: Client, ipo_dataset):
+        """Tests the Fundamental Research & Valuation directory view and sorting."""
+        url = reverse("ipo:research")
+
+        # Full page shell
+        resp = client.get(url)
+        assert resp.status_code == 200
+        content = resp.content.decode("utf-8")
+        assert "Fundamental Research" in content
+        assert "TESTLIVE" in content
+
+        # HTMX partial
+        htmx_resp = client.get(url, HTTP_HX_REQUEST="true")
+        assert htmx_resp.status_code == 200
+        assert "<!DOCTYPE html>" not in htmx_resp.content.decode("utf-8")
+
+        # Sector filtering
+        resp_sector = client.get(f"{url}?sector=Utilities")
+        assert resp_sector.status_code == 200
+        assert "TESTLIVE" in resp_sector.content.decode("utf-8")
+
+        # Sorting by CAGR
+        resp_cagr = client.get(f"{url}?sort=cagr_desc")
+        assert resp_cagr.status_code == 200
+
     def test_ipo_calendar_view(self, client: Client, ipo_dataset):
         url = reverse("ipo:calendar")
 
@@ -170,27 +315,45 @@ class TestIPOIntelligenceModule:
         assert htmx_resp.status_code == 200
         assert "<!DOCTYPE html>" not in htmx_resp.content.decode("utf-8")
 
-    def test_ipo_detail_view(self, client: Client, ipo_dataset):
-        # Valid detail view
-        url = reverse("ipo:detail", kwargs={"symbol": "TESTLIVE"})
-        resp = client.get(url)
+    def test_ipo_detail_view_and_tab_navigation(self, client: Client, ipo_dataset):
+        """Tests full detail view and all 4 research tabs (overview, subscription, fundamentals, documents)."""
+        base_url = reverse("ipo:detail", kwargs={"symbol": "TESTLIVE"})
+
+        # Tab: Overview (default)
+        resp = client.get(base_url)
         assert resp.status_code == 200
         content = resp.content.decode("utf-8")
         assert "Test Live Energies Limited" in content
         assert "₹100 - ₹110" in content
-        assert "₹500.0 Cr" in content
+        assert "Issue Overview" in content
 
-        # HTMX partial
-        htmx_resp = client.get(url, HTTP_HX_REQUEST="true")
-        assert htmx_resp.status_code == 200
-        assert "Test Live Energies Limited" in htmx_resp.content.decode("utf-8")
+        # Tab: Subscription
+        resp_sub = client.get(f"{base_url}?tab=subscription", HTTP_HX_REQUEST="true")
+        assert resp_sub.status_code == 200
+        sub_content = resp_sub.content.decode("utf-8")
+        assert "Live Bidding" in sub_content
+        assert "7.30x" in sub_content
+
+        # Tab: Fundamentals
+        resp_fund = client.get(f"{base_url}?tab=fundamentals", HTTP_HX_REQUEST="true")
+        assert resp_fund.status_code == 200
+        fund_content = resp_fund.content.decode("utf-8")
+        assert "Audited Financial Performance" in fund_content
+        assert "Peer Energy A" in fund_content
+
+        # Tab: Documents Vault
+        resp_docs = client.get(f"{base_url}?tab=documents", HTTP_HX_REQUEST="true")
+        assert resp_docs.status_code == 200
+        docs_content = resp_docs.content.decode("utf-8")
+        assert "Official Regulatory Filings" in docs_content
+        assert "Test Live Energies - Red Herring Prospectus" in docs_content
 
         # 404 on nonexistent symbol
         resp_404 = client.get(reverse("ipo:detail", kwargs={"symbol": "NONEXISTENT"}))
         assert resp_404.status_code == 404
 
     def test_seed_ipo_data_command(self):
-        """Verifies that seed_ipo_data runs idempotently and populates canonical records."""
+        """Verifies that seed_ipo_data runs idempotently and populates canonical records with fundamentals."""
         call_command("seed_ipo_data")
         assert IPOMaster.objects.filter(symbol="SWIGGY").exists()
         assert IPOMaster.objects.filter(symbol="WAAREEENER").exists()
@@ -198,3 +361,13 @@ class TestIPOIntelligenceModule:
         assert IPOMaster.objects.filter(symbol="BAJAJHFL").exists()
         assert IPOMaster.objects.filter(symbol="NTPCGREEN").exists()
         assert IPOMaster.objects.filter(symbol="BOSSPACK").exists()
+
+        # Check seeded fundamentals & documents
+        swiggy = IPOMaster.objects.get(symbol="SWIGGY")
+        assert hasattr(swiggy, "fundamentals")
+        assert swiggy.fundamentals.revenue_cagr_3yr == Decimal("40.41")
+        assert swiggy.documents.count() >= 3
+
+        waaree = IPOMaster.objects.get(symbol="WAAREEENER")
+        assert waaree.fundamentals.revenue_fy_latest == Decimal("11397.61")
+        assert waaree.subscriptions.count() == 3

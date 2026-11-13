@@ -5,3 +5,4 @@ class IpoConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.ipo"
     verbose_name = "IPO Intelligence"
+

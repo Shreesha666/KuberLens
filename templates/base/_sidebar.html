@@ -44,6 +44,29 @@
             <i class="bi bi-newspaper"></i> News & Events
         </a>
 
+        <!-- IPO INTELLIGENCE -->
+        <div class="nav-section-title">IPO Intelligence</div>
+        <a href="{% url 'ipo:dashboard' %}"
+            class="nav-link {% if active_nav == 'ipo_dashboard' %}active{% endif %}"
+            hx-get="{% url 'ipo:dashboard' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-rocket-takeoff"></i> IPO Dashboard
+        </a>
+        <a href="{% url 'ipo:issues' %}"
+            class="nav-link {% if active_nav == 'ipo_issues' %}active{% endif %}"
+            hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-grid-3x3-gap"></i> Primary Issues Desk
+        </a>
+        <a href="{% url 'ipo:calendar' %}"
+            class="nav-link {% if active_nav == 'ipo_calendar' %}active{% endif %}"
+            hx-get="{% url 'ipo:calendar' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-calendar3"></i> IPO Calendar
+        </a>
+        <a href="{% url 'ipo:research' %}"
+            class="nav-link {% if active_nav == 'ipo_research' %}active{% endif %}"
+            hx-get="{% url 'ipo:research' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-file-earmark-bar-graph"></i> Research &amp; Financials
+        </a>
+
         <!-- MY INVESTMENTS -->
         <div class="nav-section-title">My Investments</div>
         <a href="{% url 'portfolio:overview' %}"

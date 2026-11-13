@@ -1,14 +1,36 @@
-<footer class="mt-5 py-3 border-top border-secondary border-opacity-25 text-muted small d-flex flex-wrap justify-content-between align-items-center">
-    <div>
-        <span>&copy; KuberLens &bull; Indian Stock Market Research & Intelligence Platform</span>
-        <span class="ms-2 badge bg-secondary bg-opacity-25 text-secondary">Modular Monolith Architecture</span>
+<footer id="app-footer" class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2">
+        <span>&copy; {% now "Y" %} <span class="fw-semibold text-secondary">{{ platform_title|default:"KuberLens" }}</span> &bull; Indian Stock Market Intelligence</span>
+        <span class="footer-badge">Modular Monolith</span>
     </div>
-    <div class="d-flex align-items-center gap-3">
-        <a href="{% url 'core:health_check' %}" class="text-decoration-none text-muted d-flex align-items-center gap-1" target="_blank">
-            <i class="bi bi-heart-pulse text-success"></i> System Health
-        </a>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-end gap-3">
+        <!-- Market Status Indicator -->
+        <div class="d-inline-flex align-items-center" title="{{ market_status.exchange|default:'NSE' }} Market Session: {{ market_status.session_name|default:'Post-Market' }}">
+            <span class="status-indicator-dot {% if market_status.is_open %}status-dot-open{% else %}status-dot-closed{% endif %}"></span>
+            <span class="text-secondary fw-medium me-1">{{ market_status.exchange|default:"NSE" }}:</span>
+            <span>{{ market_status.session_name|default:"Post-Market" }}</span>
+        </div>
+
         <span>&bull;</span>
-        <span>Version 1.0.0-phase1</span>
+
+        <!-- Data Freshness Status -->
+        <div class="d-inline-flex align-items-center gap-1">
+            <i class="bi bi-database-check text-primary"></i>
+            <span>{{ data_freshness.label|default:"Settled EOD (NSE)" }}</span>
+        </div>
+
+        <span>&bull;</span>
+
+        <!-- System Health Link -->
+        <a href="{% url 'core:health_check' %}" class="d-inline-flex align-items-center gap-1" target="_blank" rel="noopener" title="System Diagnostic & Health Check">
+            <i class="bi bi-heart-pulse text-success"></i>
+            <span>Health</span>
+        </a>
+
+        <span>&bull;</span>
+
+        <!-- Release Version -->
+        <span class="footer-badge">v1.0.0</span>
     </div>
 </footer>
-

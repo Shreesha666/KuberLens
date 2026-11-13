@@ -42,3 +42,4 @@ class Command(BaseCommand):
                 f"Updated: {stats['updated']}, Errors: {stats['errors']}"
             )
         )
+

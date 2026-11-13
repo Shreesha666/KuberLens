@@ -85,3 +85,4 @@ class IPOSMarketsClient:
         if not symbol:
             return None
         return self._fetch_json("api/v1/subscription", params={"symbol": symbol.strip().upper()})
+

@@ -1,0 +1,199 @@
+{% load core_tags humanize %}
+
+<!-- Multi-IPO Comparison Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'ipo:dashboard' %}" class="text-decoration-none" hx-get="{% url 'ipo:dashboard' %}" hx-target="#main-content" hx-push-url="true">IPO Intelligence</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Compare Issues</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h3 fw-bold text-body mb-0">Multi-IPO Comparison Engine</h1>
+            <span class="badge bg-secondary-subtle text-body border small">{{ comparison.ipos|length }} Issues Compared</span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">Side-by-side comparative analysis across issue structure, valuation multiples, 3-year financial growth, balance sheet risk, and 7-pillar composite research scores.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'ipo:performance' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2"
+           hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-graph-up"></i>
+            <span>Listing Performance</span>
+        </a>
+        <a href="{% url 'ipo:issues' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2"
+           hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-grid-3x3-gap"></i>
+            <span>Issues Desk</span>
+        </a>
+    </div>
+</div>
+
+<!-- Symbol Selector Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" action="{% url 'ipo:compare' %}"
+              hx-get="{% url 'ipo:compare' %}" hx-target="#main-content" hx-push-url="true"
+              class="row g-2 align-items-center">
+            <div class="col-12 col-md-8 col-lg-9">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="small fw-semibold text-muted text-uppercase me-1">Comparing:</span>
+                    {% for sym in selected_symbols %}
+                    <span class="badge bg-primary text-white d-inline-flex align-items-center gap-1.5 py-1.5 px-2.5 fs-6">
+                        <span>{{ sym }}</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="input-group input-group-sm">
+                    <select name="symbols" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="" disabled selected>-- Quick Comparison Presets --</option>
+                        <option value="SWIGGY,HYUNDAI,WAAREEENER" {% if selected_symbols_csv == 'SWIGGY,HYUNDAI,WAAREEENER' %}selected{% endif %}>
+                            Swiggy vs Hyundai vs Waaree
+                        </option>
+                        <option value="BAJAJHFL,NTPCGREEN" {% if selected_symbols_csv == 'BAJAJHFL,NTPCGREEN' %}selected{% endif %}>
+                            Bajaj Housing vs NTPC Green
+                        </option>
+                        <option value="BOSSPACK,WAAREEENER" {% if selected_symbols_csv == 'BOSSPACK,WAAREEENER' %}selected{% endif %}>
+                            Boss Packaging (SME) vs Waaree (Mainboard)
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if comparison.error %}
+<div class="alert alert-warning py-3 px-4 shadow-sm" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i> {{ comparison.error }}
+</div>
+{% else %}
+
+<!-- Head-to-Head Top Cards -->
+<div class="row g-3 mb-4">
+    {% for header in comparison.headers %}
+    <div class="col-12 col-md-6 {% if comparison.headers|length == 2 %}col-xl-6{% elif comparison.headers|length == 3 %}col-xl-4{% else %}col-xl-3{% endif %}">
+        <div class="card border-0 shadow-sm h-100 {% if header.ipo == comparison.leader %}border-top border-3 border-primary shadow{% endif %}">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center bg-body-tertiary border flex-shrink-0" style="width: 48px; height: 48px;">
+                        {% if header.ipo.listing and header.ipo.listing.instrument.logo %}
+                        <img src="{{ header.ipo.listing.instrument.logo.url }}" alt="{{ header.symbol }}" class="rounded-2" style="max-width: 38px; max-height: 38px; object-fit: contain;">
+                        {% else %}
+                        <i class="bi bi-rocket-takeoff text-secondary fs-4"></i>
+                        {% endif %}
+                    </div>
+                    {% if header.ipo == comparison.leader %}
+                    <span class="badge bg-primary text-white px-2 py-1 small">
+                        <i class="bi bi-trophy-fill me-1"></i> Highest Score
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border small">{{ header.status }}</span>
+                    {% endif %}
+                </div>
+
+                <h4 class="h5 fw-bold text-body mb-0">
+                    <a href="{% url 'ipo:detail' header.symbol %}" class="text-decoration-none text-body"
+                       hx-get="{% url 'ipo:detail' header.symbol %}" hx-target="#main-content" hx-push-url="true">
+                        {{ header.company_name }}
+                    </a>
+                </h4>
+                <div class="d-flex align-items-center gap-1.5 mt-1 mb-3">
+                    <span class="badge bg-secondary-subtle text-secondary border small">{{ header.symbol }}</span>
+                    <span class="badge bg-light text-muted border small">{{ header.issue_type }}</span>
+                    <span class="text-muted small">{{ header.sector }}</span>
+                </div>
+
+                <!-- Score Badge Card -->
+                <div class="p-3 rounded-3 bg-body-tertiary border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-semibold text-muted text-uppercase">Research Score</span>
+                        <span class="badge {{ header.badge_class }} small">{{ header.recommendation_display }}</span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="h3 fw-bold num-mono text-primary mb-0">{{ header.composite_score|floatformat:1 }}</span>
+                        <span class="text-muted small">/ 100 (Grade {{ header.score_grade }})</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between small text-muted py-1 border-bottom">
+                    <span>Price Band:</span>
+                    <span class="fw-bold num-mono text-body">{{ header.price_band }}</span>
+                </div>
+                <div class="d-flex justify-content-between small text-muted py-1">
+                    <span>Min Investment:</span>
+                    <span class="fw-bold num-mono text-body">₹{{ header.min_investment|floatformat:0|intcomma }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Executive Analytical Narrative Comparison Card -->
+{% if comparison.narrative %}
+<div class="card border-0 shadow-sm mb-4 bg-primary-subtle border border-primary-subtle">
+    <div class="card-body p-4">
+        <h5 class="fw-bold text-body mb-2 d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb-fill text-primary"></i>
+            <span>Comparative Research Verdict &amp; Differentiators</span>
+        </h5>
+        <div class="text-body lh-base" style="font-size: 0.92rem;">
+            {{ comparison.narrative|linebreaks }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Full Dimension Comparison Matrix Table Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
+        <h5 class="fw-bold mb-0 text-body">Side-by-Side Metric Matrix</h5>
+        <span class="text-muted small">Comparative breakdown across all primary and fundamental parameters</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-4" style="width: 25%;">Evaluation Metric</th>
+                    {% for header in comparison.headers %}
+                    <th class="text-center">
+                        <div class="fw-bold text-body">{{ header.symbol }}</div>
+                        <span class="text-muted small fw-normal">{{ header.issue_type }}</span>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% regroup comparison.rows by category as category_list %}
+                {% for cat in category_list %}
+                <tr class="table-secondary bg-opacity-25">
+                    <td colspan="6" class="ps-4 py-2 fw-bold text-body small text-uppercase">
+                        <i class="bi bi-bookmark-fill text-primary me-1.5"></i> {{ cat.grouper }}
+                    </td>
+                </tr>
+                {% for row in cat.list %}
+                <tr>
+                    <td class="ps-4 py-3">
+                        <div class="fw-semibold text-body">{{ row.metric }}</div>
+                        {% if row.help_text %}
+                        <div class="text-muted small" style="font-size: 0.72rem;">{{ row.help_text }}</div>
+                        {% endif %}
+                    </td>
+                    {% for val in row.values %}
+                    <td class="text-center py-3 num-mono fw-medium text-body">
+                        {{ val }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}

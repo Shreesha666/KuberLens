@@ -66,6 +66,16 @@
             hx-get="{% url 'ipo:research' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-file-earmark-bar-graph"></i> Research &amp; Financials
         </a>
+        <a href="{% url 'ipo:performance' %}"
+            class="nav-link {% if active_nav == 'ipo_performance' %}active{% endif %}"
+            hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-graph-up"></i> Listing Performance
+        </a>
+        <a href="{% url 'ipo:compare' %}"
+            class="nav-link {% if active_nav == 'ipo_compare' %}active{% endif %}"
+            hx-get="{% url 'ipo:compare' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-arrow-left-right"></i> Compare IPOs
+        </a>
         <a href="{% url 'ipo:applications' %}"
             class="nav-link {% if active_nav == 'ipo_applications' %}active{% endif %}"
             hx-get="{% url 'ipo:applications' %}" hx-target="#main-content" hx-push-url="true">

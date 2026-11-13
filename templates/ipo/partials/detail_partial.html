@@ -203,6 +203,21 @@
             <i class="bi bi-calculator me-1"></i> Bid Planner &amp; Odds
         </a>
     </li>
+    {% if ipo.status == 'LISTED' or ipo.listing_date %}
+    <li class="nav-item">
+        <a class="nav-link {% if active_tab == 'performance' %}active fw-semibold{% endif %}"
+           href="{% url 'ipo:detail' ipo.symbol %}?tab=performance"
+           hx-get="{% url 'ipo:detail' ipo.symbol %}?tab=performance"
+           hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-graph-up me-1"></i> Post-Listing Returns
+            {% if performance_metrics and performance_metrics.listing_gain_percent %}
+            <span class="badge {% if performance_metrics.listing_gain_percent >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white ms-1">
+                {% if performance_metrics.listing_gain_percent >= 0 %}+{% endif %}{{ performance_metrics.listing_gain_percent }}%
+            </span>
+            {% endif %}
+        </a>
+    </li>
+    {% endif %}
 </ul>
 
 <!-- TAB CONTENT 1: OVERVIEW -->
@@ -925,3 +940,236 @@
 {% if active_tab == 'planner' %}
 {% include "ipo/partials/bid_planner_partial.html" %}
 {% endif %}
+
+<!-- TAB CONTENT 7: POST-LISTING PERFORMANCE (Phase F) -->
+{% if active_tab == 'performance' %}
+{% if performance_metrics %}
+<div class="row g-4 mb-4">
+    <!-- Left Column: Debut vs Current Market Returns -->
+    <div class="col-12 col-xl-7">
+        <!-- Debut vs Current Returns Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-body">Listing Day vs Current Market Return</h5>
+                    <span class="badge {{ performance_metrics.badge_class }}">{{ performance_metrics.performance_label }}</span>
+                </div>
+            </div>
+            <div class="card-body px-4 py-3">
+                <div class="row g-3 text-center mb-3">
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-body-tertiary border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Issue Price</span>
+                            <span class="fs-4 fw-bold num-mono text-body">₹{{ performance_metrics.issue_price|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-body-tertiary border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Debut Close</span>
+                            <span class="fs-4 fw-bold num-mono text-body">₹{{ performance_metrics.listing_day_close|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-body-tertiary border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Listing Gain</span>
+                            <span class="fs-4 fw-bold num-mono {% if performance_metrics.listing_gain_percent >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if performance_metrics.listing_gain_percent > 0 %}+{% endif %}{{ performance_metrics.listing_gain_percent }}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-body-tertiary border">
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Current Price</span>
+                            <span class="fs-4 fw-bold num-mono text-primary">₹{{ performance_metrics.current_price|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprehensive Returns Summary Bar -->
+                <div class="p-3 rounded-3 bg-primary-subtle border border-primary-subtle mb-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <span class="small fw-semibold text-muted text-uppercase d-block">Overall Holding Return Since Issue</span>
+                            <span class="h3 fw-bold num-mono {% if performance_metrics.total_return_percent >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                                {% if performance_metrics.total_return_percent > 0 %}+{% endif %}{{ performance_metrics.total_return_percent }}%
+                            </span>
+                        </div>
+                        <div class="text-end">
+                            <span class="small fw-semibold text-muted text-uppercase d-block">Post-Debut Drift (vs Day 1)</span>
+                            <span class="h4 fw-bold num-mono {% if performance_metrics.post_listing_drift_percent >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                                {% if performance_metrics.post_listing_drift_percent > 0 %}+{% endif %}{{ performance_metrics.post_listing_drift_percent }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benchmark Relative Alpha & Drawdown Details -->
+                <div class="row g-2 text-muted small">
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded bg-body-tertiary border">
+                            <span>Benchmark Alpha (vs NIFTY 50):</span>
+                            <strong class="num-mono {% if performance_metrics.benchmark_alpha >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if performance_metrics.benchmark_alpha > 0 %}+{% endif %}{{ performance_metrics.benchmark_alpha }}%
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded bg-body-tertiary border">
+                            <span>Max Drawdown (from Peak):</span>
+                            <strong class="num-mono text-danger">-{{ performance_metrics.max_drawdown_percent }}%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day-1 Intraday Price Range Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Listing Day Volatility &amp; Intraday Range</h5>
+                <span class="text-muted small">Session opening auction, extremes, and final close</span>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless align-middle mb-0" style="font-size: 0.88rem;">
+                        <tbody>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-0">Listing Day Open (Discovery Price)</td>
+                                <td class="text-end num-mono fw-bold text-body">₹{{ performance_metrics.listing_day_open|floatformat:2 }}</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-0">Listing Day High</td>
+                                <td class="text-end num-mono fw-bold text-success">₹{{ performance_metrics.listing_day_high|floatformat:2 }}</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-0">Listing Day Low</td>
+                                <td class="text-end num-mono fw-bold text-danger">₹{{ performance_metrics.listing_day_low|floatformat:2 }}</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-0">Listing Day Close</td>
+                                <td class="text-end num-mono fw-bold text-body">₹{{ performance_metrics.listing_day_close|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted ps-0">Session Spread (High - Low)</td>
+                                <td class="text-end num-mono fw-bold text-body">₹{{ performance_metrics.listing_day_range|floatformat:2 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Multi-Horizon Returns & Technical Deep-Dive -->
+    <div class="col-12 col-xl-5">
+        <!-- Multi-Horizon Holding Returns Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Multi-Horizon Holding Returns</h5>
+                <span class="text-muted small">Holding performance over key post-listing periods</span>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th>Holding Horizon</th>
+                                <th class="text-end">Return %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">1 Week</span></td>
+                                <td class="text-end num-mono fw-bold">
+                                    {% if performance_metrics.horizon_returns.1W is not None %}
+                                    <span class="{% if performance_metrics.horizon_returns.1W >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if performance_metrics.horizon_returns.1W > 0 %}+{% endif %}{{ performance_metrics.horizon_returns.1W }}%
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">&lt; 7 days listed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">1 Month</span></td>
+                                <td class="text-end num-mono fw-bold">
+                                    {% if performance_metrics.horizon_returns.1M is not None %}
+                                    <span class="{% if performance_metrics.horizon_returns.1M >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if performance_metrics.horizon_returns.1M > 0 %}+{% endif %}{{ performance_metrics.horizon_returns.1M }}%
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">&lt; 1 month listed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">3 Months</span></td>
+                                <td class="text-end num-mono fw-bold">
+                                    {% if performance_metrics.horizon_returns.3M is not None %}
+                                    <span class="{% if performance_metrics.horizon_returns.3M >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if performance_metrics.horizon_returns.3M > 0 %}+{% endif %}{{ performance_metrics.horizon_returns.3M }}%
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">&lt; 3 months listed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">6 Months</span></td>
+                                <td class="text-end num-mono fw-bold">
+                                    {% if performance_metrics.horizon_returns.6M is not None %}
+                                    <span class="{% if performance_metrics.horizon_returns.6M >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if performance_metrics.horizon_returns.6M > 0 %}+{% endif %}{{ performance_metrics.horizon_returns.6M }}%
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">&lt; 6 months listed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">1 Year</span></td>
+                                <td class="text-end num-mono fw-bold">
+                                    {% if performance_metrics.horizon_returns.1Y is not None %}
+                                    <span class="{% if performance_metrics.horizon_returns.1Y >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if performance_metrics.horizon_returns.1Y > 0 %}+{% endif %}{{ performance_metrics.horizon_returns.1Y }}%
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">&lt; 1 year listed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Chart Link Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-graph-up-arrow fs-1 text-primary d-block mb-2"></i>
+                <h5 class="fw-bold text-body">Technical Chart &amp; Moving Averages</h5>
+                <p class="text-muted small mb-3">View candlestick price action, SMA 20/50/200 trends, RSI, and MACD indicators for {{ ipo.symbol }}.</p>
+                {% if ipo.listing %}
+                <a href="{% url 'stocks:detail' ipo.symbol %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                    <span>Open Technical Stock Chart</span>
+                </a>
+                {% else %}
+                <span class="text-muted small">Active exchange listing will link to technical chart upon exchange connection.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-5 text-center text-muted">
+        <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+        <h5 class="fw-bold text-body">Performance data not yet available</h5>
+        <p class="small mb-0">This IPO has not completed its official listing day on NSE/BSE yet.</p>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+

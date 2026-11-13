@@ -25,7 +25,11 @@ from apps.ipo.models import (
     IssueType,
 )
 from apps.portfolio.models import Portfolio
+from services.ipo.comparison import compare_ipos
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
+from services.ipo.performance import (
+    compute_ipo_performance_metrics,
+)
 from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
@@ -715,4 +719,75 @@ class TestIPOIntelligenceModule:
         res = client.post(del_url)
         assert res.status_code == 302
         assert not IPOApplication.objects.filter(pk=app.pk).exists()
+
+    def test_ipo_performance_computation_and_horizons(self, ipo_dataset):
+        """Verifies calculation of listing day gains, drift, current returns, and benchmark alpha."""
+        sme = ipo_dataset["sme"]
+        metrics = compute_ipo_performance_metrics(sme)
+
+        assert metrics["issue_price"] == Decimal("75.00")
+        assert metrics["listing_day_close"] == Decimal("125.00")
+        assert metrics["listing_gain_percent"] == Decimal("66.67")
+        assert metrics["current_price"] == Decimal("125.00")
+        assert metrics["total_return_percent"] == Decimal("66.67")
+        assert metrics["performance_category"] == "SUPER_OUTPERFORMER"
+        assert metrics["benchmark_alpha"] > Decimal("0.00")
+
+    def test_ipo_performance_view_and_filtering(self, client: Client, ipo_dataset):
+        """Verifies post-listing performance desk view, type filtering and HTMX partial response."""
+        url = reverse("ipo:performance")
+        res = client.get(url)
+        assert res.status_code == 200
+        assert "summary" in res.context
+        assert res.context["summary"]["total_listed_count"] >= 1
+        assert "TESTSME" in res.content.decode()
+
+        # HTMX partial with SME filter
+        htmx_res = client.get(url + "?type=SME", HTTP_HX_REQUEST="true")
+        assert htmx_res.status_code == 200
+        content = htmx_res.content.decode()
+        assert "TESTSME" in content
+
+    def test_ipo_comparison_service_and_narrative(self, ipo_dataset):
+        """Verifies multi-IPO side-by-side comparison matrix and automated narrative generation."""
+        live = ipo_dataset["live"]
+        sme = ipo_dataset["sme"]
+
+        comparison = compare_ipos([live.symbol, sme.symbol])
+        assert "error" not in comparison
+        assert len(comparison["ipos"]) == 2
+        assert len(comparison["headers"]) == 2
+        assert len(comparison["rows"]) >= 10
+        assert comparison["leader"] is not None
+        assert len(comparison["narrative"]) > 0
+
+    def test_ipo_comparison_view_and_presets(self, client: Client, ipo_dataset):
+        """Verifies multi-IPO comparison view, URL query params, and HTMX partial rendering."""
+        live = ipo_dataset["live"]
+        sme = ipo_dataset["sme"]
+
+        url = reverse("ipo:compare") + f"?symbols={live.symbol},{sme.symbol}"
+        res = client.get(url)
+        assert res.status_code == 200
+        assert "comparison" in res.context
+        assert len(res.context["comparison"]["ipos"]) == 2
+        assert live.symbol in res.content.decode()
+        assert sme.symbol in res.content.decode()
+
+        # HTMX partial
+        htmx_res = client.get(url, HTTP_HX_REQUEST="true")
+        assert htmx_res.status_code == 200
+        assert "Side-by-Side Metric Matrix" in htmx_res.content.decode()
+
+    def test_ipo_detail_performance_tab(self, client: Client, ipo_dataset):
+        """Verifies ?tab=performance on IPODetailView renders listing day metrics and horizon returns."""
+        sme = ipo_dataset["sme"]
+        url = reverse("ipo:detail", kwargs={"symbol": sme.symbol}) + "?tab=performance"
+        res = client.get(url)
+        assert res.status_code == 200
+        assert res.context["active_tab"] == "performance"
+        assert "performance_metrics" in res.context
+        assert res.context["performance_metrics"]["listing_gain_percent"] == Decimal("66.67")
+        assert "Listing Day vs Current Market Return" in res.content.decode()
+
 

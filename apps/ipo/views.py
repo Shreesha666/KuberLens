@@ -19,7 +19,12 @@ from apps.holdings.models import HoldingTransaction, TransactionType
 from apps.instruments.models import ExchangeListing
 from apps.ipo.models import IPOApplication, IPOMaster, IPOStatus, IssueType
 from apps.portfolio.models import Portfolio
+from services.ipo.comparison import compare_ipos
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
+from services.ipo.performance import (
+    compute_ipo_performance_metrics,
+    get_listed_ipos_performance_summary,
+)
 from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
@@ -444,6 +449,10 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         context["planner_cutoff"] = planner_cutoff
         context["planner_pans"] = planner_pans
 
+        # 6. Post-Listing Performance Analytics (Phase F)
+        if active_tab == "performance" or ipo.status == IPOStatus.LISTED or ipo.listing_date:
+            context["performance_metrics"] = compute_ipo_performance_metrics(ipo)
+
         return context
 
 
@@ -759,4 +768,75 @@ class IPOApplicationDeleteView(LoginRequiredMixin, View):
             response["HX-Redirect"] = reverse("ipo:applications")
             return response
         return redirect("ipo:applications")
+
+
+class IPOPerformanceView(HTMXResponseMixin, TemplateView):
+    """
+    Post-Listing Performance Desk:
+    Exhaustive return analytics for listed IPOs including listing day gains,
+    multi-horizon holding returns (1W, 1M, 3M, 6M, 1Y), maximum drawdowns, and benchmark alpha.
+    """
+    template_name = "ipo/performance.html"
+    partial_template_name = "ipo/partials/performance_partial.html"
+    active_nav = "ipo_performance"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        issue_type = self.request.GET.get("type", "ALL")
+        sector = self.request.GET.get("sector", "ALL")
+        sort_by = self.request.GET.get("sort", "-total_return")
+
+        summary = get_listed_ipos_performance_summary(
+            issue_type=issue_type,
+            sector=sector,
+            sort_by=sort_by,
+        )
+        context["page_title"] = "Post-Listing Performance & Returns Desk"
+        context["active_nav"] = "ipo_performance"
+        context["summary"] = summary
+        context["current_type"] = issue_type
+        context["current_sector"] = sector
+        context["current_sort"] = sort_by
+
+        context["sectors"] = (
+            IPOMaster.objects.filter(Q(status=IPOStatus.LISTED) | Q(listing_date__isnull=False))
+            .values_list("sector", flat=True)
+            .distinct()
+            .order_by("sector")
+        )
+        return context
+
+
+class IPOComparisonView(HTMXResponseMixin, TemplateView):
+    """
+    Multi-IPO Side-by-Side Comparison Engine:
+    Compares 2 to 4 IPOs across valuation multiples, 3-year growth,
+    financial ratios, subscription demand, and 7-pillar composite research scores.
+    """
+    template_name = "ipo/compare.html"
+    partial_template_name = "ipo/partials/compare_partial.html"
+    active_nav = "ipo_compare"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        symbols_raw = self.request.GET.get("symbols", "")
+        if symbols_raw:
+            symbols = [s.strip().upper() for s in symbols_raw.split(",") if s.strip()]
+        else:
+            # Default to 3 prominent issues
+            default_symbols = list(
+                IPOMaster.objects.filter(status__in=[IPOStatus.LIVE, IPOStatus.UPCOMING, IPOStatus.LISTED])
+                .values_list("symbol", flat=True)[:3]
+            )
+            symbols = default_symbols or ["SWIGGY", "HYUNDAI", "WAAREEENER"]
+
+        comparison_data = compare_ipos(symbols)
+        context["page_title"] = "Multi-IPO Comparison Matrix"
+        context["active_nav"] = "ipo_compare"
+        context["comparison"] = comparison_data
+        context["selected_symbols"] = symbols
+        context["selected_symbols_csv"] = ",".join(symbols)
+        context["all_ipos"] = IPOMaster.objects.all().order_by("company_name")
+        return context
+
 

@@ -157,6 +157,10 @@ class IPOMaster(AuditedModel):
             return self.open_date <= today <= self.close_date
         return self.status == IPOStatus.LIVE
 
+    @property
+    def latest_subscription(self):
+        return self.subscriptions.order_by("-day_number").first()
+
 
 class IPOSubscriptionSnapshot(AuditedModel):
     """
@@ -223,6 +227,12 @@ class IPOFundamentals(AuditedModel):
 
     def __str__(self):
         return f"{self.ipo.symbol} Fundamentals (FY Latest: ₹{self.revenue_fy_latest or 0} Cr)"
+
+    @property
+    def debt_equity_ratio(self):
+        if self.total_borrowings is not None and self.net_worth and self.net_worth > Decimal("0.00"):
+            return round(self.total_borrowings / self.net_worth, 2)
+        return None
 
 
 class DocumentType(models.TextChoices):
@@ -304,6 +314,34 @@ class IPOScoring(AuditedModel):
 
     def __str__(self):
         return f"{self.ipo.symbol} Score: {self.overall_score}/100 ({self.recommendation})"
+
+    @property
+    def composite_score(self) -> Decimal:
+        return self.overall_score
+
+    @property
+    def score_grade(self) -> str:
+        s = self.overall_score
+        if s >= Decimal("85.0"):
+            return "A+"
+        if s >= Decimal("75.0"):
+            return "A"
+        if s >= Decimal("60.0"):
+            return "B"
+        if s >= Decimal("45.0"):
+            return "C"
+        return "D"
+
+    @property
+    def recommendation_badge_class(self) -> str:
+        rec_badges = {
+            "STRONG_RESEARCH_CANDIDATE": "bg-success text-white",
+            "CONSIDER_APPLYING": "bg-primary text-white",
+            "APPLY_WITH_CAUTION": "bg-warning text-dark",
+            "AVOID": "bg-danger text-white",
+            "INSUFFICIENT_DATA": "bg-secondary text-white",
+        }
+        return rec_badges.get(self.recommendation, "bg-secondary text-white")
 
 
 class IPOGMPRecord(AuditedModel):

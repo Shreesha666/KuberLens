@@ -155,6 +155,16 @@ def sync_ipos_markets(
             seen_slugs.add(slug)
             candidates.append(item)
 
+    # Ingest the full comprehensive upcoming pipeline from issues_index.json (130+ DRHP & SEBI approved issues)
+    issues_index = client.get_issues_index() or []
+    for item in issues_index:
+        stage = (item.get("stage") or "").lower()
+        if stage in ("upcoming", "drhp_filed", "sebi_observations", "announced"):
+            slug = item.get("slug")
+            if slug and slug not in seen_slugs:
+                seen_slugs.add(slug)
+                candidates.append(item)
+
     if not live_only:
         for item in overview.get("recent", []):
             slug = item.get("slug")
@@ -176,16 +186,20 @@ def sync_ipos_markets(
             seen_slugs.add(k_slug)
             candidates.append({"slug": k_slug, "symbol": sym})
 
-    logger.info("Found %d candidate IPOs from ipos.markets overview", len(candidates))
+    logger.info("Found %d candidate IPOs from ipos.markets", len(candidates))
 
-    # Process candidates up to detail_limit
-    for item in candidates[:detail_limit]:
+    # Process all candidates (fetch deep details for live/recent/top N, use index metadata for pipeline)
+    for idx, item in enumerate(candidates):
         slug = item.get("slug")
         if not slug:
             continue
 
         try:
-            detail = client.get_issue_detail(slug) or {}
+            stage = (item.get("stage") or "").lower()
+            needs_deep_detail = (idx < detail_limit) or stage in ("open", "bidding", "listed", "post_listing")
+            detail = client.get_issue_detail(slug) if needs_deep_detail else {}
+            if detail is None:
+                detail = {}
 
             # Determine Company Name & Symbol
             company_name = detail.get("display") or item.get("name") or slug.replace("-", " ").title()
@@ -193,6 +207,13 @@ def sync_ipos_markets(
             if not symbol:
                 symbol = generate_fallback_symbol(company_name, slug)
             symbol = symbol.strip().upper()
+
+            # Ensure symbol uniqueness across distinct companies
+            existing = IPOMaster.objects.filter(symbol=symbol).first()
+            if existing and existing.company_name.lower().strip() != company_name.lower().strip():
+                import hashlib
+                slug_hash = hashlib.md5(slug.encode()).hexdigest()[:4].upper()
+                symbol = f"{symbol[:8]}{slug_hash}"
 
             # ISIN
             isin = detail.get("isin")

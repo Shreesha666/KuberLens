@@ -1,0 +1,199 @@
+{% load core_tags %}
+<!-- IPO Calendar Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'ipo:dashboard' %}" class="text-decoration-none" hx-get="{% url 'ipo:dashboard' %}" hx-target="#main-content" hx-push-url="true">IPO Intelligence</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">IPO Calendar</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h3 fw-bold text-body mb-0">Primary Market Events Calendar</h1>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">{{ events|length }} Milestones</span>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'ipo:issues' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2"
+           hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-grid-3x3-gap"></i>
+            <span>Issues Desk</span>
+        </a>
+        <a href="{% url 'ipo:dashboard' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+           hx-get="{% url 'ipo:dashboard' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+        </a>
+    </div>
+</div>
+
+<!-- Upcoming Events Section -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-body">Upcoming IPO Events &amp; Milestones</h5>
+            <span class="text-muted small">Chronological schedule of issue openings, closings, allotments, and debuts</span>
+        </div>
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+            {{ upcoming_events|length }} Scheduled
+        </span>
+    </div>
+    <div class="card-body px-0 py-2">
+        {% if upcoming_events %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Date</th>
+                        <th>Event Milestone</th>
+                        <th>Company &amp; Symbol</th>
+                        <th>Segment</th>
+                        <th class="text-end">Price Band / Price</th>
+                        <th class="text-end">Min Investment</th>
+                        <th class="text-center pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in upcoming_events %}
+                    <tr class="{% if ev.is_today %}table-warning bg-warning bg-opacity-10{% endif %}">
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="p-2 rounded bg-body-tertiary border text-center flex-shrink-0" style="min-width: 48px;">
+                                    <div class="fw-bold fs-6 num-mono leading-none">{{ ev.date|date:"d" }}</div>
+                                    <div class="text-muted text-uppercase" style="font-size: 0.65rem;">{{ ev.date|date:"M" }}</div>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-body small">{{ ev.date|date:"l" }}</div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">{{ ev.date|date:"Y" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {{ ev.badge_class }} px-2 py-1">
+                                {{ ev.label }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2.5">
+                                {% stock_logo ev.ipo.symbol size=30 css_class="p-0.5 flex-shrink-0" %}
+                                <div class="text-truncate" style="max-width: 220px;">
+                                    <a href="{% url 'ipo:detail' ev.ipo.symbol %}"
+                                       class="text-decoration-none fw-bold text-body hover-primary text-truncate d-block"
+                                       hx-get="{% url 'ipo:detail' ev.ipo.symbol %}"
+                                       hx-target="#main-content" hx-push-url="true">
+                                        {{ ev.ipo.symbol }}
+                                    </a>
+                                    <div class="text-muted small text-truncate" title="{{ ev.ipo.company_name }}">
+                                        {{ ev.ipo.company_name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if ev.ipo.issue_type == 'MAINBOARD' %}bg-primary-subtle text-primary{% else %}bg-warning-subtle text-warning-emphasis{% endif %} border small">
+                                {{ ev.ipo.get_issue_type_display }}
+                            </span>
+                        </td>
+                        <td class="text-end num-mono fw-bold">
+                            {{ ev.ipo.price_band_display }}
+                        </td>
+                        <td class="text-end num-mono">
+                            <div>₹{{ ev.ipo.calculated_min_investment|floatformat:0 }}</div>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ ev.ipo.lot_size }} shares</small>
+                        </td>
+                        <td class="text-center pe-4">
+                            <a href="{% url 'ipo:detail' ev.ipo.symbol %}"
+                               class="btn btn-sm btn-outline-primary"
+                               hx-get="{% url 'ipo:detail' ev.ipo.symbol %}"
+                               hx-target="#main-content" hx-push-url="true">
+                                Inspect
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-calendar-check fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            <h6 class="fw-bold text-body">No Upcoming Calendar Events</h6>
+            <p class="small text-muted mb-0">All current issue milestones have concluded or dates are awaiting SEBI / exchange confirmation.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Past Events Accordion / Section -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-body">Past Concluded Milestones</h5>
+            <span class="text-muted small">Historical timeline records</span>
+        </div>
+        <span class="badge bg-secondary-subtle text-secondary border small">{{ past_events|length }} Past Events</span>
+    </div>
+    <div class="card-body px-0 py-2">
+        {% if past_events %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Concluded Date</th>
+                        <th>Milestone</th>
+                        <th>Company &amp; Symbol</th>
+                        <th>Issue Price</th>
+                        <th class="text-end">Listing Day Gain</th>
+                        <th class="text-center pe-4">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in past_events|slice:":10" %}
+                    <tr class="text-muted">
+                        <td class="ps-4 num-mono small">
+                            {{ ev.date|date:"d M Y" }}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border small">
+                                {{ ev.label }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% stock_logo ev.ipo.symbol size=24 css_class="p-0.5" %}
+                                <a href="{% url 'ipo:detail' ev.ipo.symbol %}"
+                                   class="text-decoration-none fw-semibold text-body hover-primary small"
+                                   hx-get="{% url 'ipo:detail' ev.ipo.symbol %}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    {{ ev.ipo.symbol }} &bull; {{ ev.ipo.company_name|truncatechars:24 }}
+                                </a>
+                            </div>
+                        </td>
+                        <td class="num-mono small">
+                            ₹{{ ev.ipo.issue_price|floatformat:2|default:"—" }}
+                        </td>
+                        <td class="text-end num-mono">
+                            {% if ev.ipo.listing_day_gain_percent is not None %}
+                            <span class="{% if ev.ipo.listing_day_gain_percent >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold small">
+                                {% if ev.ipo.listing_day_gain_percent >= 0 %}+{% endif %}{{ ev.ipo.listing_day_gain_percent|floatformat:1 }}%
+                            </span>
+                            {% else %}
+                            <span>—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-4">
+                            <a href="{% url 'ipo:detail' ev.ipo.symbol %}" class="small text-decoration-none"
+                               hx-get="{% url 'ipo:detail' ev.ipo.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                View &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>

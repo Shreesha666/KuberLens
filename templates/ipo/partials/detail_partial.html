@@ -1,0 +1,359 @@
+{% load core_tags %}
+<!-- IPO Detail Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item">
+            <a href="{% url 'ipo:dashboard' %}" class="text-decoration-none" hx-get="{% url 'ipo:dashboard' %}" hx-target="#main-content" hx-push-url="true">IPO Intelligence</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'ipo:issues' %}" class="text-decoration-none" hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">Issues Desk</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">{{ ipo.symbol }}</li>
+    </ol>
+</nav>
+
+<!-- IPO Master Header Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
+                {% stock_logo ipo.symbol size=52 css_class="p-1" %}
+                <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <h1 class="h3 fw-bold mb-0 text-body">{{ ipo.company_name }}</h1>
+                        <span class="badge bg-primary text-white fw-bold">{{ ipo.symbol }}</span>
+                        <span class="badge {% if ipo.issue_type == 'MAINBOARD' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                            {{ ipo.get_issue_type_display }}
+                        </span>
+                        <span class="badge bg-secondary-subtle text-body border">{{ ipo.exchange }}</span>
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">{{ ipo.sector|default:"General" }}</span>
+                    </div>
+                    <div class="text-muted small">
+                        Industry: <strong>{{ ipo.industry|default:"Diversified" }}</strong> &bull;
+                        {% if ipo.isin %}ISIN: <span class="num-mono">{{ ipo.isin }}</span> &bull;{% endif %}
+                        SEBI Observation Status: <span class="text-success fw-semibold"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        {% if ipo.status == 'LIVE' %}
+                        <span class="badge bg-success text-white px-2.5 py-1.5 d-flex align-items-center gap-1.5">
+                            <span class="spinner-grow spinner-grow-sm" role="status"></span>
+                            Bidding Window Live (Closes {{ ipo.close_date|date:"d M Y" }})
+                        </span>
+                        {% else %}
+                        <span class="badge {{ status_badge }} px-2.5 py-1">
+                            {{ ipo.get_status_display }}
+                        </span>
+                        {% endif %}
+
+                        {% if ipo.listing %}
+                        <a href="{% url 'stocks:stock_detail' ipo.listing.symbol %}"
+                           class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                           hx-get="{% url 'stocks:stock_detail' ipo.listing.symbol %}"
+                           hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-graph-up"></i>
+                            <span>Secondary Market Chart</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price & Issue Size Banner -->
+            <div class="text-md-end">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Issue Price Band</div>
+                <div class="h2 fw-bold num-mono text-body mb-0">{{ ipo.price_band_display }}</div>
+                <div class="text-muted small mt-1">
+                    Lot Size: <strong class="num-mono text-body">{{ ipo.lot_size }} shares</strong> &bull;
+                    Min Outlay: <strong class="num-mono text-body">₹{{ ipo.calculated_min_investment|floatformat:0 }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Issue Timeline Progress Stepper -->
+        <div class="pt-3 border-top border-secondary border-opacity-10">
+            <div class="small fw-semibold text-muted text-uppercase mb-2">Issue Milestones &amp; Lifecycle Progress</div>
+            <div class="row g-2 text-center">
+                {% for step in timeline_steps %}
+                <div class="col">
+                    <div class="p-2 rounded {% if step.status == 'COMPLETED' %}bg-success-subtle border border-success-subtle text-success-emphasis{% elif step.status == 'CURRENT' %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary border text-muted{% endif %}">
+                        <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                            {% if step.status == 'COMPLETED' %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            {% elif step.status == 'CURRENT' %}
+                            <i class="bi bi-record-circle-fill text-white"></i>
+                            {% else %}
+                            <i class="bi bi-circle text-muted"></i>
+                            {% endif %}
+                            <span class="fw-bold small">{{ step.name }}</span>
+                        </div>
+                        <div class="num-mono small" style="font-size: 0.75rem;">
+                            {% if step.date %}{{ step.date|date:"d M Y" }}{% else %}TBA{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Issue Specs KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Issue Size</span>
+                <span class="fs-4 fw-bold num-mono text-body">₹{{ ipo.total_issue_size_cr|floatformat:1 }} Cr</span>
+                <div class="text-muted small mt-1">Primary &amp; secondary issue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Fresh Issue / OFS</span>
+                <span class="fs-4 fw-bold num-mono text-body">₹{{ ipo.fresh_issue_cr|floatformat:0|default:"0" }} Cr</span>
+                <div class="text-muted small mt-1">OFS: <strong class="num-mono text-body">₹{{ ipo.offer_for_sale_cr|floatformat:0|default:"0" }} Cr</strong></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Min Retail Investment</span>
+                <span class="fs-4 fw-bold num-mono text-body">₹{{ ipo.calculated_min_investment|floatformat:0 }}</span>
+                <div class="text-muted small mt-1">{{ ipo.lot_size }} shares @ Upper Band</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Promoter Dilution</span>
+                <span class="fs-4 fw-bold num-mono text-body">
+                    {% if ipo.promoter_holding_pre_issue %}{{ ipo.promoter_holding_pre_issue|floatformat:1 }}% &rarr; {{ ipo.promoter_holding_post_issue|floatformat:1 }}%{% else %}N/A{% endif %}
+                </span>
+                <div class="text-muted small mt-1">Post-issue promoter stake</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Two-Column Issue Intelligence Layout -->
+<div class="row g-4 mb-4">
+    <!-- Left Column: Business Description & Reservations -->
+    <div class="col-12 col-xl-8">
+        <!-- Business Overview Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Company Profile &amp; Business Model</h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                <p class="text-body mb-3">
+                    {{ ipo.description|default:"Detailed business model and operational overview extracted from the Red Herring Prospectus (RHP) filed with SEBI and stock exchanges." }}
+                </p>
+                <div class="row g-3 pt-2 border-top border-secondary-subtle">
+                    <div class="col-12 col-md-6">
+                        <span class="text-muted small d-block">Industry Classification</span>
+                        <span class="fw-semibold text-body">{{ ipo.industry|default:"General Industry" }}</span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <span class="text-muted small d-block">Target Exchanges</span>
+                        <span class="fw-semibold text-body">{{ ipo.exchange }} ({{ ipo.get_issue_type_display }})</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Reservations Breakdown Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Investor Category Reservations</h5>
+                <span class="text-muted small">SEBI mandated quota allocation structure</span>
+            </div>
+            <div class="card-body px-4 py-3">
+                <div class="d-flex flex-column gap-3">
+                    <div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="fw-semibold text-body">Retail Individual Investors (RII)</span>
+                            <span class="num-mono fw-bold">{{ ipo.retail_quota_percent }}% of net offer</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ ipo.retail_quota_percent }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="fw-semibold text-body">Qualified Institutional Buyers (QIB)</span>
+                            <span class="num-mono fw-bold">{{ ipo.qib_quota_percent }}% of net offer</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ ipo.qib_quota_percent }}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="fw-semibold text-body">Non-Institutional Investors (NII / HNI)</span>
+                            <span class="num-mono fw-bold">{{ ipo.nii_quota_percent }}% of net offer</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ ipo.nii_quota_percent }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Snapshot (if available) -->
+        {% if latest_subscription %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0 text-body">Live Subscription Demand Snapshot</h5>
+                    <span class="text-muted small">Category bidding multiples as of {{ latest_subscription.snapshot_timestamp|date:"d M Y H:i" }} IST</span>
+                </div>
+                <span class="badge bg-primary text-white px-2 py-1">Day {{ latest_subscription.day_number }}</span>
+            </div>
+            <div class="card-body px-4 py-3">
+                <div class="row g-3 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-body-tertiary border">
+                            <span class="text-muted small text-uppercase d-block">QIB Multiple</span>
+                            <span class="fs-4 fw-bold num-mono text-body">{{ latest_subscription.qib_subscription }}x</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-body-tertiary border">
+                            <span class="text-muted small text-uppercase d-block">NII / HNI Multiple</span>
+                            <span class="fs-4 fw-bold num-mono text-body">{{ latest_subscription.nii_subscription }}x</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-body-tertiary border">
+                            <span class="text-muted small text-uppercase d-block">Retail Multiple</span>
+                            <span class="fs-4 fw-bold num-mono text-body">{{ latest_subscription.retail_subscription }}x</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 rounded bg-primary-subtle border border-primary-subtle">
+                            <span class="text-primary small text-uppercase fw-semibold d-block">Total Demand</span>
+                            <span class="fs-4 fw-bold num-mono text-primary">{{ latest_subscription.total_subscription }}x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Listing Day Debut Stats (if listed) -->
+        {% if ipo.listing_day_open %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Listing Day Debut Performance</h5>
+                <span class="text-muted small">Debuted on {{ ipo.listing_date|date:"d M Y" }}</span>
+            </div>
+            <div class="card-body px-4 py-3">
+                <div class="row g-3 text-center">
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted small d-block">Issue Price</span>
+                        <span class="fs-5 fw-bold num-mono text-body">₹{{ ipo.issue_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted small d-block">Listing Day Open</span>
+                        <span class="fs-5 fw-bold num-mono text-body">₹{{ ipo.listing_day_open|floatformat:2 }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted small d-block">Day 1 Close</span>
+                        <span class="fs-5 fw-bold num-mono text-body">₹{{ ipo.listing_day_close|floatformat:2|default:"—" }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <span class="text-muted small d-block">Listing Day Gain</span>
+                        <span class="fs-5 fw-bold num-mono {% if ipo.listing_day_gain_percent >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                            {% if ipo.listing_day_gain_percent >= 0 %}+{% endif %}{{ ipo.listing_day_gain_percent|floatformat:1 }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Intermediaries, Registrar & Documents -->
+    <div class="col-12 col-xl-4">
+        <!-- Registrar & Lead Managers Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Intermediaries &amp; Registrar</h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="mb-3">
+                    <span class="text-muted small d-block">Issue Registrar</span>
+                    <strong class="text-body d-block mb-1">{{ ipo.registrar|default:"Registrar to the issue" }}</strong>
+                    {% if ipo.registrar_portal_url %}
+                    <a href="{{ ipo.registrar_portal_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 mt-1">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span>Check Allotment on Portal</span>
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="pt-2 border-top border-secondary-subtle">
+                    <span class="text-muted small d-block">Book Running Lead Managers (BRLMs)</span>
+                    <span class="small text-body d-block">{{ ipo.lead_managers|default:"Lead Managers to the issue" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Official Prospectus & Filings Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Official Filings &amp; Documents</h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="d-flex flex-column gap-2">
+                    {% if ipo.rhp_url %}
+                    <a href="{{ ipo.rhp_url }}" target="_blank" rel="noopener noreferrer" class="p-2 rounded border bg-body-tertiary text-decoration-none d-flex align-items-center justify-content-between hover-primary">
+                        <span class="small fw-semibold text-body"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Red Herring Prospectus (RHP)</span>
+                        <i class="bi bi-box-arrow-up-right text-muted small"></i>
+                    </a>
+                    {% endif %}
+                    {% if ipo.drhp_url %}
+                    <a href="{{ ipo.drhp_url }}" target="_blank" rel="noopener noreferrer" class="p-2 rounded border bg-body-tertiary text-decoration-none d-flex align-items-center justify-content-between hover-primary">
+                        <span class="small fw-semibold text-body"><i class="bi bi-file-earmark-text text-primary me-2"></i>Draft Red Herring Prospectus (DRHP)</span>
+                        <i class="bi bi-box-arrow-up-right text-muted small"></i>
+                    </a>
+                    {% endif %}
+                    {% if ipo.official_exchange_url %}
+                    <a href="{{ ipo.official_exchange_url }}" target="_blank" rel="noopener noreferrer" class="p-2 rounded border bg-body-tertiary text-decoration-none d-flex align-items-center justify-content-between hover-primary">
+                        <span class="small fw-semibold text-body"><i class="bi bi-globe text-success me-2"></i>Official Exchange Issue Page</span>
+                        <i class="bi bi-box-arrow-up-right text-muted small"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantitative Research Score Card (if computed) -->
+        {% if scoring %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
+                <h5 class="fw-bold mb-0 text-body">Quantitative Research Score</h5>
+            </div>
+            <div class="card-body px-4 py-2">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-2 fw-bold num-mono text-primary">{{ scoring.overall_score }}/100</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                        {{ scoring.get_recommendation_display }}
+                    </span>
+                </div>
+                <div class="text-muted small mb-2">
+                    {{ scoring.scoring_rationale }}
+                </div>
+                <div class="small d-flex justify-content-between text-muted border-top pt-2">
+                    <span>Listing Gain Potential: <strong class="text-body">{{ scoring.listing_gain_potential }}</strong></span>
+                    <span>Long-Term: <strong class="text-body">{{ scoring.long_term_potential }}</strong></span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>

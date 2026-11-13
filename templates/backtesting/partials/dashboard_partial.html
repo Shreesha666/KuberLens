@@ -55,7 +55,7 @@
                                        required>
                                 <datalist id="popular-symbols-list">
                                     {% for item in popular_listings %}
-                                    <option value="{{ item.symbol }}">{{ item.instrument.name }} ({{ item.instrument.sector }})</option>
+                                    <option value="{{ item.symbol }}">{{ item.instrument.display_name }} ({{ item.instrument.sector }})</option>
                                     {% endfor %}
                                 </datalist>
                             </div>

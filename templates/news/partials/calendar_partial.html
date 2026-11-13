@@ -88,7 +88,9 @@
                                    class="fw-bold text-primary text-decoration-none">
                                     {{ ev.listing.symbol }}
                                 </a>
-                                <span class="text-muted small">({{ ev.listing.instrument.name }})</span>
+                                {% if ev.listing.instrument.display_name %}
+                                <span class="text-muted small">({{ ev.listing.instrument.display_name }})</span>
+                                {% endif %}
                             </div>
                         </td>
                         <td>

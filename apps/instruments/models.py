@@ -54,6 +54,11 @@ class Instrument(AuditedModel):
     def __str__(self):
         return f"{self.display_name} ({self.isin})"
 
+    @property
+    def name(self) -> str:
+        """Alias for display_name to ensure robust template compatibility."""
+        return self.display_name or self.legal_name or ""
+
 class ExchangeListing(AuditedModel):
     """
     Venue-specific listing instance for an instrument (e.g., RELIANCE on NSE, 500325 on BSE).

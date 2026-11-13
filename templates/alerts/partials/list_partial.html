@@ -122,7 +122,9 @@
                                class="fw-bold text-primary text-decoration-none">
                                 {{ alert.listing.symbol }}
                             </a>
-                            <span class="text-muted small">({{ alert.listing.instrument.name }})</span>
+                            {% if alert.listing.instrument.display_name %}
+                            <span class="text-muted small">({{ alert.listing.instrument.display_name }})</span>
+                            {% endif %}
                             {% else %}
                             <span class="badge bg-secondary-subtle text-muted">Portfolio-Wide</span>
                             {% endif %}

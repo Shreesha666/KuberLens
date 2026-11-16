@@ -102,7 +102,7 @@
                             <span class="fw-bold small">{{ step.name }}</span>
                         </div>
                         <div class="num-mono small" style="font-size: 0.75rem;">
-                            {% if step.date %}{{ step.date|date:"d M Y" }}{% else %}TBA{% endif %}
+                            {% if step.display_date %}{{ step.display_date }}{% elif step.date %}{{ step.date|date:"d M Y" }}{% else %}TBA{% endif %}
                         </div>
                     </div>
                 </div>

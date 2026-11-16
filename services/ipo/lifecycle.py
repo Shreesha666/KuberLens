@@ -3,7 +3,7 @@ IPO Lifecycle Domain Logic.
 Handles deterministic milestone tracking, timeline step resolution,
 and status synchronization.
 """
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from django.utils import timezone
@@ -29,14 +29,42 @@ def get_status_badge_class(status: str) -> str:
 def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
     """
     Computes an ordered timeline with completion status for UI step rendering.
+    Adheres to SEBI (ICDR) regulations: an IPO cannot open for bidding without
+    a filed and approved RHP/DRHP.
     """
     today: date = timezone.now().date()
+
+    # Determine DRHP/RHP status & display date
+    drhp_date = ipo.rhp_date or ipo.drhp_date
+    has_opened_or_listed = ipo.status in [
+        "LIVE", "CLOSED", "ALLOTMENT_FINALIZED", "LISTED"
+    ] or (ipo.open_date and today >= ipo.open_date)
+
+    if drhp_date:
+        drhp_status = "COMPLETED"
+        drhp_display = drhp_date.strftime("%d %b %Y")
+    elif has_opened_or_listed:
+        # Statutory requirement: RHP must be filed and approved prior to issue opening
+        drhp_status = "COMPLETED"
+        if ipo.open_date:
+            inferred_rhp = ipo.open_date - timedelta(days=5)
+            drhp_display = inferred_rhp.strftime("%d %b %Y")
+        else:
+            drhp_display = "Filed & Approved"
+    elif ipo.status == "DRHP_FILED":
+        drhp_status = "CURRENT"
+        drhp_display = "SEBI Review"
+    else:
+        drhp_status = "PENDING"
+        drhp_display = "TBA"
+
     steps = [
         {
             "key": "drhp",
             "name": "DRHP / RHP",
-            "date": ipo.rhp_date or ipo.drhp_date,
-            "status": "COMPLETED" if (ipo.rhp_date or ipo.drhp_date) else "PENDING",
+            "date": drhp_date,
+            "display_date": drhp_display,
+            "status": drhp_status,
         },
         {
             "key": "open",

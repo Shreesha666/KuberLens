@@ -183,6 +183,9 @@ class TestIPOIntelligenceModule:
         assert len(milestones) == 5
         keys = [m["key"] for m in milestones]
         assert keys == ["drhp", "open", "close", "allotment", "listing"]
+        # In a live issue, DRHP/RHP is completed by statutory necessity
+        assert milestones[0]["status"] == "COMPLETED"
+        assert milestones[0]["display_date"] != "TBA"
 
         # Check badges
         assert "bg-success" in get_status_badge_class("LIVE")

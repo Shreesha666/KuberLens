@@ -336,7 +336,21 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         context["active_nav"] = "ipo_issues"
         context["active_tab"] = active_tab
         context["status_badge"] = get_status_badge_class(ipo.status)
-        context["timeline_steps"] = get_timeline_milestones(ipo)
+        timeline_steps = get_timeline_milestones(ipo)
+        context["timeline_steps"] = timeline_steps
+        completed_count = sum(1 for s in timeline_steps if s["status"] == "COMPLETED")
+        context["completed_milestones_count"] = completed_count
+        context["timeline_progress_percent"] = int((completed_count / len(timeline_steps)) * 100) if timeline_steps else 0
+        current_step = next((s for s in timeline_steps if s["status"] == "CURRENT"), None)
+        if completed_count == len(timeline_steps):
+            context["milestone_summary_label"] = "100% Completed &bull; Secondary Market Active"
+            context["milestone_summary_badge"] = "bg-success-subtle text-success border border-success-subtle"
+        elif current_step:
+            context["milestone_summary_label"] = f"Live Now: {current_step['name']}"
+            context["milestone_summary_badge"] = "bg-primary text-white shadow-sm"
+        else:
+            context["milestone_summary_label"] = f"Stage {completed_count + 1} of 5 &bull; Upcoming"
+            context["milestone_summary_badge"] = "bg-info-subtle text-info border border-info-subtle"
 
         # 1. Subscription Analytics (Phase B)
         sub_summary = get_subscription_summary(ipo)

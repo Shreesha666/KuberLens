@@ -779,3 +779,158 @@ body {
 [data-bs-theme="dark"] .modern-subnav .nav-link.active {
     background-color: rgba(59, 130, 246, 0.12);
 }
+
+/* ==========================================================================
+   Statutory Issue Lifecycle Stepper (.lifecycle-stepper)
+   Interactive, informative connected progress tracker with animations
+   ========================================================================== */
+.lifecycle-stepper-container {
+    position: relative;
+    padding-top: 0.25rem;
+}
+
+.lifecycle-stepper {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 0.25rem;
+}
+
+.lifecycle-stepper::-webkit-scrollbar {
+    display: none;
+}
+
+.lifecycle-step {
+    flex: 1 1 0;
+    min-width: 140px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.85rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    position: relative;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.lifecycle-step:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Completed Stage */
+.lifecycle-step.step-completed {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.01) 100%);
+}
+
+.lifecycle-step.step-completed:hover {
+    border-color: rgba(16, 185, 129, 0.55);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.12);
+}
+
+/* Current / Active Stage */
+.lifecycle-step.step-current {
+    border-color: var(--brand-primary, #2563eb);
+    background: linear-gradient(180deg, rgba(37, 99, 235, 0.07) 0%, rgba(37, 99, 235, 0.02) 100%);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+}
+
+.lifecycle-step.step-current:hover {
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.24);
+}
+
+/* Upcoming Stage */
+.lifecycle-step.step-upcoming {
+    background-color: var(--bg-surface);
+    border-color: var(--border-color);
+    opacity: 0.75;
+}
+
+.lifecycle-step.step-upcoming:hover {
+    opacity: 1;
+    border-color: rgba(100, 116, 139, 0.4);
+}
+
+/* Step Node Circle Icon */
+.step-node-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin: 0 auto 0.45rem auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: transform 0.2s ease;
+}
+
+.lifecycle-step:hover .step-node-icon {
+    transform: scale(1.12);
+}
+
+.step-completed .step-node-icon {
+    background-color: #10b981;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.step-current .step-node-icon {
+    background-color: var(--brand-primary, #2563eb);
+    color: #ffffff;
+    animation: pulse-ring 2s infinite cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.step-upcoming .step-node-icon {
+    background-color: rgba(100, 116, 139, 0.1);
+    color: var(--text-muted);
+    border: 1px dashed rgba(100, 116, 139, 0.3);
+}
+
+/* Animated Pulse Ring */
+@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    }
+}
+
+.step-meta-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 0.35rem;
+}
+
+.progress-track-bar {
+    height: 4px;
+    background: rgba(100, 116, 139, 0.12);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progress-track-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #10b981 0%, #2563eb 100%);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+

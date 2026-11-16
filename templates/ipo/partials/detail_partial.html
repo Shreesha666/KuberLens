@@ -78,27 +78,55 @@
 
         <!-- Issue Timeline Progress Stepper -->
         <div class="pt-3 border-top border-secondary border-opacity-10">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="kpi-label mb-0">Statutory Issue Milestones &amp; Progress</span>
-                <span class="text-micro text-muted">SEBI ICDR Regulatory Steps</span>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <span class="kpi-label mb-0 d-flex align-items-center gap-1.5">
+                    <i class="bi bi-diagram-3 text-primary"></i>
+                    <span>Statutory Issue Milestones &amp; Progress</span>
+                </span>
+                <span class="badge {{ milestone_summary_badge }} px-2.5 py-1">
+                    {{ milestone_summary_label|safe }}
+                </span>
             </div>
-            <div class="row g-2 text-center">
+
+            <!-- Horizontal Progress Track Bar -->
+            <div class="progress-track-bar">
+                <div class="progress-track-fill" style="width: {{ timeline_progress_percent }}%;"></div>
+            </div>
+
+            <!-- Connected Interactive Stepper -->
+            <div class="lifecycle-stepper">
                 {% for step in timeline_steps %}
-                <div class="col">
-                    <div class="p-2.5 rounded-3 h-100 d-flex flex-column justify-content-center {% if step.status == 'COMPLETED' %}bg-success-subtle border border-success-subtle text-success-emphasis{% elif step.status == 'CURRENT' %}bg-primary text-white shadow-sm border border-primary{% else %}bg-body-tertiary border border-secondary-subtle text-secondary{% endif %}">
-                        <div class="d-flex align-items-center justify-content-center gap-1.5 mb-1">
+                <div class="lifecycle-step {% if step.status == 'COMPLETED' %}step-completed{% elif step.status == 'CURRENT' %}step-current{% else %}step-upcoming{% endif %}">
+                    <div>
+                        <div class="step-node-icon">
                             {% if step.status == 'COMPLETED' %}
-                            <i class="bi bi-check-circle-fill text-success" style="font-size: 0.85rem;"></i>
+                            <i class="bi bi-check2"></i>
                             {% elif step.status == 'CURRENT' %}
-                            <i class="bi bi-record-circle-fill text-white" style="font-size: 0.85rem;"></i>
+                            <i class="bi bi-play-fill fs-6"></i>
                             {% else %}
-                            <i class="bi bi-circle text-muted" style="font-size: 0.85rem;"></i>
+                            <span>{{ step.step_number }}</span>
                             {% endif %}
-                            <span class="fw-semibold text-truncate" style="font-size: 0.78rem;">{{ step.name }}</span>
                         </div>
-                        <div class="num-mono" style="font-size: 0.72rem; opacity: 0.9;">
+                        <div class="fw-bold text-body" style="font-size: 0.8125rem;">{{ step.name }}</div>
+                        <div class="num-mono fw-semibold {% if step.status == 'COMPLETED' %}text-success{% elif step.status == 'CURRENT' %}text-primary{% else %}text-muted{% endif %}" style="font-size: 0.74rem;">
                             {% if step.display_date %}{{ step.display_date }}{% elif step.date %}{{ step.date|date:"d M Y" }}{% else %}TBA{% endif %}
                         </div>
+                    </div>
+                    <div class="pt-2 border-top border-secondary border-opacity-10 mt-2">
+                        <span class="text-muted d-block text-truncate" style="font-size: 0.6875rem;">{{ step.statutory_note }}</span>
+                        {% if step.status == 'COMPLETED' %}
+                        <span class="step-meta-badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-check-circle-fill"></i> Done
+                        </span>
+                        {% elif step.status == 'CURRENT' %}
+                        <span class="step-meta-badge bg-primary text-white shadow-sm">
+                            <span class="spinner-grow spinner-grow-sm" style="width: 0.45rem; height: 0.45rem;" role="status"></span> Active
+                        </span>
+                        {% else %}
+                        <span class="step-meta-badge bg-body-tertiary text-muted border">
+                            Upcoming
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}

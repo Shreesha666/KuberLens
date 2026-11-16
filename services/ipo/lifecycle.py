@@ -65,6 +65,9 @@ def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
             "date": drhp_date,
             "display_date": drhp_display,
             "status": drhp_status,
+            "step_number": 1,
+            "statutory_note": "SEBI & RoC Filing",
+            "icon": "bi-file-earmark-text",
         },
         {
             "key": "open",
@@ -72,6 +75,9 @@ def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
             "date": ipo.open_date,
             "status": "COMPLETED" if (ipo.open_date and today > ipo.open_date)
                       else ("CURRENT" if (ipo.open_date and today == ipo.open_date) else "UPCOMING"),
+            "step_number": 2,
+            "statutory_note": "Bidding Opens 10:00 AM",
+            "icon": "bi-door-open",
         },
         {
             "key": "close",
@@ -79,6 +85,9 @@ def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
             "date": ipo.close_date,
             "status": "COMPLETED" if (ipo.close_date and today > ipo.close_date)
                       else ("CURRENT" if (ipo.close_date and today == ipo.close_date) else "UPCOMING"),
+            "step_number": 3,
+            "statutory_note": "UPI Cutoff 5:00 PM",
+            "icon": "bi-clock-history",
         },
         {
             "key": "allotment",
@@ -86,6 +95,9 @@ def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
             "date": ipo.allotment_date,
             "status": "COMPLETED" if (ipo.allotment_date and today > ipo.allotment_date)
                       else ("CURRENT" if (ipo.allotment_date and today == ipo.allotment_date) else "UPCOMING"),
+            "step_number": 4,
+            "statutory_note": "Lottery & Fund Unblock",
+            "icon": "bi-dice-5",
         },
         {
             "key": "listing",
@@ -93,6 +105,9 @@ def get_timeline_milestones(ipo: Any) -> list[dict[str, Any]]:
             "date": ipo.listing_date,
             "status": "COMPLETED" if (ipo.listing_date and today >= ipo.listing_date)
                       else ("CURRENT" if (ipo.listing_date and today == ipo.listing_date) else "UPCOMING"),
+            "step_number": 5,
+            "statutory_note": "T+3 Trading Debut",
+            "icon": "bi-graph-up-arrow",
         },
     ]
     return steps

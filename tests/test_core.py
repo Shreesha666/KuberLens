@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 
 from apps.core.encryption import decrypt_value, encrypt_value
 from apps.core.mixins import HTMXResponseMixin
-from apps.core.templatetags.core_tags import financial_color, format_inr
+from apps.core.templatetags.core_tags import financial_color, format_inr, safe_markdown
 
 
 @pytest.mark.django_db
@@ -63,3 +63,15 @@ def test_htmx_response_mixin_dual_mode():
     view_htmx = DummyHTMXView()
     view_htmx.setup(req_htmx)
     assert view_htmx.get_template_names() == ["dashboard/partials/dashboard_partial.html"]
+
+
+def test_safe_markdown_filter():
+    raw = "**HGS (India)** leads with score of **57.8/100**.\n\n*Valuation Note*: Fair value."
+    output = str(safe_markdown(raw))
+    assert "<strong>HGS (India)</strong>" in output
+    assert "<strong>57.8/100</strong>" in output
+    assert "<em>Valuation Note</em>" in output
+    assert "<p class='mb-2'>" in output
+    assert "**" not in output
+    assert safe_markdown("") == ""
+    assert safe_markdown(None) == ""

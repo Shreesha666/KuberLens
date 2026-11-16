@@ -99,7 +99,7 @@
                 <h4 class="h5 fw-bold text-body mb-0">
                     <a href="{% url 'ipo:detail' header.symbol %}" class="text-decoration-none text-body"
                        hx-get="{% url 'ipo:detail' header.symbol %}" hx-target="#main-content" hx-push-url="true">
-                        {{ header.company_name }}
+                        {{ header.company_name|title }}
                     </a>
                 </h4>
                 <div class="d-flex align-items-center gap-1.5 mt-1 mb-3">
@@ -111,11 +111,11 @@
                 <!-- Score Badge Card -->
                 <div class="p-3 rounded-3 bg-body-tertiary border mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small fw-semibold text-muted text-uppercase">Research Score</span>
+                        <span class="kpi-label mb-0">Research Score</span>
                         <span class="badge {{ header.badge_class }} small">{{ header.recommendation_display }}</span>
                     </div>
                     <div class="d-flex align-items-baseline gap-2">
-                        <span class="h3 fw-bold num-mono text-primary mb-0">{{ header.composite_score|floatformat:1 }}</span>
+                        <span class="kpi-value text-primary mb-0">{{ header.composite_score|floatformat:1 }}</span>
                         <span class="text-muted small">/ 100 (Grade {{ header.score_grade }})</span>
                     </div>
                 </div>
@@ -142,8 +142,8 @@
             <i class="bi bi-lightbulb-fill text-primary"></i>
             <span>Comparative Research Verdict &amp; Differentiators</span>
         </h5>
-        <div class="text-body lh-base" style="font-size: 0.92rem;">
-            {{ comparison.narrative|linebreaks }}
+        <div class="text-body lh-base">
+            {{ comparison.narrative|safe_markdown }}
         </div>
     </div>
 </div>
@@ -156,7 +156,7 @@
         <span class="text-muted small">Comparative breakdown across all primary and fundamental parameters</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+        <table class="table table-hover table-financial align-middle mb-0">
             <thead class="table-light text-muted small text-uppercase">
                 <tr>
                     <th class="ps-4" style="width: 25%;">Evaluation Metric</th>
@@ -181,7 +181,7 @@
                     <td class="ps-4 py-3">
                         <div class="fw-semibold text-body">{{ row.metric }}</div>
                         {% if row.help_text %}
-                        <div class="text-muted small" style="font-size: 0.72rem;">{{ row.help_text }}</div>
+                        <div class="text-muted text-micro">{{ row.help_text }}</div>
                         {% endif %}
                     </td>
                     {% for val in row.values %}

@@ -47,7 +47,7 @@
                             {{ member.name|slice:":1"|upper }}
                         </div>
                         <div>
-                            <h6 class="fw-bold mb-0 text-body">{{ member.name }}</h6>
+                            <div class="fw-bold text-body fs-6">{{ member.name }}</div>
                             <span class="badge bg-secondary-subtle text-secondary small border">{{ member.get_relationship_display }}</span>
                             {% if member.is_primary %}
                             <span class="badge bg-primary-subtle text-primary small">Primary Account</span>

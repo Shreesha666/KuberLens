@@ -44,10 +44,10 @@
         <div class="stat-card-elevated border-accent-success h-100">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Live &amp; Open Issues</span>
+                    <span class="kpi-label">Live &amp; Open Issues</span>
                     <div class="d-flex align-items-baseline gap-2 mt-1 mb-0">
-                        <h3 class="fw-bold num-mono text-dark mb-0" style="font-size: 1.625rem;">{{ live_count }}</h3>
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 fw-medium" style="font-size: 0.72rem;">
+                        <div class="kpi-value text-body mb-0">{{ live_count }}</div>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 fw-medium">
                             <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.4rem;"></i>Bidding Active
                         </span>
                     </div>
@@ -56,7 +56,7 @@
                     <i class="bi bi-broadcast fs-5"></i>
                 </div>
             </div>
-            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center kpi-subtext">
                 <span>Accepting bids right now</span>
                 <a href="{% url 'ipo:issues' %}?tab=live" class="text-primary text-decoration-none fw-semibold"
                    hx-get="{% url 'ipo:issues' %}?tab=live" hx-target="#main-content" hx-push-url="true">
@@ -71,10 +71,10 @@
         <div class="stat-card-elevated border-accent-primary h-100">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Upcoming Pipeline</span>
+                    <span class="kpi-label">Upcoming Pipeline</span>
                     <div class="d-flex align-items-baseline gap-2 mt-1 mb-0">
-                        <h3 class="fw-bold num-mono text-primary mb-0" style="font-size: 1.625rem;">{{ upcoming_count }}</h3>
-                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 fw-medium" style="font-size: 0.72rem;">
+                        <div class="kpi-value text-primary mb-0">{{ upcoming_count }}</div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 fw-medium">
                             <i class="bi bi-calendar-event me-1"></i>Scheduled
                         </span>
                     </div>
@@ -83,7 +83,7 @@
                     <i class="bi bi-hourglass-split fs-5"></i>
                 </div>
             </div>
-            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center kpi-subtext">
                 <span>Approved pipeline</span>
                 <a href="{% url 'ipo:issues' %}?tab=upcoming" class="text-primary text-decoration-none fw-semibold"
                    hx-get="{% url 'ipo:issues' %}?tab=upcoming" hx-target="#main-content" hx-push-url="true">
@@ -98,17 +98,17 @@
         <div class="stat-card-elevated border-accent-info h-100">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Total Issue Size</span>
+                    <span class="kpi-label">Total Issue Size</span>
                     <div class="d-flex align-items-baseline mt-1 mb-0">
-                        <h3 class="fw-bold num-mono text-dark mb-0" style="font-size: 1.625rem;">₹{{ total_mobilized_cr|intcomma_inr }}</h3>
-                        <span class="text-muted fw-semibold ms-1" style="font-size: 0.875rem; font-family: var(--font-family-sans);">Cr</span>
+                        <div class="kpi-value text-body mb-0">₹{{ total_mobilized_cr|intcomma_inr }}</div>
+                        <span class="text-muted fw-semibold ms-1 small">Cr</span>
                     </div>
                 </div>
                 <div class="rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background-color: rgba(8, 145, 178, 0.1); color: var(--color-cyan);">
                     <i class="bi bi-currency-rupee fs-5"></i>
                 </div>
             </div>
-            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center kpi-subtext">
                 <span>Mainboard: <strong class="text-secondary">{{ mainboard_count }}</strong></span>
                 <span>SME: <strong class="text-secondary">{{ sme_count }}</strong></span>
             </div>
@@ -120,12 +120,12 @@
         <div class="stat-card-elevated border-accent-warning h-100">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <span class="text-muted text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Avg Debut Return</span>
+                    <span class="kpi-label">Avg Debut Return</span>
                     <div class="d-flex align-items-baseline gap-2 mt-1 mb-0">
-                        <h3 class="fw-bold num-mono mb-0 {% if avg_listing_gain >= 0 %}text-gain{% else %}text-loss{% endif %}" style="font-size: 1.625rem;">
+                        <div class="kpi-value mb-0 {% if avg_listing_gain >= 0 %}text-gain{% else %}text-loss{% endif %}">
                             {% if avg_listing_gain >= 0 %}+{% endif %}{{ avg_listing_gain|floatformat:1 }}%
-                        </h3>
-                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-20 fw-medium" style="font-size: 0.72rem;">
+                        </div>
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-20 fw-medium">
                             Day 1 Pop
                         </span>
                     </div>
@@ -134,7 +134,7 @@
                     <i class="bi bi-graph-up-arrow fs-5"></i>
                 </div>
             </div>
-            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
+            <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center kpi-subtext">
                 <span>{{ listed_count }} Debuts Tracked</span>
                 <a href="{% url 'ipo:performance' %}" class="text-primary text-decoration-none fw-semibold"
                    hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">

@@ -51,7 +51,7 @@
                            value="{{ min_gmp|default:'15' }}" step="5" min="0" max="200">
                     <span class="input-group-text">%</span>
                 </div>
-                <small class="text-muted" style="font-size: 0.72rem;">Filter issues with Day-3 GMP &ge; threshold</small>
+                <small class="text-muted text-micro">Filter issues with Day-3 GMP &ge; threshold</small>
             </div>
 
             <!-- Min QIB Sub Multiple -->
@@ -64,7 +64,7 @@
                            value="{{ min_qib|default:'5' }}" step="1" min="0" max="200">
                     <span class="input-group-text">x</span>
                 </div>
-                <small class="text-muted" style="font-size: 0.72rem;">Filter issues with Institutional QIB &ge; threshold</small>
+                <small class="text-muted text-micro">Filter issues with Institutional QIB &ge; threshold</small>
             </div>
 
             <!-- Board Type Filter -->
@@ -108,11 +108,11 @@
     <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
-                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Historical Win Rate</span>
-                <span class="display-6 fw-bold num-mono {% if backtest.win_rate >= 75 %}text-success{% elif backtest.win_rate >= 50 %}text-primary{% else %}text-danger{% endif %}">
+                <span class="kpi-label mb-1">Historical Win Rate</span>
+                <div class="kpi-value {% if backtest.win_rate >= 75 %}text-success{% elif backtest.win_rate >= 50 %}text-primary{% else %}text-danger{% endif %} mb-1">
                     {{ backtest.win_rate }}%
-                </span>
-                <div class="text-muted small mt-1">
+                </div>
+                <div class="kpi-subtext mt-1">
                     <strong>{{ backtest.winning_count }} Won</strong> / {{ backtest.losing_count }} Lost ({{ backtest.total_matched }} Matched)
                 </div>
             </div>
@@ -121,11 +121,11 @@
     <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
-                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Avg Listing Pop</span>
-                <span class="display-6 fw-bold num-mono {% if backtest.avg_gain >= 0 %}text-success{% else %}text-danger{% endif %}">
+                <span class="kpi-label mb-1">Avg Listing Pop</span>
+                <div class="kpi-value {% if backtest.avg_gain >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
                     {% if backtest.avg_gain > 0 %}+{% endif %}{{ backtest.avg_gain }}%
-                </span>
-                <div class="text-muted small mt-1">
+                </div>
+                <div class="kpi-subtext mt-1">
                     Max: <strong class="text-success">+{{ backtest.max_gain }}%</strong> &bull; Min: <strong class="text-danger">{{ backtest.max_loss }}%</strong>
                 </div>
             </div>
@@ -134,11 +134,11 @@
     <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
-                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Simulated Capital</span>
-                <span class="display-6 fw-bold num-mono text-body">
+                <span class="kpi-label mb-1">Simulated Capital</span>
+                <div class="kpi-value text-body mb-1">
                     ₹{{ backtest.final_capital|floatformat:0|intcomma }}
-                </span>
-                <div class="text-muted small mt-1">
+                </div>
+                <div class="kpi-subtext mt-1">
                     Started with: <strong class="num-mono">₹{{ backtest.initial_capital|floatformat:0|intcomma }}</strong>
                 </div>
             </div>
@@ -147,11 +147,11 @@
     <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
-                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Simulated P&amp;L</span>
-                <span class="display-6 fw-bold num-mono {% if backtest.total_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                <span class="kpi-label mb-1">Total Simulated P&amp;L</span>
+                <div class="kpi-value {% if backtest.total_pnl >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
                     {% if backtest.total_pnl > 0 %}+{% endif %}₹{{ backtest.total_pnl|floatformat:0|intcomma }}
-                </span>
-                <div class="text-muted small mt-1">
+                </div>
+                <div class="kpi-subtext mt-1">
                     Net ROI: <strong>{% if backtest.total_return_percent > 0 %}+{% endif %}{{ backtest.total_return_percent }}%</strong>
                 </div>
             </div>
@@ -170,7 +170,7 @@
     </div>
     <div class="card-body px-0 py-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+            <table class="table table-hover table-financial align-middle mb-0">
                 <thead class="table-light text-muted text-uppercase">
                     <tr>
                         <th class="ps-4">Issue / Company</th>
@@ -193,7 +193,7 @@
                                hx-get="{% url 'ipo:detail' trade.symbol %}" hx-target="#main-content" hx-push-url="true">
                                 {{ trade.company_name }}
                             </a>
-                            <div class="text-muted num-mono small" style="font-size: 0.72rem;">{{ trade.symbol }}</div>
+                            <div class="text-muted num-mono text-micro">{{ trade.symbol }}</div>
                         </td>
                         <td class="num-mono small">{{ trade.listing_date|date:"d M Y"|default:"—" }}</td>
                         <td>

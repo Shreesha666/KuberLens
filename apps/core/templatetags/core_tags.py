@@ -72,3 +72,26 @@ def stock_logo(target, size=32, css_class=""):
         f'class="{classes}" loading="lazy" style="object-fit: contain; aspect-ratio: 1/1; background-color: var(--bs-card-bg, #fff);" />'
     )
 
+
+@register.filter
+def safe_markdown(value):
+    """
+    Safely parses common inline markdown elements (**bold**, *italic*) and line breaks,
+    escaping raw HTML to prevent injection while rendering cleanly styled rich text.
+    """
+    if not value:
+        return ""
+    import html
+    import re
+
+    escaped = html.escape(str(value))
+    # Replace **bold** with <strong>bold</strong>
+    bold_sub = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+    # Replace *italic* with <em>italic</em>
+    italic_sub = re.sub(r"\*(.+?)\*", r"<em>\1</em>", bold_sub)
+    # Split paragraphs by double newline, or single newlines with br
+    paragraphs = [p.strip().replace("\n", "<br>") for p in italic_sub.split("\n\n") if p.strip()]
+    rendered = "".join(f"<p class='mb-2'>{p}</p>" for p in paragraphs)
+    return mark_safe(rendered)
+
+

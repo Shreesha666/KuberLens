@@ -38,15 +38,15 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small fw-semibold text-muted text-uppercase">Avg Listing Gain</span>
+                    <span class="kpi-label mb-0">Avg Listing Gain</span>
                     <span class="badge {% if summary.avg_listing_gain >= 0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
                         {% if summary.avg_listing_gain >= 0 %}+{% endif %}{{ summary.avg_listing_gain }}%
                     </span>
                 </div>
-                <h3 class="h4 fw-bold num-mono {% if summary.avg_listing_gain >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                <div class="kpi-value {% if summary.avg_listing_gain >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
                     {% if summary.avg_listing_gain >= 0 %}+{% endif %}{{ summary.avg_listing_gain }}%
-                </h3>
-                <span class="small text-muted">{{ summary.listing_win_rate }}% listed at a premium</span>
+                </div>
+                <span class="kpi-subtext d-block">{{ summary.listing_win_rate }}% listed at a premium</span>
             </div>
         </div>
     </div>
@@ -56,15 +56,15 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small fw-semibold text-muted text-uppercase">Avg Current Return</span>
+                    <span class="kpi-label mb-0">Avg Current Return</span>
                     <span class="badge {% if summary.avg_current_return >= 0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
                         Since Issue
                     </span>
                 </div>
-                <h3 class="h4 fw-bold num-mono {% if summary.avg_current_return >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                <div class="kpi-value {% if summary.avg_current_return >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
                     {% if summary.avg_current_return >= 0 %}+{% endif %}{{ summary.avg_current_return }}%
-                </h3>
-                <span class="small text-muted">{{ summary.current_win_rate }}% profitable vs issue price</span>
+                </div>
+                <span class="kpi-subtext d-block">{{ summary.current_win_rate }}% profitable vs issue price</span>
             </div>
         </div>
     </div>
@@ -74,15 +74,15 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small fw-semibold text-muted text-uppercase">Top Day-1 Gainer</span>
+                    <span class="kpi-label mb-0">Top Day-1 Gainer</span>
                     <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
                         <i class="bi bi-trophy"></i> Debut
                     </span>
                 </div>
                 {% if summary.top_listing_gainers %}
                 {% with top_debut=summary.top_listing_gainers.0 %}
-                <h3 class="h4 fw-bold text-body mb-0">{{ top_debut.ipo.symbol }}</h3>
-                <span class="small text-success fw-bold num-mono">+{{ top_debut.listing_gain_percent }}% on debut</span>
+                <div class="kpi-value text-body mb-1">{{ top_debut.ipo.symbol }}</div>
+                <span class="kpi-subtext d-block text-success fw-semibold num-mono">+{{ top_debut.listing_gain_percent }}% on debut</span>
                 {% endwith %}
                 {% else %}
                 <span class="text-muted">—</span>
@@ -96,15 +96,15 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small fw-semibold text-muted text-uppercase">Top Total Performer</span>
+                    <span class="kpi-label mb-0">Top Total Performer</span>
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
                         <i class="bi bi-star"></i> Leader
                     </span>
                 </div>
                 {% if summary.top_performers %}
                 {% with leader=summary.top_performers.0 %}
-                <h3 class="h4 fw-bold text-body mb-0">{{ leader.ipo.symbol }}</h3>
-                <span class="small text-success fw-bold num-mono">+{{ leader.total_return_percent }}% overall</span>
+                <div class="kpi-value text-body mb-1">{{ leader.ipo.symbol }}</div>
+                <span class="kpi-subtext d-block text-success fw-semibold num-mono">+{{ leader.total_return_percent }}% overall</span>
                 {% endwith %}
                 {% else %}
                 <span class="text-muted">—</span>
@@ -173,7 +173,7 @@
 <!-- Performance Analytics Table Card -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+        <table class="table table-hover table-financial align-middle mb-0">
             <thead class="table-light text-muted small text-uppercase">
                 <tr>
                     <th class="ps-4">Company &amp; Symbol</th>
@@ -209,9 +209,9 @@
                                     {{ item.ipo.company_name }}
                                 </a>
                                 <div class="d-flex align-items-center gap-1.5 mt-0.5">
-                                    <span class="badge bg-secondary-subtle text-secondary border small" style="font-size: 0.7rem;">{{ item.ipo.symbol }}</span>
-                                    <span class="badge bg-light text-muted border small" style="font-size: 0.7rem;">{{ item.ipo.get_issue_type_display }}</span>
-                                    <span class="text-muted small" style="font-size: 0.72rem;">{{ item.ipo.sector }}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border small">{{ item.ipo.symbol }}</span>
+                                    <span class="badge bg-light text-muted border small">{{ item.ipo.get_issue_type_display }}</span>
+                                    <span class="text-muted small">{{ item.ipo.sector }}</span>
                                 </div>
                             </div>
                         </div>
@@ -220,7 +220,7 @@
                     <!-- Listing Date -->
                     <td>
                         <div class="fw-medium text-body">{{ item.ipo.listing_date|date:"d M Y"|default:"—" }}</div>
-                        <div class="text-muted small" style="font-size: 0.72rem;">{{ item.days_since_listing }} days listed</div>
+                        <div class="text-muted text-micro">{{ item.days_since_listing }} days listed</div>
                     </td>
 
                     <!-- Issue Price -->
@@ -231,7 +231,7 @@
                     <!-- Debut Close -->
                     <td class="text-end num-mono text-body">
                         ₹{{ item.listing_day_close|floatformat:2 }}
-                        <div class="text-muted small" style="font-size: 0.7rem;">Range: ₹{{ item.listing_day_low|floatformat:0 }} - ₹{{ item.listing_day_high|floatformat:0 }}</div>
+                        <div class="text-muted text-micro">Range: ₹{{ item.listing_day_low|floatformat:0 }} - ₹{{ item.listing_day_high|floatformat:0 }}</div>
                     </td>
 
                     <!-- Listing Gain % -->
@@ -246,7 +246,7 @@
 
                     <!-- Total Return since Issue % -->
                     <td class="text-end num-mono">
-                        <span class="badge {% if item.total_return_percent >= 50 %}bg-success text-white{% elif item.total_return_percent > 0 %}bg-success-subtle text-success border border-success-subtle{% elif item.total_return_percent < 0 %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-secondary{% endif %} px-2 py-1 fs-6">
+                        <span class="badge {% if item.total_return_percent >= 50 %}bg-success text-white{% elif item.total_return_percent > 0 %}bg-success-subtle text-success border border-success-subtle{% elif item.total_return_percent < 0 %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-secondary{% endif %} px-2 py-1">
                             {% if item.total_return_percent > 0 %}+{% endif %}{{ item.total_return_percent }}%
                         </span>
                     </td>
@@ -268,7 +268,7 @@
 
                     <!-- Performance Classification -->
                     <td class="text-center">
-                        <span class="badge {{ item.badge_class }} small" style="font-size: 0.72rem;">
+                        <span class="badge {{ item.badge_class }} small">
                             {{ item.performance_label }}
                         </span>
                     </td>

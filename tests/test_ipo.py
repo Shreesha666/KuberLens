@@ -472,6 +472,55 @@ class TestIPOIntelligenceModule:
         est_upcoming = estimate_allotment_probability(upcoming, category="RETAIL", lots_applied=1)
         assert est_upcoming["is_lottery"] is False
         assert est_upcoming["single_pan_probability"] == Decimal("100.0")
+        assert est_upcoming["is_awaiting_data"] is True
+
+    def test_sebi_lot_sizing_and_lottery_edge_cases(self, ipo_dataset):
+        """Tests SEBI statutory lot size properties and subscription fallback logic."""
+        from apps.ipo.models import IssueType, IPOSubscriptionSnapshot
+
+        # 1. Mainboard statutory lot sizing when lot_size is unpopulated (1)
+        mb_ipo = IPOMaster.objects.create(
+            symbol="TESTMB_LOT",
+            company_name="Test Mainboard Ltd",
+            issue_type=IssueType.MAINBOARD,
+            status=IPOStatus.LIVE,
+            price_band_min=Decimal("95.00"),
+            price_band_max=Decimal("100.00"),
+            lot_size=1,
+        )
+        assert mb_ipo.effective_lot_size == 148
+        assert mb_ipo.calculated_min_investment == Decimal("14800.00")
+
+        # 2. SME statutory lot sizing when lot_size is unpopulated (1)
+        sme_ipo = IPOMaster.objects.create(
+            symbol="TESTSME_LOT",
+            company_name="Test SME Ltd",
+            issue_type=IssueType.SME,
+            status=IPOStatus.LIVE,
+            price_band_min=Decimal("95.00"),
+            price_band_max=Decimal("100.00"),
+            lot_size=1,
+        )
+        assert sme_ipo.effective_lot_size >= 1000
+        assert sme_ipo.calculated_min_investment >= Decimal("100000.00")
+
+        # 3. Subscription fallback: retail_subscription is 0.00, total_subscription is 25.00x
+        IPOSubscriptionSnapshot.objects.create(
+            ipo=mb_ipo,
+            day_number=1,
+            qib_subscription=Decimal("0.00"),
+            nii_subscription=Decimal("0.00"),
+            retail_subscription=Decimal("0.00"),
+            total_subscription=Decimal("25.00"),
+        )
+        est_fallback = estimate_allotment_probability(mb_ipo, category="RETAIL", lots_applied=1, num_pan_accounts=1)
+        assert est_fallback["is_lottery"] is True
+        assert est_fallback["subscription_multiple"] == Decimal("25.00")
+        assert est_fallback["single_pan_probability"] == Decimal("4.00")
+
+        # 4. Family multi-PAN odds enhancement: P(3 accounts) = 1 - (1 - 0.04)^3 = 11.5%
+        est_fam3 = estimate_allotment_probability(mb_ipo, category="RETAIL", lots_applied=1, num_pan_accounts=3)
+        assert est_fam3["selected_probability"] == 11.5
 
     def test_listing_gain_predictor_and_recommendation_engine(self, ipo_dataset):
         """Tests empirical listing gain prediction, price bands, and recommendation signals."""

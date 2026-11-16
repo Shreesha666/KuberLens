@@ -142,12 +142,41 @@ class IPOMaster(AuditedModel):
         return self.price_band_max or self.issue_price or self.price_band_min or Decimal("0.00")
 
     @property
+    def effective_lot_size(self) -> int:
+        """
+        Returns the official lot size if valid (> 1), or computes the statutory SEBI
+        lot size based on issue type and price band:
+        - Mainboard: Targets ~₹14,000 - ₹15,000 retail application amount per SEBI circular.
+        - SME: Targets ~₹1,00,000 - ₹1,20,000 minimum application amount per SEBI SME guidelines.
+        """
+        if self.lot_size and self.lot_size > 1:
+            return self.lot_size
+
+        price = self.effective_upper_price
+        if price <= Decimal("0.00"):
+            return 50  # Simulation fallback
+
+        if self.issue_type == IssueType.SME:
+            # SEBI SME minimum application ~₹1,10,000 to ₹1,20,000
+            raw_lots = int(Decimal("110000.00") // price)
+            if raw_lots >= 1000:
+                return max(500, (raw_lots // 500) * 500)
+            elif raw_lots >= 200:
+                return max(100, (raw_lots // 100) * 100)
+            return max(50, (raw_lots // 50) * 50)
+        else:
+            # Mainboard: SEBI standard ~₹14,800
+            raw_lots = int(Decimal("14800.00") // price)
+            return max(1, raw_lots)
+
+    @property
     def calculated_min_investment(self) -> Decimal:
-        if self.min_investment:
+        if self.min_investment and self.min_investment > Decimal("0.00"):
             return self.min_investment
         price = self.effective_upper_price
-        if price > Decimal("0.00") and self.lot_size > 0:
-            return price * Decimal(str(self.lot_size))
+        lot = self.effective_lot_size
+        if price > Decimal("0.00") and lot > 0:
+            return price * Decimal(str(lot))
         return Decimal("0.00")
 
     @property

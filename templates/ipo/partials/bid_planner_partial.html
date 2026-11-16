@@ -34,6 +34,7 @@
                           hx-swap="outerHTML"
                           hx-push-url="false"
                           hx-trigger="change from:select, change from:input[type='checkbox'], input delay:250ms from:input[type='number']">
+                        <input type="hidden" name="submitted" value="1">
 
                         <!-- Investor Category -->
                         <div class="mb-3">
@@ -84,23 +85,25 @@
 
                             <!-- Quick Sizing Pills -->
                             <div class="d-flex flex-wrap gap-1 mt-2">
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1&submitted=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1&submitted=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
                                    class="btn btn-xs btn-outline-secondary py-0 px-2 small">1 Lot (Min)</a>
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                {% if bid_plan.max_retail_lots >= 5 %}
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5&submitted=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5&submitted=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
                                    class="btn btn-xs btn-outline-secondary py-0 px-2 small">5 Lots</a>
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots={{ bid_plan.max_retail_lots|default:13 }}{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots={{ bid_plan.max_retail_lots|default:13 }}{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                {% endif %}
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots={{ bid_plan.max_retail_lots|default:13 }}&submitted=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots={{ bid_plan.max_retail_lots|default:13 }}&submitted=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
-                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">Max Retail ({{ bid_plan.max_retail_lots|default:13 }} Lots)</a>
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots={{ bid_plan.min_shni_lots|default:14 }}&cutoff=false{% if not bid_plan.has_announced_pricing %}&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots={{ bid_plan.min_shni_lots|default:14 }}&cutoff=false{% if not bid_plan.has_announced_pricing %}&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">Max Retail ({{ bid_plan.max_retail_lots|default:13 }} Lot{{ bid_plan.max_retail_lots|pluralize }})</a>
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots={{ bid_plan.min_shni_lots|default:14 }}&submitted=1&cutoff=false{% if not bid_plan.has_announced_pricing %}&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots={{ bid_plan.min_shni_lots|default:14 }}&submitted=1&cutoff=false{% if not bid_plan.has_announced_pricing %}&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
                                    class="btn btn-xs btn-outline-secondary py-0 px-2 small">sHNI Min ({{ bid_plan.min_shni_lots|default:14 }} Lots)</a>
@@ -423,14 +426,23 @@
                     <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                             <div>
+                                {% if prob_estimate.is_awaiting_data %}
+                                <span class="text-muted small d-block">Allotment Probability Engine:</span>
+                                <div class="fs-2 fw-bold text-body num-mono text-primary d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-hourglass-split text-primary fs-3"></i>
+                                    <span>Awaiting Bids</span>
+                                </div>
+                                <span class="text-muted small">(SEBI lottery activates upon Day-1 bidding)</span>
+                                {% else %}
                                 <span class="text-muted small d-block">Estimated Probability (Selected Strategy: {{ prob_estimate.num_pan_accounts }} Account{% if prob_estimate.num_pan_accounts > 1 %}s{% endif %}):</span>
                                 <span class="fs-2 fw-bold num-mono {% if prob_estimate.selected_probability >= 70 %}text-success{% elif prob_estimate.selected_probability >= 35 %}text-primary{% else %}text-warning-emphasis{% endif %}">
                                     {{ prob_estimate.selected_probability }}%
                                 </span>
                                 <span class="text-muted small ms-1">(Odds: ~1 in {{ prob_estimate.subscription_multiple|floatformat:1 }})</span>
+                                {% endif %}
                             </div>
-                            <span class="badge {% if prob_estimate.is_lottery %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} px-2.5 py-1">
-                                {% if prob_estimate.is_lottery %}Randomized Lottery{% else %}Guaranteed Allotment{% endif %}
+                            <span class="badge {% if prob_estimate.is_awaiting_data %}bg-info-subtle text-info border border-info-subtle{% elif prob_estimate.is_lottery %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} px-2.5 py-1">
+                                {% if prob_estimate.is_awaiting_data %}Pre-Bidding Window{% elif prob_estimate.is_lottery %}Randomized Lottery ({{ prob_estimate.subscription_multiple|floatformat:2 }}x){% else %}Guaranteed Allotment ({{ prob_estimate.subscription_multiple|floatformat:2 }}x){% endif %}
                             </span>
                         </div>
                         <p class="text-muted small mb-0">{{ prob_estimate.status_note }}</p>
@@ -457,6 +469,9 @@
                                     </td>
                                     <td class="num-mono">{{ s.pans }} minimum lot{% if s.pans > 1 %}s{% endif %}</td>
                                     <td>
+                                        {% if prob_estimate.is_awaiting_data %}
+                                        <span class="text-muted small">Awaiting Bidding Data</span>
+                                        {% else %}
                                         <div class="d-flex align-items-center justify-content-center gap-2">
                                             <span class="num-mono fw-bold {% if s.probability_percent >= 70 %}text-success{% elif s.probability_percent >= 40 %}text-primary{% else %}text-body{% endif %}">
                                                 {{ s.probability_percent }}%
@@ -470,8 +485,9 @@
                                                      style="--progress-width: {{ s.probability_percent }}%; width: var(--progress-width, 0%);"></div>
                                             </div>
                                         </div>
+                                        {% endif %}
                                     </td>
-                                    <td class="num-mono text-muted">{{ s.expected_allotments }} lots</td>
+                                    <td class="num-mono text-muted">{% if prob_estimate.is_awaiting_data %}—{% else %}{{ s.expected_allotments }} lots{% endif %}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

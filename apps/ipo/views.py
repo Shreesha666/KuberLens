@@ -445,8 +445,11 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         except (ValueError, TypeError):
             planner_lots = 1
 
-        cutoff_param = self.request.GET.get("cutoff", "true" if has_pricing else "false")
-        planner_cutoff = cutoff_param.lower() in ["true", "1", "yes"] and has_pricing
+        has_submission = "submitted" in self.request.GET or "lots" in self.request.GET or "category" in self.request.GET
+        if has_submission:
+            planner_cutoff = "cutoff" in self.request.GET and has_pricing and planner_category in ["RETAIL", "EMPLOYEE", "SHAREHOLDER"]
+        else:
+            planner_cutoff = has_pricing and planner_category in ["RETAIL", "EMPLOYEE", "SHAREHOLDER"]
 
         planner_price = None
         planner_price_raw = self.request.GET.get("price", "")
@@ -528,8 +531,11 @@ class IPOBidPlannerView(HTMXResponseMixin, TemplateView):
         except (ValueError, TypeError):
             lots = 1
 
-        cutoff_param = self.request.GET.get("cutoff", "true" if has_pricing else "false")
-        is_cutoff = cutoff_param.lower() in ["true", "1", "yes"] and has_pricing
+        has_submission = "submitted" in self.request.GET or "lots" in self.request.GET or "category" in self.request.GET
+        if has_submission:
+            is_cutoff = "cutoff" in self.request.GET and has_pricing and category in ["RETAIL", "EMPLOYEE", "SHAREHOLDER"]
+        else:
+            is_cutoff = has_pricing and category in ["RETAIL", "EMPLOYEE", "SHAREHOLDER"]
 
         custom_price = None
         price_raw = self.request.GET.get("price", "")

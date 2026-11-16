@@ -42,7 +42,7 @@ def calculate_bid_plan(
     )
 
     if has_announced_pricing:
-        lot_size = ipo.lot_size or 1
+        lot_size = custom_lot_size if (custom_lot_size and custom_lot_size > 0) else ipo.effective_lot_size
         price_min = ipo.price_band_min or ipo.issue_price or Decimal("0.00")
         price_max = ipo.effective_upper_price
 
@@ -83,8 +83,8 @@ def calculate_bid_plan(
 
     # Dynamic lot limits
     if amount_per_lot > Decimal("0.00"):
-        max_retail_lots = int(Decimal("200000.00") // amount_per_lot)
-        min_shni_lots = max_retail_lots + 1
+        max_retail_lots = max(1, int(Decimal("200000.00") // amount_per_lot))
+        min_shni_lots = int(Decimal("200000.00") // amount_per_lot) + 1
     else:
         max_retail_lots = 13
         min_shni_lots = 14
@@ -237,7 +237,7 @@ def estimate_allotment_probability(
     sub_summary = get_subscription_summary(ipo)
     latest_sub = sub_summary["latest"]
 
-    lot_size = ipo.lot_size or 1
+    lot_size = ipo.effective_lot_size
     total_shares = ipo.total_shares_offered or 1000000
     retail_quota_pct = ipo.retail_quota_percent or Decimal("35.00")
 
@@ -245,36 +245,51 @@ def estimate_allotment_probability(
     if category == "RETAIL":
         quota_shares = int(Decimal(str(total_shares)) * (retail_quota_pct / Decimal("100.0")))
         quota_lots = quota_shares // lot_size if lot_size > 0 else 1
-        sub_multiple = latest_sub.retail_subscription if latest_sub else Decimal("1.00")
+        if latest_sub and latest_sub.retail_subscription and latest_sub.retail_subscription > Decimal("0.00"):
+            sub_multiple = latest_sub.retail_subscription
+        elif latest_sub and latest_sub.total_subscription and latest_sub.total_subscription > Decimal("0.00"):
+            sub_multiple = latest_sub.total_subscription
+        else:
+            sub_multiple = None
         sub_apps = latest_sub.total_applications if latest_sub else None
     elif category == "sHNI":
         nii_quota_pct = ipo.nii_quota_percent or Decimal("15.00")
         # sHNI typically gets 1/3 of NII quota (5% of total issue)
         quota_shares = int(Decimal(str(total_shares)) * ((nii_quota_pct / Decimal("3.0")) / Decimal("100.0")))
         quota_lots = quota_shares // (lot_size * 14) if lot_size > 0 else 1  # 14 lots min sHNI
-        sub_multiple = latest_sub.nii_subscription if latest_sub else Decimal("1.00")
+        if latest_sub and latest_sub.nii_subscription and latest_sub.nii_subscription > Decimal("0.00"):
+            sub_multiple = latest_sub.nii_subscription
+        elif latest_sub and latest_sub.total_subscription and latest_sub.total_subscription > Decimal("0.00"):
+            sub_multiple = latest_sub.total_subscription
+        else:
+            sub_multiple = None
         sub_apps = None
     else:
         # Default fallback
         quota_shares = int(Decimal(str(total_shares)) * Decimal("0.10"))
         quota_lots = quota_shares // lot_size if lot_size > 0 else 1
-        sub_multiple = latest_sub.total_subscription if latest_sub else Decimal("1.00")
+        sub_multiple = latest_sub.total_subscription if (latest_sub and latest_sub.total_subscription and latest_sub.total_subscription > Decimal("0.00")) else None
         sub_apps = None
 
     today = timezone.now().date()
     is_pre_issue = ipo.status in [IPOStatus.UPCOMING, IPOStatus.DRHP_FILED, IPOStatus.SEBI_APPROVED] or (ipo.open_date is None) or (ipo.open_date > today)
 
     # Base Probability Calculation for 1 PAN
-    if is_pre_issue and not latest_sub:
-        single_pan_prob = Decimal("100.0")
+    if sub_multiple is None or (is_pre_issue and not latest_sub):
+        is_awaiting_data = True
         is_lottery = False
-        status_note = "Bidding has not yet opened. Live subscription multiples and SEBI lottery probability will update in real-time once the issue goes live."
+        single_pan_prob = Decimal("100.0")
+        selected_prob = 100.0
+        status_note = "Official exchange bidding has not opened yet. Real-time subscription multiples and mathematical SEBI lottery probability will calculate once Day-1 bids are recorded."
     elif sub_multiple <= Decimal("1.00"):
         # Fully available / undersubscribed
+        is_awaiting_data = False
         single_pan_prob = Decimal("100.0")
+        selected_prob = 100.0
         is_lottery = False
-        status_note = "Category is currently undersubscribed; all valid applications expected to receive allotment."
+        status_note = f"Category is currently undersubscribed at {sub_multiple:.2f}x. Under SEBI rules, all valid applications are guaranteed allotment of requested lots."
     else:
+        is_awaiting_data = False
         is_lottery = True
         # If application count is published:
         if sub_apps and sub_apps > quota_lots and quota_lots > 0:
@@ -284,24 +299,30 @@ def estimate_allotment_probability(
             prob_float = min(1.0, 1.0 / float(sub_multiple))
 
         single_pan_prob = Decimal(str(round(prob_float * 100.0, 2)))
-        status_note = f"Category is oversubscribed at {sub_multiple:.2f}x. Allotment decided via randomized SEBI lottery."
+        status_note = f"Category is oversubscribed at {sub_multiple:.2f}x. Allotment decided via randomized SEBI lottery (1 lot per winning PAN)."
+        selected_prob = round((1.0 - ((1.0 - prob_float) ** num_pan_accounts)) * 100.0, 1)
 
     # Multi-account family PAN diversification analysis (N distinct PANs)
     num_pan_accounts = max(1, min(5, num_pan_accounts))
-    p_float = float(single_pan_prob) / 100.0
 
     family_scenarios: list[dict[str, Any]] = []
     for n in range(1, 6):
-        # Probability of at least 1 allotment: 1 - (1 - P)^N
-        at_least_one = 1.0 - ((1.0 - p_float) ** n)
-        family_scenarios.append({
-            "pans": n,
-            "probability_percent": round(at_least_one * 100.0, 1),
-            "expected_allotments": round(p_float * n, 2),
-            "is_selected": n == num_pan_accounts,
-        })
-
-    selected_prob = round((1.0 - ((1.0 - p_float) ** num_pan_accounts)) * 100.0, 1)
+        if is_awaiting_data:
+            family_scenarios.append({
+                "pans": n,
+                "probability_percent": 100.0,
+                "expected_allotments": n,
+                "is_selected": n == num_pan_accounts,
+            })
+        else:
+            p_float = float(single_pan_prob) / 100.0
+            at_least_one = 1.0 - ((1.0 - p_float) ** n)
+            family_scenarios.append({
+                "pans": n,
+                "probability_percent": round(at_least_one * 100.0, 1),
+                "expected_allotments": round(p_float * n, 2),
+                "is_selected": n == num_pan_accounts,
+            })
 
     compliance_notes = [
         "SEBI Lottery Rule: For oversubscribed retail issues, applying for more than 1 lot under the same PAN does NOT increase your probability of getting allotted.",
@@ -316,8 +337,9 @@ def estimate_allotment_probability(
         "num_pan_accounts": num_pan_accounts,
         "quota_shares": quota_shares,
         "quota_lots": quota_lots,
-        "subscription_multiple": sub_multiple,
+        "subscription_multiple": sub_multiple or Decimal("1.00"),
         "is_lottery": is_lottery,
+        "is_awaiting_data": is_awaiting_data,
         "status_note": status_note,
         "single_pan_probability": single_pan_prob,
         "selected_probability": selected_prob,

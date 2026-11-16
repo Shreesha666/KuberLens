@@ -271,36 +271,109 @@ def estimate_allotment_probability(
         sub_multiple = latest_sub.total_subscription if (latest_sub and latest_sub.total_subscription and latest_sub.total_subscription > Decimal("0.00")) else None
         sub_apps = None
 
+    # Determine lifecycle stage
     today = timezone.now().date()
-    is_pre_issue = ipo.status in [IPOStatus.UPCOMING, IPOStatus.DRHP_FILED, IPOStatus.SEBI_APPROVED] or (ipo.open_date is None) or (ipo.open_date > today)
+    is_concluded = ipo.status in [
+        IPOStatus.CLOSED,
+        IPOStatus.ALLOTMENT_FINALIZED,
+        IPOStatus.LISTED,
+    ] or bool(ipo.close_date and ipo.close_date < today)
+
+    is_pre_issue = (not is_concluded) and (
+        ipo.status in [IPOStatus.UPCOMING, IPOStatus.DRHP_FILED, IPOStatus.SEBI_APPROVED]
+        or (ipo.open_date is None)
+        or (ipo.open_date > today)
+    )
+
+    has_subscription_data = sub_multiple is not None
 
     # Base Probability Calculation for 1 PAN
-    if sub_multiple is None or (is_pre_issue and not latest_sub):
-        is_awaiting_data = True
-        is_lottery = False
-        single_pan_prob = Decimal("100.0")
-        selected_prob = 100.0
-        status_note = "Official exchange bidding has not opened yet. Real-time subscription multiples and mathematical SEBI lottery probability will calculate once Day-1 bids are recorded."
-    elif sub_multiple <= Decimal("1.00"):
-        # Fully available / undersubscribed
-        is_awaiting_data = False
-        single_pan_prob = Decimal("100.0")
-        selected_prob = 100.0
-        is_lottery = False
-        status_note = f"Category is currently undersubscribed at {sub_multiple:.2f}x. Under SEBI rules, all valid applications are guaranteed allotment of requested lots."
-    else:
-        is_awaiting_data = False
-        is_lottery = True
-        # If application count is published:
-        if sub_apps and sub_apps > quota_lots and quota_lots > 0:
-            prob_float = min(1.0, float(quota_lots) / float(sub_apps))
+    if has_subscription_data:
+        # We have verified subscription multiples from the exchange!
+        if sub_multiple > Decimal("1.00"):
+            is_awaiting_data = False
+            is_lottery = True
+            if sub_apps and sub_apps > quota_lots and quota_lots > 0:
+                prob_float = min(1.0, float(quota_lots) / float(sub_apps))
+            else:
+                prob_float = min(1.0, 1.0 / float(sub_multiple))
+            single_pan_prob = Decimal(str(round(prob_float * 100.0, 2)))
+            selected_prob = round((1.0 - ((1.0 - prob_float) ** num_pan_accounts)) * 100.0, 1)
+            if is_concluded:
+                badge_text = f"Final Allotment Odds ({sub_multiple:.2f}x)"
+                headline = f"{selected_prob}%"
+                close_str = ipo.close_date.strftime("%d %b %Y") if ipo.close_date else "close date"
+                status_note = (
+                    f"Primary bidding closed at {sub_multiple:.2f}x subscription on {close_str}. "
+                    f"Allotment was finalized via SEBI lottery (1 lot per winning PAN)."
+                )
+            else:
+                badge_text = f"Randomized Lottery ({sub_multiple:.2f}x)"
+                headline = f"{selected_prob}%"
+                status_note = (
+                    f"Category is oversubscribed at {sub_multiple:.2f}x. "
+                    f"Allotment decided via randomized SEBI lottery (1 lot per winning PAN)."
+                )
         else:
-            # Derived from subscription multiple: P = 1 / Multiple
-            prob_float = min(1.0, 1.0 / float(sub_multiple))
-
-        single_pan_prob = Decimal(str(round(prob_float * 100.0, 2)))
-        status_note = f"Category is oversubscribed at {sub_multiple:.2f}x. Allotment decided via randomized SEBI lottery (1 lot per winning PAN)."
-        selected_prob = round((1.0 - ((1.0 - prob_float) ** num_pan_accounts)) * 100.0, 1)
+            # Undersubscribed (<= 1.00x)
+            is_awaiting_data = False
+            is_lottery = False
+            single_pan_prob = Decimal("100.0")
+            selected_prob = 100.0
+            if is_concluded:
+                badge_text = f"Final Guaranteed Allotment ({sub_multiple:.2f}x)"
+                headline = "100.0%"
+                close_str = ipo.close_date.strftime("%d %b %Y") if ipo.close_date else "close date"
+                status_note = (
+                    f"Primary bidding closed at {sub_multiple:.2f}x on {close_str}. "
+                    f"All valid retail bids were guaranteed full allotment under SEBI rules."
+                )
+            else:
+                badge_text = f"Guaranteed Allotment ({sub_multiple:.2f}x)"
+                headline = "100.0%"
+                status_note = (
+                    f"Category is currently undersubscribed at {sub_multiple:.2f}x. "
+                    f"Under SEBI rules, all valid applications are guaranteed allotment of requested lots."
+                )
+    else:
+        # No subscription snapshots recorded yet
+        if is_concluded:
+            is_awaiting_data = False
+            is_lottery = False
+            single_pan_prob = Decimal("100.0")
+            selected_prob = 100.0
+            badge_text = "Bidding Concluded"
+            headline = "Bidding Concluded"
+            close_str = ipo.close_date.strftime("%d %b %Y") if ipo.close_date else "the schedule"
+            list_str = ipo.listing_date.strftime("%d %b %Y") if ipo.listing_date else "the exchange"
+            status_note = (
+                f"Primary exchange bidding for {ipo.company_name} concluded on {close_str} and "
+                f"shares listed on {list_str}. Granular day-by-day bidding snapshots were not archived; "
+                f"shares are now actively trading on the secondary market."
+            )
+        elif is_pre_issue:
+            is_awaiting_data = True
+            is_lottery = False
+            single_pan_prob = Decimal("100.0")
+            selected_prob = 100.0
+            badge_text = "Pre-Bidding Window"
+            headline = "Awaiting Day-1 Bids"
+            open_str = ipo.open_date.strftime("%d %b %Y") if ipo.open_date else "the announced date"
+            status_note = (
+                f"Official exchange bidding opens on {open_str}. Real-time subscription multiples "
+                f"and mathematical SEBI lottery probability will calculate once Day-1 bids are recorded."
+            )
+        else:
+            is_awaiting_data = True
+            is_lottery = False
+            single_pan_prob = Decimal("100.0")
+            selected_prob = 100.0
+            badge_text = "Live Bidding Active"
+            headline = "Day-1 Bids In Progress"
+            status_note = (
+                "Exchange bidding is currently live. Official category subscription tallies and "
+                "allotment odds will update once Day-1 exchange reports are received."
+            )
 
     # Multi-account family PAN diversification analysis (N distinct PANs)
     num_pan_accounts = max(1, min(5, num_pan_accounts))
@@ -340,6 +413,10 @@ def estimate_allotment_probability(
         "subscription_multiple": sub_multiple or Decimal("1.00"),
         "is_lottery": is_lottery,
         "is_awaiting_data": is_awaiting_data,
+        "is_concluded": is_concluded,
+        "has_subscription_data": has_subscription_data,
+        "badge_text": badge_text,
+        "headline": headline,
         "status_note": status_note,
         "single_pan_probability": single_pan_prob,
         "selected_probability": selected_prob,

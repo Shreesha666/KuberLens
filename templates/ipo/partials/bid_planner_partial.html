@@ -426,23 +426,33 @@
                     <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                             <div>
-                                {% if prob_estimate.is_awaiting_data %}
+                                {% if prob_estimate.is_concluded and not prob_estimate.has_subscription_data %}
+                                <span class="text-muted small d-block">Allotment Lifecycle Status:</span>
+                                <div class="fs-2 fw-bold text-body num-mono text-secondary d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                                    <span>Bidding Concluded</span>
+                                </div>
+                                <span class="text-muted small">(Issue is listed &amp; actively trading on secondary market)</span>
+                                {% elif prob_estimate.is_awaiting_data %}
                                 <span class="text-muted small d-block">Allotment Probability Engine:</span>
                                 <div class="fs-2 fw-bold text-body num-mono text-primary d-flex align-items-center gap-1.5">
                                     <i class="bi bi-hourglass-split text-primary fs-3"></i>
-                                    <span>Awaiting Bids</span>
+                                    <span>{{ prob_estimate.headline|default:"Awaiting Bids" }}</span>
                                 </div>
                                 <span class="text-muted small">(SEBI lottery activates upon Day-1 bidding)</span>
                                 {% else %}
-                                <span class="text-muted small d-block">Estimated Probability (Selected Strategy: {{ prob_estimate.num_pan_accounts }} Account{% if prob_estimate.num_pan_accounts > 1 %}s{% endif %}):</span>
+                                <span class="text-muted small d-block">
+                                    {% if prob_estimate.is_concluded %}Historical Allotment Probability{% else %}Estimated Probability{% endif %}
+                                    (Selected Strategy: {{ prob_estimate.num_pan_accounts }} Account{% if prob_estimate.num_pan_accounts > 1 %}s{% endif %}):
+                                </span>
                                 <span class="fs-2 fw-bold num-mono {% if prob_estimate.selected_probability >= 70 %}text-success{% elif prob_estimate.selected_probability >= 35 %}text-primary{% else %}text-warning-emphasis{% endif %}">
                                     {{ prob_estimate.selected_probability }}%
                                 </span>
                                 <span class="text-muted small ms-1">(Odds: ~1 in {{ prob_estimate.subscription_multiple|floatformat:1 }})</span>
                                 {% endif %}
                             </div>
-                            <span class="badge {% if prob_estimate.is_awaiting_data %}bg-info-subtle text-info border border-info-subtle{% elif prob_estimate.is_lottery %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} px-2.5 py-1">
-                                {% if prob_estimate.is_awaiting_data %}Pre-Bidding Window{% elif prob_estimate.is_lottery %}Randomized Lottery ({{ prob_estimate.subscription_multiple|floatformat:2 }}x){% else %}Guaranteed Allotment ({{ prob_estimate.subscription_multiple|floatformat:2 }}x){% endif %}
+                            <span class="badge {% if prob_estimate.is_concluded and not prob_estimate.has_subscription_data %}bg-secondary-subtle text-body border{% elif prob_estimate.is_awaiting_data %}bg-info-subtle text-info border border-info-subtle{% elif prob_estimate.is_lottery %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} px-2.5 py-1">
+                                {{ prob_estimate.badge_text }}
                             </span>
                         </div>
                         <p class="text-muted small mb-0">{{ prob_estimate.status_note }}</p>
@@ -469,7 +479,9 @@
                                     </td>
                                     <td class="num-mono">{{ s.pans }} minimum lot{% if s.pans > 1 %}s{% endif %}</td>
                                     <td>
-                                        {% if prob_estimate.is_awaiting_data %}
+                                        {% if prob_estimate.is_concluded and not prob_estimate.has_subscription_data %}
+                                        <span class="text-muted small">Bidding Concluded</span>
+                                        {% elif prob_estimate.is_awaiting_data %}
                                         <span class="text-muted small">Awaiting Bidding Data</span>
                                         {% else %}
                                         <div class="d-flex align-items-center justify-content-center gap-2">
@@ -487,7 +499,7 @@
                                         </div>
                                         {% endif %}
                                     </td>
-                                    <td class="num-mono text-muted">{% if prob_estimate.is_awaiting_data %}—{% else %}{{ s.expected_allotments }} lots{% endif %}</td>
+                                    <td class="num-mono text-muted">{% if prob_estimate.is_awaiting_data or prob_estimate.is_concluded and not prob_estimate.has_subscription_data %}—{% else %}{{ s.expected_allotments }} lots{% endif %}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

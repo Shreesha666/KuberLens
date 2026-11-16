@@ -525,6 +525,22 @@ class TestIPOIntelligenceModule:
         est_fam3 = estimate_allotment_probability(mb_ipo, category="RETAIL", lots_applied=1, num_pan_accounts=3)
         assert est_fam3["selected_probability"] == 11.5
 
+        # 5. Concluded / Listed issue without archived subscription data
+        listed_ipo = IPOMaster.objects.create(
+            symbol="TESTLISTED_NO_SUB",
+            company_name="Test Listed No Sub Ltd",
+            issue_type=IssueType.MAINBOARD,
+            status=IPOStatus.LISTED,
+            price_band_min=Decimal("100.00"),
+            price_band_max=Decimal("110.00"),
+            lot_size=100,
+        )
+        est_concluded = estimate_allotment_probability(listed_ipo, category="RETAIL", lots_applied=1, num_pan_accounts=1)
+        assert est_concluded["is_concluded"] is True
+        assert est_concluded["is_awaiting_data"] is False
+        assert est_concluded["badge_text"] == "Bidding Concluded"
+        assert "concluded" in est_concluded["status_note"].lower()
+
     def test_listing_gain_predictor_and_recommendation_engine(self, ipo_dataset):
         """Tests empirical listing gain prediction, price bands, and recommendation signals."""
         from apps.ipo.models import IPOGMPRecord

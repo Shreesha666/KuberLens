@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.1-success.svg)](https://www.djangoproject.com/)
 [![HTMX](https://img.shields.io/badge/UI-HTMX%20%2B%20Bootstrap%205-purple.svg)](https://htmx.org/)
-[![Tests](https://img.shields.io/badge/Tests-186%20Passed%20(100%25)-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-226%20Passed%20(100%25)-brightgreen.svg)](tests/)
 [![Code Style](https://img.shields.io/badge/Linter-Ruff%20Clean-black.svg)](https://github.com/astral-sh/ruff)
 [![Architecture](https://img.shields.io/badge/Architecture-Django%20Modular%20Monolith-orange.svg)](ARCHITECTURE.md)
 
@@ -58,6 +58,17 @@ The platform is designed as a **Django Modular Monolith** adhering to clean doma
 - **Capital Charge Capitalization:** Buy brokerages, STT, and exchange turnover charges are capitalized into lot acquisition costs; sell charges reduce net realized capital gains.
 - **Corporate Action Redistribution:** Non-dilutive adjustments for bonus issues, stock splits, and cash dividends across open historical lots without ledger corruption.
 - **Concentration & Risk Guardrails:** Real-time portfolio concentration tracking with automatic alerts when any single equity exposure exceeds safe allocation thresholds.
+
+### 🚀 Primary Market & IPO Intelligence Suite
+- **Canonical Lifecycle & Issues Desk:** Live tracking across Mainboard and SME exchanges through DRHP Filed, SEBI Approved, Live, Closed, Allotted, and Listed stages, with server-side pagination.
+- **Empirical Listing Gain & Pop Predictor:** Multi-factor forecast combining Grey Market Premium (GMP ~50%), Day-3 QIB subscription (~30%), and fundamental scoring (~20%) to project expected listing price ranges and actionable recommendations (`Strong Apply`, `Retail Lottery`, `Apply with Caution`, `Avoid`).
+- **Interactive Bid Planner & DRHP Simulation Mode:** Dynamic lot sizing, category limit enforcement (Retail ₹2L cutoff, sHNI, bHNI), UPI mandate vs. ASBA NetBanking routing, and interactive estimation modeling for pre-RHP pipeline issues.
+- **Mathematical SEBI Retail Lottery Calculator:** Models mathematical allotment odds ($1 - (1 - 1/S)^k$) across distinct family member Demat/PAN accounts.
+- **Central Family Demat & PAN Vault (`/ipo/family-vault/`):** Centrally manage profiles for Self, Spouse, Parents, Siblings, and HUF with masked PANs and Demat BOIDs, featuring **1-Click Batch Bidding** in the Bid Planner.
+- **Automated Multi-Registrar Allotment Verifier:** Integrated adapters for **Link Intime, KFintech, and Bigshare** to check allotment outcomes directly from the Application Tracker.
+- **IPO Strategy Backtest Workspace (`/ipo/backtest/`):** Test quantitative investment hypotheses against historical Indian IPO debuts, computing win rates, average debut returns, and simulated ₹1 Lakh portfolio growth.
+- **1-Click Portfolio Sync:** Automatically convert allotted IPO application shares into active Portfolio Holdings with full FIFO transaction audit preservation.
+- **Multi-IPO Comparison Matrix (`/ipo/compare/`):** Side-by-side comparison of 2 to 4 IPOs across valuation multiples, 3-year CAGR growth, balance sheet health, and subscription velocity.
 
 ### 🎯 Quantitative Swing Trading & Risk Hub
 - **4 Quantitative Setup Scanners:**
@@ -304,6 +315,15 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 | **Stock Profile** | [`/stocks/<symbol>/`](http://localhost:8000/stocks/RELIANCE/) | Full institutional research, canvas chart, dual recommendations |
 | **Technical Analysis Hub** | [`/research/technical/`](http://localhost:8000/research/technical/) | Indicator snapshots, RSI oversold/overbought, moving average crosses |
 | **Fundamental Analysis Hub**| [`/research/fundamental/`](http://localhost:8000/research/fundamental/) | Valuation multiples, ROCE/ROE rankings, financial health scores |
+| **IPO Intelligence Centre** | [`/ipo/`](http://localhost:8000/ipo/) | Executive primary market dashboard, capital mobilization, sync |
+| **Primary Issues Desk** | [`/ipo/issues/`](http://localhost:8000/ipo/issues/) | Mainboard & SME IPO directory with server-side pagination |
+| **IPO Detail Profile** | [`/ipo/<symbol>/`](http://localhost:8000/ipo/NTPCGREEN/) | Complete RHP research, 5-pillar radar scores, GMP, and timeline stepper |
+| **Interactive Bid Planner** | [`/ipo/<symbol>/bid-planner/`](http://localhost:8000/ipo/NTPCGREEN/bid-planner/) | Lot sizing calculator, SEBI lottery odds, simulation mode |
+| **Family Demat Vault** | [`/ipo/family-vault/`](http://localhost:8000/ipo/family-vault/) | Central family PAN/BOID management with 1-click batch bidding |
+| **IPO Strategy Backtester** | [`/ipo/backtest/`](http://localhost:8000/ipo/backtest/) | Quantitative IPO debut simulator (GMP, QIB %, ₹1L compounding) |
+| **My IPO Applications** | [`/ipo/applications/`](http://localhost:8000/ipo/applications/) | Bid mandate tracker, registrar allotment verification, portfolio sync |
+| **IPO Calendar** | [`/ipo/calendar/`](http://localhost:8000/ipo/calendar/) | Chronological monthly calendar of opens, closes, and listings |
+| **Multi-IPO Comparison** | [`/ipo/compare/`](http://localhost:8000/ipo/compare/) | Side-by-side comparison matrix across valuation & financials |
 | **AI Recommendations** | [`/modules/ai_recommendations/`](http://localhost:8000/modules/ai_recommendations/) | Dual perspective recommendations & multi-factor trade setups |
 | **Portfolio Overview** | [`/portfolio/`](http://localhost:8000/portfolio/) | Net worth, asset allocation, sector exposure, risk distribution |
 | **Holdings & FIFO Lots** | [`/portfolio/holdings/`](http://localhost:8000/portfolio/holdings/) | Open holding lots, unrealized P&L, lot acquisition costs |
@@ -326,7 +346,7 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 The platform enforces high test coverage and strict linting:
 
-### Run Complete Test Suite (183 Tests)
+### Run Complete Test Suite (226 Tests)
 ```bash
 pytest
 ```
@@ -342,6 +362,7 @@ ruff check .
 ```
 
 ### Test Suite Distribution
+- `tests/test_ipo.py`: Complete primary market suite (39 tests: master models, lifecycle milestones, time-series subscription, radar geometry, empirical listing gain predictor, family vault batch apply, registrar adapters, and strategy backtest workspace).
 - `tests/test_logos.py`: Logo proxy, cache TTL, and SVG monogram fallback tests.
 - `tests/test_recommendations.py`: Dual-perspective logic, ATR stop loss, and structural targets.
 - `tests/test_portfolio_accounting.py`: FIFO lot matching, corporate actions, and fee capitalization.

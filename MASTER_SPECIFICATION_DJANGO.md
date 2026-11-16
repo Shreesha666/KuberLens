@@ -1327,6 +1327,79 @@ The central dashboard at `/ipo/` provides high-level market visibility:
 - **Recent Listings Debut:** Card-based showcase of recent exchange debuts with issue price, opening price, issue size, and day-1 gains.
 - **Real-Time Data Sync:** Visual sync indicator and HTMX button triggering live fetch from `ipos.markets`.
 
+## 13.16 Empirical Listing Gain & Bid Recommendation Predictor Engine
+- **Service Location:** `services/ipo/predictor.py` (`predict_listing_gain(ipo, user=None)`)
+- **Mathematical Multi-Factor Weighting:**
+  Combines three empirical pillars observed across historical Indian primary market debuts:
+  1. **Grey Market Premium (GMP Weight ~50%):** Direct forward indicator from unregulated/street trades, converted to percentage pop above the upper price cap.
+  2. **Day-3 QIB Subscription Momentum (~30%):** Institutional anchor demand. QIB oversubscription $>50\times$ yields high listing conviction; $<1\times$ signals institutional indifference.
+  3. **Fundamental Quality Score (~20%):** Derived from the 5-pillar scoring engine (Valuation, Growth, Health, Quality, Subscription) out of 100.
+- **Computed Outputs:**
+  - Expected Listing Price Range (`₹predicted_price_min – ₹predicted_price_max`)
+  - Predicted Debut Pop (`+X% to +Y%`) and Midpoint Forecast %
+  - Confidence Tier: `HIGH`, `MEDIUM`, or `LOW` (based on data density of GMP quotes and QIB bids)
+  - Actionable Decision Tiers:
+    - `STRONG_APPLY`: Expected pop $\ge 20\%$ with robust institutional support.
+    - `APPLY_RETAIL_LOTTERY`: Solid pop ($\ge 15\%$) but heavily oversubscribed; maximum 1 lot per PAN strategy recommended.
+    - `APPLY_FOR_LONG_TERM`: Moderate debut gains ($\ge 5\%$) backed by strong fundamental scores ($\ge 70/100$).
+    - `APPLY_WITH_CAUTION`: Marginal pop ($0\%\text{--}10\%$) with negative valuation or market sentiment risks.
+    - `AVOID`: Flat or negative expected returns ($<0\%$) or severe fundamental red flags.
+  - Recommended Exit Strategy: Explicit listing day guidelines (`FLIP_AT_OPEN`, `PARTIAL_PROFIT_TAKE`, `HOLD_FOR_TARGET`, `AVOID_OR_WITHDRAW`).
+
+## 13.17 Central Family Member Demat & PAN Vault
+- **Model:** `IPOFamilyMember` (`apps/ipo/models.py`)
+- **Route:** `/ipo/family-vault/` (`IPOFamilyVaultView`)
+- **Relationship Hierarchy:** Self, Spouse, Mother, Father, Son, Daughter, Brother, Sister, HUF (Hindu Undivided Family), Other.
+- **Data Security & Privacy:**
+  - Masked PAN storage and presentation (`ABCDE****F`).
+  - Demat BOID (16-digit CDSL / 8-char NSDL format).
+  - Default UPI Virtual Payment Address (VPA) and linked ASBA Bank name.
+- **1-Click Batch Bidding Integration (`IPOBatchApplyView`, `/ipo/<symbol>/batch-apply/`):**
+  - Integrated into the Bid Planner UI.
+  - Allows selecting active family members to instantly create distinct `IPOApplication` records with a single click.
+  - Automatically associates each application with the designated `IPOFamilyMember` foreign key.
+  - Multiplies retail allotment lottery odds legally across distinct PANs:
+    $$P(\ge 1\text{ allotment}) = 1 - \left(1 - \frac{1}{S_{\text{retail}}}\right)^k$$
+    where $k$ is the number of distinct family PANs and $S_{\text{retail}}$ is the retail subscription multiple.
+
+## 13.18 Automated Multi-Registrar Allotment Verification Engine
+- **Service Package:** `services/ipo/registrars/`
+- **Adapter Factory:** `get_registrar_adapter(registrar_name)`
+- **Registrar Support Matrix:**
+  1. **Link Intime India (`LinkIntimeAdapter`):** Automated verification via LinkIntime's public allotment inquiry endpoint, handling PAN matching and share allotment retrieval.
+  2. **KFin Technologies (`KFintechAdapter`):** Queries KFintech primary market allotment portal with PAN and Application Number parsing.
+  3. **Bigshare Services (`BigshareAdapter`):** Handles Bigshare's allotment lookup service.
+- **Application Tracker Integration:**
+  - Endpoint: `/ipo/applications/<uuid:pk>/registrar-check/` (`IPORegistrarCheckView`).
+  - One-click verification button rendered directly on each tracked application card in `/ipo/applications/`.
+  - Automatically updates `allotment_status` (`ALLOTTED`, `NOT_ALLOTTED`, `AWAITING`), `lots_allotted`, `refund_status`, and records timestamped audit notes.
+
+## 13.19 IPO Strategy Backtesting Workspace
+- **Service Location:** `services/ipo/backtester.py` (`run_ipo_backtest`)
+- **Route:** `/ipo/backtest/` (`IPOBacktestWorkspaceView`)
+- **Quantitative Parameter Controls:**
+  - Minimum GMP Threshold % (e.g., $10\%$, $20\%$, $50\%$).
+  - Minimum Institutional QIB Multiple (e.g., $1\times$, $5\times$, $10\times$).
+  - Board Type Filter: All Exchanges, Mainboard Only, SME Only.
+  - Lookback Horizon: 3 Months, 6 Months, 1 Year, 3 Years, All-Time.
+- **Hypothetical Simulation Engine:**
+  - Evaluates every historical IPO against the parameterized strategy rules.
+  - Simulates a standard retail lot allocation per qualified IPO.
+  - Tracks ₹1,00,000 starting portfolio compounding through listing day debut pops.
+- **Interactive Visualizations & Metrics:**
+  - Strategy Win Rate % (percentage of traded IPOs closing positive on listing day).
+  - Average Listing Day Pop % across qualifying issues.
+  - Total Cumulative Profit (₹) and Profit Factor ($\text{Gross Wins} / \text{Gross Losses}$).
+  - Comparative Performance Table detailing each historical IPO's signal, allocation, and debut return.
+
+## 13.20 Pre-RHP Pipeline Simulation Mode & Sizing Guardrails
+- **Pre-RHP Simulation Mode:** For draft prospectuses (DRHP filed, SEBI observation pending) where official price bands and lot sizes have not yet been announced, the Bid Planner automatically enters **Simulation Mode**:
+  - Unlocks custom share price input and estimated lot size input.
+  - Dynamically recalculates total capital commitments, category limit compliance (Retail $\le ₹2,00,000$, sHNI $₹2L\text{--}₹10L$, bHNI $>₹10L$), and UPI mandate routing in real time via HTMX without page reloads.
+- **Payment Routing Guardrails:**
+  - Applications $\le ₹5,00,000$ route to **UPI Mandate 2.0**.
+  - Applications $> ₹5,00,000$ (bHNI or high sHNI) automatically prompt for **ASBA NetBanking Mandate** per SEBI regulatory ceilings.
+
 ---
 
 # 14. STOCK SCREENER MODULE

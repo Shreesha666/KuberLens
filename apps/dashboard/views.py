@@ -54,7 +54,7 @@ class DashboardView(HTMXResponseMixin, TemplateView):
         # Day P&L calculation from latest quotes
         day_pnl = Decimal("0.00")
         for h in holdings:
-            quote = MarketQuote.objects.filter(listing=h.listing).first()
+            quote = MarketQuote.objects.filter(listing=h.listing).order_by("-retrieved_at").first()
             if quote and getattr(quote, "change", None) is not None:
                 day_pnl += Decimal(str(quote.change)) * h.total_quantity
         day_pnl_pct = (

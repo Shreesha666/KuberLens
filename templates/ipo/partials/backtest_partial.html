@@ -1,0 +1,234 @@
+{% load core_tags humanize %}
+<!-- Strategy Backtest Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h3 fw-bold mb-0 text-body">IPO Strategy Backtesting Workspace</h1>
+            <span class="badge bg-primary text-white">Quantitative Simulator</span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">
+            Test quantitative investment hypotheses (GMP, QIB multiple, Issue Size) against historical Indian IPO debuts.
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'ipo:issues' %}" class="btn btn-outline-secondary d-flex align-items-center gap-1"
+           hx-get="{% url 'ipo:issues' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-rocket-takeoff"></i>
+            <span>Active Issues</span>
+        </a>
+        <a href="{% url 'ipo:performance' %}" class="btn btn-outline-secondary d-flex align-items-center gap-1"
+           hx-get="{% url 'ipo:performance' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Performance Desk</span>
+        </a>
+    </div>
+</div>
+
+<!-- Strategy Configuration Form Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 pb-1">
+        <h5 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+            <i class="bi bi-sliders2 text-primary"></i>
+            <span>Backtest Filters &amp; Decision Criteria</span>
+        </h5>
+        <span class="text-muted small">Configure entry rules to evaluate historical win rates and portfolio growth</span>
+    </div>
+    <div class="card-body px-4 py-3">
+        <form method="get" action="{% url 'ipo:backtest' %}"
+              hx-get="{% url 'ipo:backtest' %}"
+              hx-target="#main-content"
+              hx-push-url="true"
+              hx-trigger="change from:select, submit"
+              class="row g-3">
+
+            <!-- Min GMP % Filter -->
+            <div class="col-6 col-md-3">
+                <label for="filterGmp" class="form-label small fw-semibold text-muted text-uppercase mb-1">
+                    Min GMP % Threshold
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="number" class="form-control num-mono" id="filterGmp" name="min_gmp"
+                           value="{{ min_gmp|default:'15' }}" step="5" min="0" max="200">
+                    <span class="input-group-text">%</span>
+                </div>
+                <small class="text-muted" style="font-size: 0.72rem;">Filter issues with Day-3 GMP &ge; threshold</small>
+            </div>
+
+            <!-- Min QIB Sub Multiple -->
+            <div class="col-6 col-md-3">
+                <label for="filterQib" class="form-label small fw-semibold text-muted text-uppercase mb-1">
+                    Min QIB Multiple
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="number" class="form-control num-mono" id="filterQib" name="min_qib"
+                           value="{{ min_qib|default:'5' }}" step="1" min="0" max="200">
+                    <span class="input-group-text">x</span>
+                </div>
+                <small class="text-muted" style="font-size: 0.72rem;">Filter issues with Institutional QIB &ge; threshold</small>
+            </div>
+
+            <!-- Board Type Filter -->
+            <div class="col-6 col-md-2">
+                <label for="filterBoard" class="form-label small fw-semibold text-muted text-uppercase mb-1">
+                    Board
+                </label>
+                <select class="form-select form-select-sm" id="filterBoard" name="issue_type">
+                    <option value="ALL" {% if issue_type == 'ALL' %}selected{% endif %}>All Boards</option>
+                    <option value="MAINBOARD" {% if issue_type == 'MAINBOARD' %}selected{% endif %}>Mainboard Only</option>
+                    <option value="SME" {% if issue_type == 'SME' %}selected{% endif %}>SME Emerge Only</option>
+                </select>
+            </div>
+
+            <!-- Lookback Period -->
+            <div class="col-6 col-md-2">
+                <label for="filterMonths" class="form-label small fw-semibold text-muted text-uppercase mb-1">
+                    Timeframe
+                </label>
+                <select class="form-select form-select-sm" id="filterMonths" name="months">
+                    <option value="" {% if not months %}selected{% endif %}>All Time</option>
+                    <option value="6" {% if months == 6 %}selected{% endif %}>Past 6 Months</option>
+                    <option value="12" {% if months == 12 %}selected{% endif %}>Past 1 Year</option>
+                    <option value="24" {% if months == 24 %}selected{% endif %}>Past 2 Years</option>
+                </select>
+            </div>
+
+            <!-- Action Button -->
+            <div class="col-12 col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary w-100 d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                    <i class="bi bi-play-circle-fill"></i>
+                    <span>Run Backtest</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Strategy Simulation Performance KPI Grid -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Historical Win Rate</span>
+                <span class="display-6 fw-bold num-mono {% if backtest.win_rate >= 75 %}text-success{% elif backtest.win_rate >= 50 %}text-primary{% else %}text-danger{% endif %}">
+                    {{ backtest.win_rate }}%
+                </span>
+                <div class="text-muted small mt-1">
+                    <strong>{{ backtest.winning_count }} Won</strong> / {{ backtest.losing_count }} Lost ({{ backtest.total_matched }} Matched)
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Avg Listing Pop</span>
+                <span class="display-6 fw-bold num-mono {% if backtest.avg_gain >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if backtest.avg_gain > 0 %}+{% endif %}{{ backtest.avg_gain }}%
+                </span>
+                <div class="text-muted small mt-1">
+                    Max: <strong class="text-success">+{{ backtest.max_gain }}%</strong> &bull; Min: <strong class="text-danger">{{ backtest.max_loss }}%</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Simulated Capital</span>
+                <span class="display-6 fw-bold num-mono text-body">
+                    ₹{{ backtest.final_capital|floatformat:0|intcomma }}
+                </span>
+                <div class="text-muted small mt-1">
+                    Started with: <strong class="num-mono">₹{{ backtest.initial_capital|floatformat:0|intcomma }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-3">
+                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Total Simulated P&amp;L</span>
+                <span class="display-6 fw-bold num-mono {% if backtest.total_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if backtest.total_pnl > 0 %}+{% endif %}₹{{ backtest.total_pnl|floatformat:0|intcomma }}
+                </span>
+                <div class="text-muted small mt-1">
+                    Net ROI: <strong>{% if backtest.total_return_percent > 0 %}+{% endif %}{{ backtest.total_return_percent }}%</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matched Historical Trades Table Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-body">Matched Historical Debut Trades ({{ backtest.total_matched }} of {{ backtest.total_in_universe }} Listed)</h5>
+            <span class="text-muted small">Chronological listing outcomes and 1-lot P&amp;L simulation</span>
+        </div>
+        <span class="badge bg-secondary-subtle text-secondary border small">1 Lot Basis (~₹15k)</span>
+    </div>
+    <div class="card-body px-0 py-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                <thead class="table-light text-muted text-uppercase">
+                    <tr>
+                        <th class="ps-4">Issue / Company</th>
+                        <th>Debut Date</th>
+                        <th>Board</th>
+                        <th class="text-end">QIB Sub</th>
+                        <th class="text-end">GMP %</th>
+                        <th class="text-end">Issue Price</th>
+                        <th class="text-end">Listing Price</th>
+                        <th class="text-end">Debut Return</th>
+                        <th class="text-end">Simulated P&amp;L</th>
+                        <th class="pe-4 text-end">Portfolio Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trade in backtest.trades %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url 'ipo:detail' trade.symbol %}" class="fw-bold text-decoration-none text-body"
+                               hx-get="{% url 'ipo:detail' trade.symbol %}" hx-target="#main-content" hx-push-url="true">
+                                {{ trade.company_name }}
+                            </a>
+                            <div class="text-muted num-mono small" style="font-size: 0.72rem;">{{ trade.symbol }}</div>
+                        </td>
+                        <td class="num-mono small">{{ trade.listing_date|date:"d M Y"|default:"—" }}</td>
+                        <td>
+                            <span class="badge {% if trade.issue_type == 'MAINBOARD' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                                {{ trade.issue_type }}
+                            </span>
+                        </td>
+                        <td class="text-end num-mono font-medium">{{ trade.qib_subscription|floatformat:1 }}x</td>
+                        <td class="text-end num-mono font-medium">
+                            {% if trade.gmp_percent %}+{{ trade.gmp_percent|floatformat:1 }}%{% else %}—{% endif %}
+                        </td>
+                        <td class="text-end num-mono">₹{{ trade.issue_price|floatformat:2 }}</td>
+                        <td class="text-end num-mono fw-bold">₹{{ trade.listing_price|floatformat:2 }}</td>
+                        <td class="text-end num-mono fw-bold {% if trade.listing_gain_percent >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if trade.listing_gain_percent > 0 %}+{% endif %}{{ trade.listing_gain_percent|floatformat:1 }}%
+                        </td>
+                        <td class="text-end num-mono fw-bold {% if trade.pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if trade.pnl > 0 %}+{% endif %}₹{{ trade.pnl|floatformat:0|intcomma }}
+                        </td>
+                        <td class="pe-4 text-end num-mono fw-bold text-body">
+                            ₹{{ trade.capital_after|floatformat:0|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-funnel text-muted fs-3 d-block mb-2"></i>
+                            <strong>No historical IPOs matched your active filter criteria.</strong>
+                            <div class="small mt-1">Try lowering the minimum GMP % or QIB subscription threshold.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

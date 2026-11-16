@@ -18,8 +18,9 @@ from django.views.generic import DetailView, ListView, TemplateView, View
 from apps.core.mixins import HTMXResponseMixin
 from apps.holdings.models import HoldingTransaction, TransactionType
 from apps.instruments.models import ExchangeListing
-from apps.ipo.models import IPOApplication, IPOMaster, IPOStatus, IssueType
+from apps.ipo.models import IPOApplication, IPOFamilyMember, IPOMaster, IPOStatus, IssueType
 from apps.portfolio.models import Portfolio
+from services.ipo.backtester import run_ipo_backtest
 from services.ipo.comparison import compare_ipos
 from services.ipo.lifecycle import get_status_badge_class, get_timeline_milestones
 from services.ipo.performance import (
@@ -27,6 +28,8 @@ from services.ipo.performance import (
     get_listed_ipos_performance_summary,
 )
 from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
+from services.ipo.predictor import predict_listing_gain_and_recommendation
+from services.ipo.registrars import get_registrar_adapter
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
@@ -431,12 +434,36 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         context["latest_gmp"] = ipo.gmp_records.order_by("-observed_at").first()
 
         # 5. Interactive Bid Planner & Allotment Probability (Phase D)
+        has_pricing = (
+            ipo.price_band_max is not None and ipo.effective_upper_price > Decimal("0.00")
+        ) or (
+            ipo.issue_price is not None and ipo.issue_price > Decimal("0.00")
+        )
         planner_category = self.request.GET.get("category", "RETAIL").upper()
         try:
             planner_lots = int(self.request.GET.get("lots", 1))
         except (ValueError, TypeError):
             planner_lots = 1
-        planner_cutoff = self.request.GET.get("cutoff", "true").lower() in ["true", "1", "yes"]
+
+        cutoff_param = self.request.GET.get("cutoff", "true" if has_pricing else "false")
+        planner_cutoff = cutoff_param.lower() in ["true", "1", "yes"] and has_pricing
+
+        planner_price = None
+        planner_price_raw = self.request.GET.get("price", "")
+        if planner_price_raw and (not planner_cutoff or not has_pricing):
+            try:
+                planner_price = Decimal(planner_price_raw)
+            except (ValueError, TypeError):
+                planner_price = None
+
+        planner_lot_size = None
+        planner_lot_size_raw = self.request.GET.get("lot_size", "")
+        if planner_lot_size_raw:
+            try:
+                planner_lot_size = int(planner_lot_size_raw)
+            except (ValueError, TypeError):
+                planner_lot_size = None
+
         try:
             planner_pans = int(self.request.GET.get("pans", 1))
         except (ValueError, TypeError):
@@ -446,6 +473,8 @@ class IPODetailView(HTMXResponseMixin, DetailView):
             ipo=ipo,
             category=planner_category,
             lots=planner_lots,
+            custom_bid_price=planner_price,
+            custom_lot_size=planner_lot_size,
             is_cutoff=planner_cutoff,
         )
         context["prob_estimate"] = estimate_allotment_probability(
@@ -458,6 +487,7 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         context["planner_lots"] = planner_lots
         context["planner_cutoff"] = planner_cutoff
         context["planner_pans"] = planner_pans
+        context["prediction"] = predict_listing_gain_and_recommendation(ipo)
 
         # 6. Post-Listing Performance Analytics (Phase F)
         if active_tab == "performance" or ipo.status == IPOStatus.LISTED or ipo.listing_date:
@@ -487,21 +517,35 @@ class IPOBidPlannerView(HTMXResponseMixin, TemplateView):
         context["page_title"] = f"{ipo.company_name} ({ipo.symbol}) - Interactive Bid Planner"
         context["active_nav"] = "ipo_issues"
 
+        has_pricing = (
+            ipo.price_band_max is not None and ipo.effective_upper_price > Decimal("0.00")
+        ) or (
+            ipo.issue_price is not None and ipo.issue_price > Decimal("0.00")
+        )
         category = self.request.GET.get("category", "RETAIL").upper()
         try:
             lots = int(self.request.GET.get("lots", 1))
         except (ValueError, TypeError):
             lots = 1
 
-        is_cutoff = self.request.GET.get("cutoff", "true").lower() in ["true", "1", "yes"]
+        cutoff_param = self.request.GET.get("cutoff", "true" if has_pricing else "false")
+        is_cutoff = cutoff_param.lower() in ["true", "1", "yes"] and has_pricing
 
         custom_price = None
         price_raw = self.request.GET.get("price", "")
-        if price_raw and not is_cutoff:
+        if price_raw and (not is_cutoff or not has_pricing):
             try:
                 custom_price = Decimal(price_raw)
             except (ValueError, TypeError):
                 custom_price = None
+
+        custom_lot_size = None
+        lot_size_raw = self.request.GET.get("lot_size", "")
+        if lot_size_raw:
+            try:
+                custom_lot_size = int(lot_size_raw)
+            except (ValueError, TypeError):
+                custom_lot_size = None
 
         budget = None
         budget_raw = self.request.GET.get("budget", "")
@@ -521,6 +565,7 @@ class IPOBidPlannerView(HTMXResponseMixin, TemplateView):
             category=category,
             lots=lots,
             custom_bid_price=custom_price,
+            custom_lot_size=custom_lot_size,
             is_cutoff=is_cutoff,
             budget=budget,
         )
@@ -537,8 +582,16 @@ class IPOBidPlannerView(HTMXResponseMixin, TemplateView):
         context["planner_lots"] = lots
         context["planner_cutoff"] = is_cutoff
         context["planner_price"] = custom_price
+        context["planner_lot_size"] = custom_lot_size
         context["planner_budget"] = budget
         context["planner_pans"] = pans
+        context["prediction"] = predict_listing_gain_and_recommendation(ipo)
+        if self.request.user.is_authenticated:
+            context["family_members"] = list(
+                IPOFamilyMember.objects.filter(user=self.request.user).order_by("-is_primary", "name")
+            )
+        else:
+            context["family_members"] = []
 
         return context
 
@@ -872,6 +925,235 @@ class IPOSyncView(View):
             context = dashboard_view.get_context_data()
             return render(request, "ipo/partials/dashboard_partial.html", context)
         return redirect("ipo:dashboard")
+
+
+class IPORegistrarCheckView(LoginRequiredMixin, View):
+    """
+    Direct multi-registrar allotment verification via Link Intime, KFintech, Bigshare adapters.
+    """
+    def post(self, request, pk, *args, **kwargs):
+        application = get_object_or_404(IPOApplication, pk=pk, user=request.user)
+        ipo = application.ipo
+        adapter = get_registrar_adapter(ipo.registrar)
+
+        pan = ""
+        if application.family_member and application.family_member.pan:
+            pan = application.family_member.pan
+        elif application.user and hasattr(application.user, "pan"):
+            pan = application.user.pan
+
+        result = adapter.query_allotment(
+            ipo_symbol=ipo.symbol,
+            company_name=ipo.company_name,
+            pan=pan,
+            application_number=application.application_number,
+            demat_account=application.demat_account,
+        )
+
+        if result.get("status") in ["ALLOTTED", "PARTIALLY_ALLOTTED", "NOT_ALLOTTED"]:
+            application.allotment_status = result["status"]
+            if result.get("allotted_shares"):
+                application.allotted_shares = result["allotted_shares"]
+                application.allotted_amount = Decimal(str(application.allotted_shares)) * application.bid_price
+            application.save()
+
+        messages.info(request, f"{adapter.display_name}: {result.get('message', 'Check complete.')}")
+
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:applications"))
+            response["HX-Redirect"] = reverse("ipo:applications")
+            return response
+        return redirect("ipo:applications")
+
+
+class IPOBatchApplyView(LoginRequiredMixin, View):
+    """
+    1-Click batch creation of IPO applications across selected family member accounts.
+    """
+    def post(self, request, symbol, *args, **kwargs):
+        ipo = get_object_or_404(IPOMaster, symbol=symbol.upper())
+        member_ids = request.POST.getlist("family_members")
+        try:
+            lots = int(request.POST.get("lots", 1))
+        except (ValueError, TypeError):
+            lots = 1
+
+        category = request.POST.get("category", "RETAIL").upper()
+        bid_price = ipo.effective_upper_price
+
+        custom_price_raw = request.POST.get("price", "")
+        if custom_price_raw:
+            try:
+                bid_price = Decimal(custom_price_raw)
+            except (ValueError, TypeError):
+                bid_price = ipo.effective_upper_price
+
+        total_amount = Decimal(str(lots)) * Decimal(str(ipo.lot_size)) * bid_price
+        created_count = 0
+
+        members = IPOFamilyMember.objects.filter(id__in=member_ids, user=request.user)
+        for member in members:
+            app, created = IPOApplication.objects.get_or_create(
+                user=request.user,
+                ipo=ipo,
+                family_member=member,
+                defaults={
+                    "investor_category": category,
+                    "lots_applied": lots,
+                    "shares_applied": lots * ipo.lot_size,
+                    "bid_price": bid_price,
+                    "applied_amount": total_amount,
+                    "is_cutoff_bid": True,
+                    "demat_account": member.demat_account,
+                    "mandate_status": "APPROVED",
+                    "allotment_status": "AWAITING",
+                    "notes": f"Batch applied via Family Vault ({member.name})",
+                },
+            )
+            if created:
+                created_count += 1
+
+        if created_count > 0:
+            messages.success(
+                request,
+                f"Successfully logged {created_count} family application(s) for {ipo.symbol}!",
+            )
+        else:
+            messages.warning(
+                request,
+                "No new applications were created (accounts already logged for this issue).",
+            )
+
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:applications"))
+            response["HX-Redirect"] = reverse("ipo:applications")
+            return response
+        return redirect("ipo:applications")
+
+
+class IPOBacktestView(HTMXResponseMixin, TemplateView):
+    """
+    IPO Strategy Backtesting Workspace:
+    Tests quantitative selection rules (GMP %, QIB Institutional Demand, Retail Oversubscription, Issue Size)
+    against historical listed IPO debuts.
+    """
+    template_name = "ipo/backtest.html"
+    partial_template_name = "ipo/partials/backtest_partial.html"
+    active_nav = "ipo_backtest"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "IPO Strategy Backtesting Workspace"
+        context["active_nav"] = "ipo_backtest"
+
+        def _parse_dec(val):
+            try:
+                return Decimal(val) if val else None
+            except (ValueError, TypeError):
+                return None
+
+        min_gmp = _parse_dec(self.request.GET.get("min_gmp", "15.0"))
+        min_qib = _parse_dec(self.request.GET.get("min_qib", "5.0"))
+        min_retail = _parse_dec(self.request.GET.get("min_retail", ""))
+        issue_type = self.request.GET.get("issue_type", "ALL").upper()
+        min_size = _parse_dec(self.request.GET.get("min_size", ""))
+
+        months_raw = self.request.GET.get("months", "")
+        months = int(months_raw) if months_raw and months_raw.isdigit() else None
+
+        results = run_ipo_backtest(
+            min_gmp_percent=min_gmp,
+            min_qib_sub=min_qib,
+            min_retail_sub=min_retail,
+            issue_type=issue_type,
+            min_issue_size_cr=min_size,
+            months=months,
+        )
+
+        context["backtest"] = results
+        context["min_gmp"] = min_gmp
+        context["min_qib"] = min_qib
+        context["min_retail"] = min_retail
+        context["issue_type"] = issue_type
+        context["min_size"] = min_size
+        context["months"] = months
+        return context
+
+
+class IPOFamilyVaultView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
+    """
+    Central Family Member Demat & PAN Account Vault.
+    Manage multi-account profiles for coordinated retail primary market bidding.
+    """
+    template_name = "ipo/family_vault.html"
+    partial_template_name = "ipo/partials/family_vault_partial.html"
+    active_nav = "ipo_family_vault"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["page_title"] = "Family Demat & PAN Account Vault"
+        context["active_nav"] = "ipo_family_vault"
+        context["family_members"] = list(
+            IPOFamilyMember.objects.filter(user=self.request.user).order_by("-is_primary", "name")
+        )
+        return context
+
+
+class IPOFamilyMemberCreateView(LoginRequiredMixin, View):
+    """
+    Add a new family member to the account vault.
+    """
+    def post(self, request, *args, **kwargs):
+        name = request.POST.get("name", "").strip()
+        pan = request.POST.get("pan", "").strip().upper()
+        relationship = request.POST.get("relationship", "SELF").upper()
+        demat_account = request.POST.get("demat_account", "").strip()
+        default_upi_id = request.POST.get("default_upi_id", "").strip()
+        asba_bank_name = request.POST.get("asba_bank_name", "").strip()
+        is_primary = request.POST.get("is_primary") in ["true", "1", "on"]
+
+        if not name or not pan or len(pan) != 10:
+            messages.error(request, "Name and valid 10-character PAN are required.")
+        else:
+            member, created = IPOFamilyMember.objects.update_or_create(
+                user=request.user,
+                pan=pan,
+                defaults={
+                    "name": name,
+                    "relationship": relationship,
+                    "demat_account": demat_account,
+                    "default_upi_id": default_upi_id,
+                    "asba_bank_name": asba_bank_name,
+                    "is_primary": is_primary,
+                },
+            )
+            if created:
+                messages.success(request, f"Added {name} ({member.masked_pan}) to Family Vault.")
+            else:
+                messages.info(request, f"Updated profile for {name}.")
+
+        redirect_url = request.POST.get("next") or reverse("ipo:family_vault")
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(redirect_url)
+            response["HX-Redirect"] = redirect_url
+            return response
+        return redirect(redirect_url)
+
+
+class IPOFamilyMemberDeleteView(LoginRequiredMixin, View):
+    """
+    Delete a family member from the account vault.
+    """
+    def post(self, request, pk, *args, **kwargs):
+        member = get_object_or_404(IPOFamilyMember, pk=pk, user=request.user)
+        name = member.name
+        member.delete()
+        messages.info(request, f"Removed {name} from Family Vault.")
+        if request.headers.get("HX-Request"):
+            response = HttpResponseRedirect(reverse("ipo:family_vault"))
+            response["HX-Redirect"] = reverse("ipo:family_vault")
+            return response
+        return redirect("ipo:family_vault")
 
 
 

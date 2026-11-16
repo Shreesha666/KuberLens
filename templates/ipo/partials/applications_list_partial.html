@@ -18,7 +18,12 @@
         <p class="text-muted small mb-0 mt-1">Track your applied IPO bids, UPI mandate blockages, allotment results, and seamlessly sync allotted shares into your portfolio.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newApplicationModal">
+        <a href="{% url 'ipo:family_vault' %}" class="btn btn-outline-primary d-flex align-items-center gap-1.5 shadow-sm"
+           hx-get="{% url 'ipo:family_vault' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-people-fill"></i>
+            <span>Family Vault</span>
+        </a>
+        <button type="button" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#newApplicationModal">
             <i class="bi bi-plus-circle"></i>
             <span>Log Application</span>
         </button>
@@ -191,6 +196,13 @@
                     <!-- Category & Demat -->
                     <td>
                         <span class="badge bg-light text-dark border small fw-semibold">{{ app.get_investor_category_display }}</span>
+                        {% if app.family_member %}
+                        <div class="mt-1">
+                            <span class="badge bg-primary-subtle text-primary border small" style="font-size: 0.72rem;">
+                                <i class="bi bi-people-fill me-1"></i>{{ app.family_member.name }} ({{ app.family_member.masked_pan }})
+                            </span>
+                        </div>
+                        {% endif %}
                         {% if app.demat_account %}
                         <div class="text-muted small mt-0.5" style="font-size: 0.75rem;">
                             <i class="bi bi-person-badge"></i> {{ app.demat_account }}
@@ -300,6 +312,17 @@
                     <!-- Actions -->
                     <td class="text-end pe-4">
                         <div class="btn-group btn-group-sm">
+                            <!-- Check Registrar Allotment Status Button -->
+                            <form method="post" action="{% url 'ipo:application_registrar_check' app.id %}"
+                                  hx-post="{% url 'ipo:application_registrar_check' app.id %}"
+                                  hx-target="#main-content"
+                                  class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-primary" title="Check Allotment with Registrar ({{ app.ipo.registrar|default:'Registrar' }})">
+                                    <i class="bi bi-patch-check"></i>
+                                </button>
+                            </form>
+
                             <!-- Update Outcome Button (Opens Modal) -->
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#outcomeModal{{ app.id }}" title="Update Allotment Outcome">
                                 <i class="bi bi-pencil-square"></i>

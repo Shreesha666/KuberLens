@@ -1,6 +1,6 @@
 {% load static %}
 <header id="top-header">
-    <!-- Left: Brand Logo Container (matches 260px sidebar width exactly on desktop) -->
+    <!-- Left: Brand Logo Container (matches sidebar width exactly on desktop) -->
     <div class="header-brand-box">
         <button id="mobile-sidebar-toggle" class="btn btn-outline-secondary btn-sm d-lg-none me-2" type="button"
             aria-label="Toggle Navigation">
@@ -10,7 +10,7 @@
             class="text-decoration-none d-flex align-items-center text-body text-nowrap"
             hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">
             <img src="{% static 'branding/logo/kuberlens-primary-logo.png' %}" alt="KuberLens Logo" class="brand-logo"
-                height="34" style="max-height: 80px; width: auto; object-fit: contain;">
+                height="75" style="height: 75px; max-height: 78px; width: auto; object-fit: contain;">
         </a>
     </div>
 

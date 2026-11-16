@@ -365,6 +365,52 @@ class IPOGMPRecord(AuditedModel):
         return f"{self.ipo.symbol} GMP: ₹{self.reported_gmp} ({self.estimated_gain_percent:+.1f}%)"
 
 
+class IPOFamilyMember(AuditedModel):
+    """
+    Demat & PAN account profile for a family member.
+    Enables coordinated multi-account retail bidding to legally multiply SEBI lottery odds.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="ipo_family_members",
+    )
+    name = models.CharField(max_length=100)
+    relationship = models.CharField(
+        max_length=30,
+        choices=[
+            ("SELF", "Self"),
+            ("SPOUSE", "Spouse"),
+            ("PARENT", "Parent"),
+            ("SIBLING", "Sibling"),
+            ("CHILD", "Child"),
+            ("HUF", "HUF"),
+            ("OTHER", "Other"),
+        ],
+        default="SELF",
+    )
+    pan = models.CharField(max_length=10)
+    demat_account = models.CharField(max_length=50, blank=True, default="")
+    default_upi_id = models.CharField(max_length=100, blank=True, default="")
+    asba_bank_name = models.CharField(max_length=100, blank=True, default="")
+    is_primary = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "ipo_family_member"
+        ordering = ["-is_primary", "name"]
+        unique_together = [("user", "pan")]
+
+    def __str__(self):
+        return f"{self.name} ({self.masked_pan})"
+
+    @property
+    def masked_pan(self) -> str:
+        if self.pan and len(self.pan) == 10:
+            return f"{self.pan[:5]}****{self.pan[-1]}"
+        return self.pan or ""
+
+
 class IPOApplication(AuditedModel):
     """
     User-specific tracked IPO application with UPI mandate and allotment outcome.
@@ -372,6 +418,13 @@ class IPOApplication(AuditedModel):
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ipo_applications")
     ipo = models.ForeignKey(IPOMaster, on_delete=models.CASCADE, related_name="user_applications")
+    family_member = models.ForeignKey(
+        "IPOFamilyMember",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="applications",
+    )
     investor_category = models.CharField(
         max_length=20,
         choices=[

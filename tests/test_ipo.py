@@ -31,6 +31,7 @@ from services.ipo.performance import (
     compute_ipo_performance_metrics,
 )
 from services.ipo.planner import calculate_bid_plan, estimate_allotment_probability
+from services.ipo.predictor import predict_listing_gain_and_recommendation
 from services.ipo.research import compute_financial_metrics
 from services.ipo.scoring import evaluate_ipo_scoring, get_radar_chart_geometry
 from services.ipo.subscription import get_subscription_summary
@@ -472,6 +473,40 @@ class TestIPOIntelligenceModule:
         assert est_upcoming["is_lottery"] is False
         assert est_upcoming["single_pan_probability"] == Decimal("100.0")
 
+    def test_listing_gain_predictor_and_recommendation_engine(self, ipo_dataset):
+        """Tests empirical listing gain prediction, price bands, and recommendation signals."""
+        from apps.ipo.models import IPOGMPRecord
+
+        live = ipo_dataset["live"]
+        # Add a mock GMP record of ₹35 on ₹110 upper band (+31.8%)
+        IPOGMPRecord.objects.create(
+            ipo=live,
+            reported_gmp=Decimal("35.00"),
+            estimated_listing_price=Decimal("145.00"),
+            estimated_gain_percent=Decimal("31.80"),
+        )
+
+        pred = predict_listing_gain_and_recommendation(live)
+        assert pred["has_prediction"] is True
+        assert pred["predicted_price_min"] > Decimal("110.00")
+        assert pred["predicted_price_max"] > pred["predicted_price_min"]
+        assert pred["expected_gain_midpoint"] > Decimal("20.00")
+        assert pred["recommendation"] in ["STRONG_APPLY", "APPLY_RETAIL_LOTTERY"]
+        assert "Book Listing Gains" in pred["listing_day_strategy"] or "Family PAN" in pred["listing_day_strategy"]
+        assert len(pred["rationale"]) > 0
+
+        # Test pre-issue DRHP without price band
+        drhp_ipo = IPOMaster.objects.create(
+            symbol="TESTDRHP",
+            company_name="Test DRHP Limited",
+            status=IPOStatus.DRHP_FILED,
+            price_band_min=None,
+            price_band_max=None,
+        )
+        pred_drhp = predict_listing_gain_and_recommendation(drhp_ipo)
+        assert pred_drhp["has_prediction"] is False
+        assert pred_drhp["recommendation"] == "AWAIT_PRICING"
+
     def test_bid_planner_views_and_htmx(self, client: Client, ipo_dataset):
         """Tests the standalone Bid Planner view and HTMX live parameter updates."""
         live = ipo_dataset["live"]
@@ -911,6 +946,127 @@ class TestIPOIntelligenceModule:
             htmx_res = client.post(sync_url, HTTP_HX_REQUEST="true")
             assert htmx_res.status_code == 200
             assert "IPO Intelligence Centre" in htmx_res.content.decode()
+
+    def test_registrar_adapters_and_dispatcher(self):
+        """Tests multi-registrar allotment enquiry adapters and dispatcher resolution."""
+        from services.ipo.registrars import (
+            BigshareAdapter,
+            KFintechAdapter,
+            LinkIntimeAdapter,
+            get_registrar_adapter,
+        )
+
+        assert isinstance(get_registrar_adapter("Link Intime India Private Ltd"), LinkIntimeAdapter)
+        assert isinstance(get_registrar_adapter("KFin Technologies Limited"), KFintechAdapter)
+        assert isinstance(get_registrar_adapter("Bigshare Services Pvt Ltd"), BigshareAdapter)
+
+        link_adapter = LinkIntimeAdapter()
+        res = link_adapter.query_allotment(
+            ipo_symbol="SWIGGY",
+            company_name="Swiggy Limited",
+            pan="ABCDE1234F",
+        )
+        assert res["success"] is True
+        assert res["status"] in ["AWAITING", "ALLOTTED", "NOT_ALLOTTED"]
+        assert "Link Intime" in res["registrar_name"]
+
+    def test_ipo_strategy_backtester(self, ipo_dataset):
+        """Tests the IPO quantitative strategy backtester across historical listed IPOs."""
+        from services.ipo.backtester import run_ipo_backtest
+
+        # Test unrestricted universe
+        res_all = run_ipo_backtest(initial_capital=Decimal("100000.00"))
+        assert res_all["total_in_universe"] >= 1
+        assert res_all["total_matched"] >= 1
+        assert res_all["win_rate"] >= Decimal("0.00")
+        assert len(res_all["equity_curve"]) >= 2
+
+        # Test with strict high QIB filter
+        res_qib = run_ipo_backtest(min_qib_sub=Decimal("100.00"))
+        # Should have 0 matches with an impossible 100x QIB filter on the fixture
+        assert res_qib["total_matched"] == 0
+
+    def test_family_vault_and_batch_apply(self, client: Client, ipo_dataset):
+        """Tests Family Member Demat Vault creation and 1-click batch application in Bid Planner."""
+        from django.contrib.auth import get_user_model
+        from apps.ipo.models import IPOFamilyMember
+
+        User = get_user_model()
+        user = User.objects.create_user(username="vault_user", password="password123")
+        client.force_login(user)
+
+        # 1. Add Family Member via POST
+        create_url = reverse("ipo:family_member_create")
+        res = client.post(create_url, {
+            "name": "Priya Sharma",
+            "pan": "ABCDE1234F",
+            "relationship": "SPOUSE",
+            "demat_account": "1208160012345678",
+            "default_upi_id": "priya@okaxis",
+            "asba_bank_name": "HDFC Bank",
+            "is_primary": "true",
+        })
+        assert res.status_code == 302
+        member = IPOFamilyMember.objects.get(user=user, pan="ABCDE1234F")
+        assert member.masked_pan == "ABCDE****F"
+        assert member.is_primary is True
+
+        # 2. View Family Vault
+        vault_url = reverse("ipo:family_vault")
+        v_res = client.get(vault_url)
+        assert v_res.status_code == 200
+        assert "Priya Sharma" in v_res.content.decode()
+
+        # 3. 1-Click Batch Apply in Bid Planner
+        live = ipo_dataset["live"]
+        batch_url = reverse("ipo:batch_apply", kwargs={"symbol": live.symbol})
+        b_res = client.post(batch_url, {
+            "family_members": [str(member.id)],
+            "lots": 1,
+            "category": "RETAIL",
+        })
+        assert b_res.status_code == 302
+
+        # Check IPOApplication was created and linked to family member
+        app = IPOApplication.objects.get(user=user, ipo=live, family_member=member)
+        assert app.lots_applied == 1
+        assert app.allotment_status == "AWAITING"
+        assert app.demat_account == member.demat_account
+
+    def test_registrar_check_view_and_application_flow(self, client: Client, ipo_dataset):
+        """Tests direct registrar check action on an active application."""
+        from django.contrib.auth import get_user_model
+        from apps.ipo.models import IPOFamilyMember
+
+        User = get_user_model()
+        user = User.objects.create_user(username="reg_user", password="password123")
+        client.force_login(user)
+
+        live = ipo_dataset["live"]
+        member = IPOFamilyMember.objects.create(
+            user=user,
+            name="Ramesh",
+            pan="KLMNO5678P",
+            demat_account="1208160098765432",
+        )
+        app = IPOApplication.objects.create(
+            user=user,
+            ipo=live,
+            family_member=member,
+            investor_category="RETAIL",
+            lots_applied=1,
+            shares_applied=100,
+            bid_price=Decimal("110.00"),
+            applied_amount=Decimal("11000.00"),
+            allotment_status="AWAITING",
+        )
+
+        reg_check_url = reverse("ipo:application_registrar_check", kwargs={"pk": app.pk})
+        res = client.post(reg_check_url)
+        assert res.status_code == 302
+        app.refresh_from_db()
+        assert app.allotment_status in ["AWAITING", "ALLOTTED", "NOT_ALLOTTED"]
+
 
 
 

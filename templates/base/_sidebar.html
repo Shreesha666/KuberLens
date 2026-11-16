@@ -76,6 +76,16 @@
             hx-get="{% url 'ipo:compare' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-arrow-left-right"></i> Compare IPOs
         </a>
+        <a href="{% url 'ipo:backtest' %}"
+            class="nav-link {% if active_nav == 'ipo_backtest' %}active{% endif %}"
+            hx-get="{% url 'ipo:backtest' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-sliders2"></i> IPO Backtester
+        </a>
+        <a href="{% url 'ipo:family_vault' %}"
+            class="nav-link {% if active_nav == 'ipo_family_vault' %}active{% endif %}"
+            hx-get="{% url 'ipo:family_vault' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-people"></i> Family Demat Vault
+        </a>
         <a href="{% url 'ipo:applications' %}"
             class="nav-link {% if active_nav == 'ipo_applications' %}active{% endif %}"
             hx-get="{% url 'ipo:applications' %}" hx-target="#main-content" hx-push-url="true">

@@ -15,7 +15,9 @@ Implements:
 from decimal import Decimal
 from typing import Any
 
-from apps.ipo.models import IPOMaster
+from django.utils import timezone
+
+from apps.ipo.models import IPOMaster, IPOStatus
 from services.ipo.subscription import get_subscription_summary
 
 
@@ -24,51 +26,91 @@ def calculate_bid_plan(
     category: str = "RETAIL",
     lots: int = 1,
     custom_bid_price: Decimal | None = None,
+    custom_lot_size: int | None = None,
     is_cutoff: bool = True,
     budget: Decimal | None = None,
 ) -> dict[str, Any]:
     """
     Computes precise lot sizing, capital commitment, regulatory category eligibility,
     payment routing (UPI vs ASBA), and scenario outcomes.
+    Supports both announced RHP issues and pre-RHP pipeline simulation mode.
     """
-    lot_size = ipo.lot_size or 1
-    price_min = ipo.price_band_min or ipo.issue_price or Decimal("0.00")
-    price_max = ipo.effective_upper_price
+    has_announced_pricing = (
+        ipo.price_band_max is not None and ipo.effective_upper_price > Decimal("0.00")
+    ) or (
+        ipo.issue_price is not None and ipo.issue_price > Decimal("0.00")
+    )
 
-    # Determine effective bid price
-    if is_cutoff or custom_bid_price is None:
-        effective_price = price_max
-    else:
-        # Clamp custom price to price band if defined
-        if price_min > Decimal("0.00") and price_max > Decimal("0.00"):
-            effective_price = max(price_min, min(price_max, custom_bid_price))
+    if has_announced_pricing:
+        lot_size = ipo.lot_size or 1
+        price_min = ipo.price_band_min or ipo.issue_price or Decimal("0.00")
+        price_max = ipo.effective_upper_price
+
+        # Determine effective bid price
+        if is_cutoff or custom_bid_price is None:
+            effective_price = price_max
         else:
+            # Clamp custom price to price band if defined
+            if price_min > Decimal("0.00") and price_max > Decimal("0.00"):
+                effective_price = max(price_min, min(price_max, custom_bid_price))
+            else:
+                effective_price = custom_bid_price
+    else:
+        # Pipeline / Simulation Mode for Pre-RHP issues
+        is_cutoff = False
+        price_min = Decimal("0.00")
+        price_max = Decimal("0.00")
+        if custom_bid_price is not None and custom_bid_price > Decimal("0.00"):
             effective_price = custom_bid_price
+        else:
+            effective_price = Decimal("0.00")
+
+        if custom_lot_size is not None and custom_lot_size > 0:
+            lot_size = custom_lot_size
+        elif ipo.lot_size and ipo.lot_size > 1:
+            lot_size = ipo.lot_size
+        elif effective_price > Decimal("0.00"):
+            # Estimate SEBI retail lot size targeting ~₹14,500 - ₹15,000
+            lot_size = max(1, int(Decimal("14800.00") // effective_price))
+        else:
+            lot_size = 50  # Default simulation lot size
 
     lots = max(1, lots)
     total_shares = lots * lot_size
     amount_per_lot = lot_size * effective_price
     total_amount = total_shares * effective_price
-    min_retail_amount = lot_size * price_max
+    min_retail_amount = lot_size * (price_max if has_announced_pricing else effective_price)
+
+    # Dynamic lot limits
+    if amount_per_lot > Decimal("0.00"):
+        max_retail_lots = int(Decimal("200000.00") // amount_per_lot)
+        min_shni_lots = max_retail_lots + 1
+    else:
+        max_retail_lots = 13
+        min_shni_lots = 14
 
     # Regulatory category validations
     warnings: list[str] = []
     is_eligible = True
+
+    if not has_announced_pricing and effective_price == Decimal("0.00"):
+        warnings.append(
+            f"Official price band and lot size for {ipo.company_name} have not yet been announced (pre-RHP pipeline stage). "
+            f"Enter an estimated share price below to simulate lot sizing and capital blocking."
+        )
 
     # 1. Category Limit Checks
     if category == "RETAIL":
         # SEBI limit for Retail Individual Investors is ₹2,00,000
         if total_amount > Decimal("200000.00"):
             is_eligible = False
-            max_retail_lots = int(Decimal("200000.00") // amount_per_lot) if amount_per_lot > 0 else 1
             warnings.append(
                 f"Retail application amount (₹{total_amount:,.2f}) exceeds the SEBI ₹2,00,000 statutory limit. "
                 f"Maximum allowed retail lots: {max_retail_lots} lot(s). Switch to sHNI category for bids above ₹2 Lakhs."
             )
     elif category == "sHNI":
         # Small HNI must be > ₹2,00,000 and <= ₹10,00,000
-        min_shni_lots = int(Decimal("200000.00") // amount_per_lot) + 1 if amount_per_lot > 0 else 1
-        if total_amount <= Decimal("200000.00"):
+        if total_amount <= Decimal("200000.00") and amount_per_lot > Decimal("0.00"):
             is_eligible = False
             warnings.append(
                 f"Small HNI (sHNI) bids must strictly exceed ₹2,00,000. "
@@ -85,7 +127,7 @@ def calculate_bid_plan(
     elif category == "bHNI":
         # Big HNI must exceed ₹10,00,000
         min_bhni_lots = int(Decimal("1000000.00") // amount_per_lot) + 1 if amount_per_lot > 0 else 1
-        if total_amount <= Decimal("1000000.00"):
+        if total_amount <= Decimal("1000000.00") and amount_per_lot > Decimal("0.00"):
             is_eligible = False
             warnings.append(
                 f"Big HNI (bHNI) bids must strictly exceed ₹10,00,000. "
@@ -171,6 +213,10 @@ def calculate_bid_plan(
         "max_lots_within_budget": max_lots_within_budget,
         "remaining_budget": remaining_budget,
         "scenarios": scenarios,
+        "has_announced_pricing": has_announced_pricing,
+        "is_simulation_mode": not has_announced_pricing,
+        "max_retail_lots": max_retail_lots,
+        "min_shni_lots": min_shni_lots,
     }
 
 
@@ -215,12 +261,19 @@ def estimate_allotment_probability(
         sub_multiple = latest_sub.total_subscription if latest_sub else Decimal("1.00")
         sub_apps = None
 
+    today = timezone.now().date()
+    is_pre_issue = ipo.status in [IPOStatus.UPCOMING, IPOStatus.DRHP_FILED, IPOStatus.SEBI_APPROVED] or (ipo.open_date is None) or (ipo.open_date > today)
+
     # Base Probability Calculation for 1 PAN
-    if sub_multiple <= Decimal("1.00"):
+    if is_pre_issue and not latest_sub:
+        single_pan_prob = Decimal("100.0")
+        is_lottery = False
+        status_note = "Bidding has not yet opened. Live subscription multiples and SEBI lottery probability will update in real-time once the issue goes live."
+    elif sub_multiple <= Decimal("1.00"):
         # Fully available / undersubscribed
         single_pan_prob = Decimal("100.0")
         is_lottery = False
-        status_note = "Category is currently undersubscribed or opening; 100% full allotment expected."
+        status_note = "Category is currently undersubscribed; all valid applications expected to receive allotment."
     else:
         is_lottery = True
         # If application count is published:

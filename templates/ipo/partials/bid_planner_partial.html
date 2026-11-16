@@ -1,9 +1,25 @@
 {% load core_tags humanize %}
 <div id="bid-planner-container">
+    {% if bid_plan.is_simulation_mode %}
+    <!-- Pre-RHP Pipeline Simulation Mode Banner -->
+    <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-start gap-3">
+        <i class="bi bi-info-circle-fill text-info fs-4 flex-shrink-0 mt-0.5"></i>
+        <div>
+            <h6 class="alert-heading fw-bold mb-1">Pre-RHP Upcoming Pipeline — Interactive Bid Simulation Mode</h6>
+            <p class="mb-1 small">
+                <strong>{{ ipo.company_name }}</strong> is currently in the draft prospectus (DRHP) pipeline stage. Official issue price band, bidding dates, and lot size have not yet been finalized by the issuer or SEBI.
+            </p>
+            <div class="small text-muted">
+                You can model your bid below by entering an estimated share price and lot size. Capital commitments, UPI vs ASBA payment routing, and family PAN lottery probability will calculate interactively in real time.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row g-4">
         <!-- Left Column: Interactive Bid Configuration Form -->
         <div class="col-12 col-xl-5">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2">
                     <h5 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
                         <i class="bi bi-sliders text-primary"></i>
@@ -50,7 +66,7 @@
                                     Number of Lots
                                 </label>
                                 <span class="badge bg-secondary-subtle text-secondary border small">
-                                    {{ ipo.lot_size }} shares / lot
+                                    {{ bid_plan.lot_size|default:ipo.lot_size }} shares / lot
                                 </span>
                             </div>
                             <div class="input-group">
@@ -68,26 +84,26 @@
 
                             <!-- Quick Sizing Pills -->
                             <div class="d-flex flex-wrap gap-1 mt-2">
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1&cutoff=true"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1&cutoff=true"
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=1{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
                                    class="btn btn-xs btn-outline-secondary py-0 px-2 small">1 Lot (Min)</a>
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5&cutoff=true"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5&cutoff=true"
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=5{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
                                    class="btn btn-xs btn-outline-secondary py-0 px-2 small">5 Lots</a>
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=13&cutoff=true"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots=13&cutoff=true"
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots={{ bid_plan.max_retail_lots|default:13 }}{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=RETAIL&lots={{ bid_plan.max_retail_lots|default:13 }}{% if bid_plan.has_announced_pricing %}&cutoff=true{% else %}&cutoff=false&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
-                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">Max Retail (~₹1.95L)</a>
-                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots=14&cutoff=false"
-                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots=14&cutoff=false"
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">Max Retail ({{ bid_plan.max_retail_lots|default:13 }} Lots)</a>
+                                <a href="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots={{ bid_plan.min_shni_lots|default:14 }}&cutoff=false{% if not bid_plan.has_announced_pricing %}&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
+                                   hx-get="{% url 'ipo:bid_planner' ipo.symbol %}?category=sHNI&lots={{ bid_plan.min_shni_lots|default:14 }}&cutoff=false{% if not bid_plan.has_announced_pricing %}&price={{ bid_plan.bid_price }}&lot_size={{ bid_plan.lot_size }}{% endif %}"
                                    hx-target="#bid-planner-container"
                                    hx-swap="outerHTML"
-                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">sHNI Min (14 Lots)</a>
+                                   class="btn btn-xs btn-outline-secondary py-0 px-2 small">sHNI Min ({{ bid_plan.min_shni_lots|default:14 }} Lots)</a>
                             </div>
                         </div>
 
@@ -99,22 +115,35 @@
                                        id="cutoff-toggle"
                                        name="cutoff"
                                        value="true"
-                                       {% if bid_plan.is_cutoff %}checked{% endif %}>
+                                       {% if bid_plan.is_cutoff %}checked{% endif %}
+                                       {% if not bid_plan.has_announced_pricing %}disabled{% endif %}>
                                 <label class="form-check-label fw-semibold text-body small" for="cutoff-toggle">
-                                    Bid at Cut-off Price (Recommended)
+                                    Bid at Cut-off Price {% if not bid_plan.has_announced_pricing %}<span class="text-muted fw-normal">(Awaiting RHP Band)</span>{% else %}(Recommended){% endif %}
                                 </label>
                             </div>
                             <div class="text-muted small mb-2" style="font-size: 0.78rem;">
+                                {% if bid_plan.has_announced_pricing %}
                                 Automatically locks bid at the issue upper cap (₹{{ ipo.effective_upper_price|floatformat:2 }}). Only available for Retail and Employee categories.
+                                {% else %}
+                                Official price band is pending SEBI approval. Cut-off is disabled; enter an estimated share price below to simulate.
+                                {% endif %}
                             </div>
 
                             <div class="row g-2 align-items-center">
                                 <div class="col-6">
                                     <label class="form-label text-muted small mb-0">Price Band Range:</label>
-                                    <strong class="d-block num-mono text-body small">{{ ipo.price_band_display }}</strong>
+                                    <strong class="d-block num-mono text-body small">
+                                        {% if bid_plan.has_announced_pricing %}
+                                        {{ ipo.price_band_display }}
+                                        {% else %}
+                                        <span class="badge bg-warning-subtle text-warning-emphasis">Awaiting Announcement</span>
+                                        {% endif %}
+                                    </strong>
                                 </div>
                                 <div class="col-6">
-                                    <label for="price-input" class="form-label text-muted small mb-0">Custom Bid Price:</label>
+                                    <label for="price-input" class="form-label text-muted small mb-0">
+                                        {% if bid_plan.has_announced_pricing %}Custom Bid Price:{% else %}Estimated Share Price:{% endif %}
+                                    </label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">₹</span>
                                         <input type="number"
@@ -122,12 +151,35 @@
                                                name="price"
                                                class="form-control num-mono"
                                                value="{{ bid_plan.bid_price|floatformat:2 }}"
-                                               min="{{ ipo.price_band_min|default:0 }}"
-                                               max="{{ ipo.price_band_max|default:100000 }}"
+                                               min="0.05"
+                                               max="100000"
                                                step="0.05"
-                                               {% if bid_plan.is_cutoff %}disabled{% endif %}>
+                                               {% if bid_plan.is_cutoff and bid_plan.has_announced_pricing %}disabled{% endif %}>
                                     </div>
                                 </div>
+                                {% if bid_plan.is_simulation_mode %}
+                                <div class="col-12 mt-2 pt-2 border-top">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-6">
+                                            <label for="lot-size-input" class="form-label text-muted small mb-0">Estimated Lot Size:</label>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="input-group input-group-sm">
+                                                <input type="number"
+                                                       id="lot-size-input"
+                                                       name="lot_size"
+                                                       class="form-control num-mono"
+                                                       value="{{ bid_plan.lot_size }}"
+                                                       min="1"
+                                                       max="5000"
+                                                       step="1">
+                                                <span class="input-group-text">shares</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">SEBI standard retail lot sizes typically target an application value of ~₹14,000–₹15,000.</small>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -150,6 +202,69 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Family Vault 1-Click Multi-Account Application Card -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 pb-1 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-body d-flex align-items-center gap-1.5">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            <span>1-Click Family Multi-Account Bidding</span>
+                        </h6>
+                        <span class="text-muted small" style="font-size: 0.75rem;">Apply across distinct family PANs to legally maximize lottery odds</span>
+                    </div>
+                    <a href="{% url 'ipo:family_vault' %}" class="btn btn-xs btn-outline-secondary py-0 px-2 small"
+                       hx-get="{% url 'ipo:family_vault' %}" hx-target="#main-content" hx-push-url="true">
+                        Manage Vault
+                    </a>
+                </div>
+                <div class="card-body px-4 py-3">
+                    {% if family_members %}
+                    <form method="post" action="{% url 'ipo:batch_apply' ipo.symbol %}"
+                          hx-post="{% url 'ipo:batch_apply' ipo.symbol %}"
+                          hx-target="#main-content">
+                        {% csrf_token %}
+                        <input type="hidden" name="lots" value="{{ bid_plan.lots|default:1 }}">
+                        <input type="hidden" name="category" value="{{ bid_plan.category|default:'RETAIL' }}">
+                        <input type="hidden" name="price" value="{{ bid_plan.bid_price }}">
+
+                        <span class="small text-muted fw-semibold text-uppercase d-block mb-2" style="font-size: 0.72rem;">
+                            Select Family Accounts to Apply ({{ bid_plan.lots }} Lot{{ bid_plan.lots|pluralize }} each):
+                        </span>
+
+                        <div class="space-y-2 mb-3">
+                            {% for member in family_members %}
+                            <div class="form-check p-2 rounded border bg-body-tertiary d-flex align-items-center justify-content-between">
+                                <div>
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" name="family_members" value="{{ member.id }}" id="famMember{{ member.id }}" checked>
+                                    <label class="form-check-label small fw-semibold text-body" for="famMember{{ member.id }}">
+                                        {{ member.name }}
+                                        <span class="text-muted fw-normal">({{ member.get_relationship_display }})</span>
+                                    </label>
+                                </div>
+                                <span class="badge bg-light text-muted border num-mono small" style="font-size: 0.7rem;">
+                                    PAN: {{ member.masked_pan }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" class="btn btn-sm btn-primary w-100 d-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                            <i class="bi bi-send-check-fill"></i>
+                            <span>Batch Log Bids in Application Tracker</span>
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-2">
+                        <p class="text-muted small mb-2">No family accounts linked yet. Add family members to enable 1-click multi-PAN lottery bidding.</p>
+                        <a href="{% url 'ipo:family_vault' %}" class="btn btn-sm btn-outline-primary"
+                           hx-get="{% url 'ipo:family_vault' %}" hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-person-plus me-1"></i> Add Accounts to Family Vault
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- Right Column: Live Sizing Summary, Payment Mandate & Allotment Probability -->
@@ -168,6 +283,11 @@
                     <div class="d-flex flex-wrap align-items-baseline gap-2 mb-3">
                         <span class="display-6 fw-bold num-mono text-body">₹{{ bid_plan.total_amount|intcomma }}</span>
                         <span class="text-muted">for <strong>{{ bid_plan.total_shares }} shares</strong> ({{ bid_plan.lots }} lot{% if bid_plan.lots > 1 %}s{% endif %})</span>
+                        {% if bid_plan.is_simulation_mode and bid_plan.total_amount == 0 %}
+                        <div class="w-100 text-info small mt-1">
+                            <i class="bi bi-lightbulb me-1"></i> Enter an estimated price in the form to simulate blocked funds and subscription tiers.
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- Regulatory Warnings -->
@@ -203,6 +323,89 @@
                             </span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Predictive Listing Gain & Bid Recommendation Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+                            <i class="bi bi-magic text-primary"></i>
+                            <span>Listing Gain &amp; Bid Recommendation</span>
+                        </h5>
+                        <span class="text-muted small">Multi-factor empirical forecast combining GMP, Day-3 QIB demand &amp; valuation</span>
+                    </div>
+                    <span class="badge {{ prediction.recommendation_badge }} px-2.5 py-1">
+                        {{ prediction.recommendation_label }}
+                    </span>
+                </div>
+                <div class="card-body px-4 py-3">
+                    {% if prediction.has_prediction %}
+                    <!-- Predicted Pop & Price Metric Hero -->
+                    <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-12 col-md-6 border-end-md">
+                                <span class="text-muted small d-block">Predicted Listing Day Pop:</span>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <span class="display-6 fw-bold num-mono {% if prediction.expected_gain_midpoint >= 20 %}text-success{% elif prediction.expected_gain_midpoint >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                                        {% if prediction.predicted_gain_min > 0 %}+{% endif %}{{ prediction.predicted_gain_min }}% to {% if prediction.predicted_gain_max > 0 %}+{% endif %}{{ prediction.predicted_gain_max }}%
+                                    </span>
+                                </div>
+                                <span class="text-muted small">Midpoint Forecast: <strong>{% if prediction.expected_gain_midpoint > 0 %}+{% endif %}{{ prediction.expected_gain_midpoint }}%</strong></span>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="text-muted small d-block">Estimated Listing Price Range:</span>
+                                <div class="fs-3 fw-bold num-mono text-body">
+                                    ₹{{ prediction.predicted_price_min|intcomma }} – ₹{{ prediction.predicted_price_max|intcomma }}
+                                </div>
+                                <div class="d-flex align-items-center gap-1 mt-1">
+                                    <span class="badge bg-secondary-subtle text-secondary small border">
+                                        Issue Price: ₹{{ ipo.effective_upper_price|intcomma }}
+                                    </span>
+                                    <span class="badge {% if prediction.confidence == 'HIGH' %}bg-success-subtle text-success{% elif prediction.confidence == 'MEDIUM' %}bg-primary-subtle text-primary{% else %}bg-warning-subtle text-warning-emphasis{% endif %} small">
+                                        {{ prediction.confidence }} Confidence
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategy Callout -->
+                    <div class="alert alert-light border shadow-none p-3 mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-compass text-primary fw-bold"></i>
+                            <strong class="text-body small text-uppercase">Recommended Action &amp; Strategy:</strong>
+                            <span class="badge bg-primary-subtle text-primary border small ms-auto">{{ prediction.listing_day_strategy }}</span>
+                        </div>
+                        <p class="small text-muted mb-0">{{ prediction.listing_day_strategy_desc }}</p>
+                    </div>
+
+                    <!-- 3-Pillar Factor Matrix -->
+                    <div class="row g-2 pt-1 border-top">
+                        <div class="col-4">
+                            <span class="text-muted small d-block" style="font-size: 0.72rem;">GMP Weight (50%)</span>
+                            <strong class="num-mono text-body small">{{ prediction.gmp_factor_desc }}</strong>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted small d-block" style="font-size: 0.72rem;">QIB Anchor (30%)</span>
+                            <strong class="num-mono text-body small">{{ prediction.qib_factor_desc }}</strong>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted small d-block" style="font-size: 0.72rem;">Valuation Score (20%)</span>
+                            <strong class="num-mono text-body small">{{ prediction.valuation_factor_desc }}</strong>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Pre-Issue Pipeline Notice -->
+                    <div class="p-3 bg-body-tertiary rounded-3 text-center py-4">
+                        <i class="bi bi-hourglass-split fs-2 text-muted mb-2 d-block"></i>
+                        <h6 class="fw-bold mb-1">Listing Gain Model Inactive</h6>
+                        <p class="text-muted small mb-0">
+                            Awaiting official Red Herring Prospectus (RHP) price band and active grey market quotes to generate empirical listing gain forecasts.
+                        </p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 

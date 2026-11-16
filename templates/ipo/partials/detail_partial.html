@@ -62,6 +62,13 @@
                             <i class="bi bi-calculator"></i>
                             <span>Bid Planner &amp; Odds</span>
                         </a>
+
+                        {% if prediction.has_prediction %}
+                        <span class="badge {{ prediction.recommendation_badge }} px-2.5 py-1.5 d-flex align-items-center gap-1">
+                            <i class="bi bi-magic"></i>
+                            <span>Listing Pop: {% if prediction.expected_gain_midpoint > 0 %}+{% endif %}{{ prediction.expected_gain_midpoint }}% ({{ prediction.recommendation_label }})</span>
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>

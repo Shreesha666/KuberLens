@@ -350,24 +350,27 @@
                     <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
                         <div class="row g-3 align-items-center">
                             <div class="col-12 col-md-6 border-end-md">
-                                <span class="text-muted small d-block mb-1">Predicted Listing Day Pop:</span>
+                                <span class="kpi-label mb-1">Predicted Listing Day Pop</span>
                                 <div class="d-flex align-items-baseline gap-2 mb-1">
-                                    <span class="fs-3 fw-bold num-mono {% if prediction.expected_gain_midpoint >= 20 %}text-success{% elif prediction.expected_gain_midpoint >= 0 %}text-primary{% else %}text-danger{% endif %}">
-                                        {% if prediction.predicted_gain_min > 0 %}+{% endif %}{{ prediction.predicted_gain_min }}% to {% if prediction.predicted_gain_max > 0 %}+{% endif %}{{ prediction.predicted_gain_max }}%
+                                    <span class="kpi-value {% if prediction.expected_gain_midpoint >= 20 %}text-success{% elif prediction.expected_gain_midpoint >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                                        {% if prediction.expected_gain_midpoint > 0 %}+{% endif %}{{ prediction.expected_gain_midpoint }}%
                                     </span>
+                                    <span class="text-muted small">midpoint estimate</span>
                                 </div>
-                                <span class="text-muted small">Midpoint Forecast: <strong>{% if prediction.expected_gain_midpoint > 0 %}+{% endif %}{{ prediction.expected_gain_midpoint }}%</strong></span>
+                                <div class="kpi-subtext">
+                                    Forecast Range: <strong class="text-body num-mono">{% if prediction.predicted_gain_min > 0 %}+{% endif %}{{ prediction.predicted_gain_min }}% &rarr; {% if prediction.predicted_gain_max > 0 %}+{% endif %}{{ prediction.predicted_gain_max }}%</strong>
+                                </div>
                             </div>
                             <div class="col-12 col-md-6">
-                                <span class="text-muted small d-block mb-1">Estimated Listing Price Range:</span>
-                                <div class="fs-3 fw-bold num-mono text-body mb-1">
-                                    ₹{{ prediction.predicted_price_min|intcomma }} – ₹{{ prediction.predicted_price_max|intcomma }}
+                                <span class="kpi-label mb-1">Estimated Listing Price Range</span>
+                                <div class="kpi-value text-body mb-1">
+                                    ₹{{ prediction.predicted_price_min|floatformat:2 }} &ndash; ₹{{ prediction.predicted_price_max|floatformat:2 }}
                                 </div>
-                                <div class="d-flex align-items-center gap-1">
-                                    <span class="badge bg-secondary-subtle text-secondary small border">
-                                        Issue Price: ₹{{ ipo.effective_upper_price|intcomma }}
+                                <div class="kpi-subtext d-flex align-items-center gap-1.5 mt-1">
+                                    <span class="badge bg-secondary-subtle text-body border">
+                                        Issue Price: ₹{{ ipo.effective_upper_price|floatformat:2 }}
                                     </span>
-                                    <span class="badge {% if prediction.confidence == 'HIGH' %}bg-success-subtle text-success{% elif prediction.confidence == 'MEDIUM' %}bg-primary-subtle text-primary{% else %}bg-warning-subtle text-warning-emphasis{% endif %} small">
+                                    <span class="badge {% if prediction.confidence == 'HIGH' %}bg-success-subtle text-success border border-success-subtle{% elif prediction.confidence == 'MEDIUM' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
                                         {{ prediction.confidence }} Confidence
                                     </span>
                                 </div>
@@ -376,33 +379,41 @@
                     </div>
 
                     <!-- Strategy Callout -->
-                    <div class="alert alert-light border shadow-none p-3 mb-3">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <i class="bi bi-compass text-primary fw-bold"></i>
-                            <strong class="text-body small text-uppercase">Recommended Action &amp; Strategy:</strong>
-                            <span class="badge bg-primary-subtle text-primary border small ms-auto">{{ prediction.listing_day_strategy }}</span>
+                    <div class="p-3 rounded-3 bg-body border mb-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1.5">
+                            <span class="kpi-label text-primary mb-0 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-compass"></i>
+                                <span>Recommended Action &amp; Strategy</span>
+                            </span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5">{{ prediction.listing_day_strategy }}</span>
                         </div>
-                        <p class="small text-muted mb-0">{{ prediction.listing_day_strategy_desc }}</p>
+                        <p class="text-body small mb-0">{{ prediction.listing_day_strategy_desc }}</p>
                     </div>
 
                     <!-- 3-Pillar Factor Matrix -->
-                    <div class="row g-2 pt-1 border-top">
-                        <div class="col-4">
-                            <span class="text-muted small d-block">GMP Weight (50%)</span>
-                            <strong class="num-mono text-body small">{{ prediction.gmp_factor_desc }}</strong>
+                    <div class="row g-2">
+                        <div class="col-12 col-md-4">
+                            <div class="p-2.5 rounded-3 bg-body border h-100">
+                                <span class="text-micro text-uppercase text-muted fw-semibold d-block mb-1">GMP Weight (50%)</span>
+                                <div class="fw-semibold text-body small">{{ prediction.gmp_factor_desc }}</div>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <span class="text-muted small d-block">QIB Anchor (30%)</span>
-                            <strong class="num-mono text-body small">{{ prediction.qib_factor_desc }}</strong>
+                        <div class="col-12 col-md-4">
+                            <div class="p-2.5 rounded-3 bg-body border h-100">
+                                <span class="text-micro text-uppercase text-muted fw-semibold d-block mb-1">QIB Anchor (30%)</span>
+                                <div class="fw-semibold text-body small">{{ prediction.qib_factor_desc }}</div>
+                            </div>
                         </div>
-                        <div class="col-4">
-                            <span class="text-muted small d-block">Valuation Score (20%)</span>
-                            <strong class="num-mono text-body small">{{ prediction.valuation_factor_desc }}</strong>
+                        <div class="col-12 col-md-4">
+                            <div class="p-2.5 rounded-3 bg-body border h-100">
+                                <span class="text-micro text-uppercase text-muted fw-semibold d-block mb-1">Valuation Score (20%)</span>
+                                <div class="fw-semibold text-body small">{{ prediction.valuation_factor_desc }}</div>
+                            </div>
                         </div>
                     </div>
                     {% else %}
                     <!-- Pre-Issue Pipeline Notice -->
-                    <div class="p-3 bg-body-tertiary rounded-3 text-center py-4">
+                    <div class="p-4 bg-body-tertiary rounded-3 text-center border">
                         <i class="bi bi-hourglass-split fs-2 text-muted mb-2 d-block"></i>
                         <h6 class="fw-bold mb-1">Listing Gain Model Inactive</h6>
                         <p class="text-muted small mb-0">

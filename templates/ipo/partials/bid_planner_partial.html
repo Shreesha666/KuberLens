@@ -447,7 +447,7 @@
                                 <span>Secondary Market Chart</span>
                             </a>
                             {% endif %}
-                            <a href="{% url 'ipo:overview' ipo.symbol %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" hx-get="{% url 'ipo:overview' ipo.symbol %}" hx-target="#main-content" hx-push-url="true">
+                            <a href="{% url 'ipo:detail' ipo.symbol %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5" hx-get="{% url 'ipo:detail' ipo.symbol %}" hx-target="#main-content" hx-push-url="true">
                                 <i class="bi bi-info-circle"></i>
                                 <span>Issue Overview</span>
                             </a>

@@ -1,0 +1,4 @@
+# Ignore Django template files so Prettier does not break {% ... %} and {{ ... }} tags
+templates/
+**/templates/**
+*.html

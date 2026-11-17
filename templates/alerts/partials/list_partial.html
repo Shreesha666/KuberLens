@@ -38,17 +38,17 @@
     <div class="collapse show mb-4" id="createAlertCollapse">
         <div class="card border border-secondary border-opacity-10 shadow-sm rounded-3 overflow-hidden">
             <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-3 px-4 d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2.5">
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 rounded-2">
                         <i class="bi bi-bell-fill fs-6"></i>
                     </span>
                     <div>
-                        <h6 class="fw-bold mb-0 text-body">Configure New Alert Trigger</h6>
-                        <span class="text-muted extra-small">Automated real-time notifications with anti-spam cooldown protection</span>
+                        <div class="fw-bold fs-6 mb-0 text-body" style="text-transform: none; letter-spacing: -0.01em;">Configure Real-Time Alert Rule</div>
+                        <span class="text-muted extra-small">Automated trigger monitoring with anti-spam cooldown protection</span>
                     </div>
                 </div>
-                <span class="badge bg-light text-secondary border small d-none d-md-inline-block">
-                    <i class="bi bi-lightning-charge text-warning me-1"></i>Zero-Latency Evaluation
+                <span class="badge bg-light text-secondary border small d-none d-md-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-pill">
+                    <i class="bi bi-lightning-charge-fill text-warning"></i>Zero-Latency Evaluation
                 </span>
             </div>
             <div class="card-body p-4">
@@ -61,7 +61,7 @@
                     <div class="row g-3">
                         <!-- Left: Stock / Instrument Target -->
                         <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.03em;">Target Stock / Instrument</label>
+                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Target Stock / Instrument</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
                                 <input type="text"
@@ -79,24 +79,23 @@
                                 </option>
                                 {% endfor %}
                             </datalist>
-                            <div id="stockBadge" class="mt-2 d-none">
-                                <div class="p-2 rounded-2 bg-body-tertiary border border-secondary border-opacity-10 d-flex align-items-center justify-content-between">
+                            <div id="stockBadge" class="mt-2">
+                                <div class="p-2 px-3 rounded-2 bg-body-tertiary border border-secondary border-opacity-10 d-flex align-items-center justify-content-between" style="min-height: 46px;">
                                     <div class="d-flex align-items-center gap-2 text-truncate">
-                                        <span class="badge bg-primary text-white px-2 py-1 font-monospace fw-bold" id="stockBadgeSymbol"></span>
-                                        <span class="small fw-semibold text-body text-truncate" id="stockBadgeName"></span>
+                                        <span class="badge bg-primary text-white px-2 py-1 font-monospace fw-bold" id="stockBadgeSymbol">PORTFOLIO</span>
+                                        <span class="small fw-semibold text-body text-truncate" id="stockBadgeName">Account-Wide / Drawdown Rule</span>
                                     </div>
                                     <div class="text-end ps-2 flex-shrink-0">
-                                        <span class="text-muted extra-small d-block">Live LTP</span>
-                                        <span class="fw-bold num-mono text-body" id="stockBadgePrice">₹—</span>
+                                        <span class="text-muted extra-small d-block" style="font-size: 0.68rem;">Live LTP</span>
+                                        <span class="fw-bold num-mono text-body" id="stockBadgePrice">Aggregate</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-text extra-small text-muted" id="stockHelpText">Leave blank to monitor account-wide portfolio drawdown.</div>
                         </div>
 
                         <!-- Right: Condition / Trigger -->
                         <div class="col-12 col-md-6">
-                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.03em;">Alert Condition / Trigger Rule</label>
+                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Alert Condition / Trigger Rule</label>
                             <select name="alert_type" id="alertTypeSelect" class="form-select fw-semibold" required>
                                 {% for group in alert_groups %}
                                 <optgroup label="{{ group.group }}">
@@ -106,27 +105,63 @@
                                 </optgroup>
                                 {% endfor %}
                             </select>
-                            <div class="form-text extra-small text-muted mt-1" id="conditionHelpText">Select trigger rule.</div>
+                            <div id="conditionBadge" class="mt-2">
+                                <div class="p-2 px-3 rounded-2 bg-body-tertiary border border-secondary border-opacity-10 d-flex align-items-center justify-content-between" style="min-height: 46px;">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small fw-semibold" id="conditionBadgeType">Price Action</span>
+                                        <span class="small text-muted text-truncate" id="conditionBadgeDesc">Executes when threshold is crossed</span>
+                                    </div>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle small flex-shrink-0">
+                                        <i class="bi bi-broadcast me-1"></i>Tick Stream
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Full Width: Threshold & 1-Click Quick Chips Box -->
+                        <!-- Full Width: Threshold & Structured 2-Tier Presets Box -->
                         <div class="col-12">
                             <div class="p-3 rounded-3 bg-body-tertiary bg-opacity-50 border border-secondary border-opacity-10">
-                                <div class="row align-items-center g-2.5">
-                                    <div class="col-12 col-md-4">
-                                        <label class="form-label small fw-semibold mb-1" id="thresholdLabel">Threshold / Target Value</label>
+                                <div class="row g-3 align-items-center">
+                                    <!-- Left: Numeric Threshold Input -->
+                                    <div class="col-12 col-md-4 col-xl-3">
+                                        <label class="form-label small fw-semibold text-muted text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.04em;" id="thresholdLabel">Threshold / Target Value</label>
                                         <div class="input-group">
-                                            <span class="input-group-text bg-body num-mono text-muted" id="targetUnitPrefix">₹</span>
-                                            <input type="number" step="any" name="target_value" id="alertTargetInput" class="form-control num-mono fw-bold" placeholder="Target value..." required>
+                                            <span class="input-group-text bg-body num-mono text-muted fw-bold" id="targetUnitPrefix">₹</span>
+                                            <input type="number" step="any" name="target_value" id="alertTargetInput" class="form-control num-mono fw-bold fs-6" placeholder="Target price..." required>
+                                        </div>
+                                        <div class="form-text extra-small text-muted mt-1.5" id="thresholdHelp">
+                                            Custom value or 1-click preset.
                                         </div>
                                     </div>
-                                    <div class="col-12 col-md-8">
-                                        <div class="small fw-semibold text-muted mb-1.5 d-flex align-items-center justify-content-between">
-                                            <span>Quick 1-Click Presets:</span>
-                                            <span class="extra-small text-muted fw-normal" id="presetsHint">Select stock above for smart targets</span>
+
+                                    <!-- Right: 2-Tier Presets Shelf -->
+                                    <div class="col-12 col-md-8 col-xl-9 border-start border-secondary border-opacity-10 ps-md-3">
+                                        <!-- Tier 1: Quantitative Model Milestones (ATR & Swing Targets) -->
+                                        <div id="smartTargetsSection" class="mb-2">
+                                            <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                                <span class="extra-small fw-bold text-uppercase text-body-secondary d-flex align-items-center gap-1" style="font-size: 0.71rem; letter-spacing: 0.04em;">
+                                                    <i class="bi bi-stars text-warning"></i>
+                                                    <span>Quantitative Milestones (ATR &amp; Swing Analysis)</span>
+                                                </span>
+                                                <span class="extra-small text-muted" id="presetsHint">Select stock to load targets</span>
+                                            </div>
+                                            <div id="smartMilestonesContainer" class="d-flex flex-wrap gap-2 align-items-center" style="min-height: 29px;">
+                                                <span class="text-muted extra-small fst-italic">Pick a stock above to generate automatic ATR stop loss and swing targets.</span>
+                                            </div>
                                         </div>
-                                        <div id="quickPresetsContainer" class="d-flex flex-wrap gap-1.5 align-items-center" style="min-height: 31px;">
-                                            <span class="text-muted extra-small fst-italic">Pick a stock or indicator to reveal dynamic target presets.</span>
+
+                                        <div class="border-top border-secondary border-opacity-10 my-2" id="presetsDivider"></div>
+
+                                        <!-- Tier 2: Quick Offsets from LTP -->
+                                        <div id="quickOffsetsSection">
+                                            <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                                <span class="extra-small fw-semibold text-uppercase text-muted" style="font-size: 0.71rem; letter-spacing: 0.04em;" id="offsetsLabel">
+                                                    Quick Price Offsets from LTP
+                                                </span>
+                                            </div>
+                                            <div id="quickOffsetsContainer" class="d-flex flex-wrap gap-1.5 align-items-center" style="min-height: 28px;">
+                                                <span class="text-muted extra-small fst-italic">Price offsets will calculate once a stock is selected.</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -135,8 +170,11 @@
 
                         <!-- Bottom: User Notes & Actions -->
                         <div class="col-12 col-md-7">
-                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.03em;">Trading Plan / Notes (Optional)</label>
-                            <input type="text" name="notes" id="alertNotesInput" class="form-control" placeholder="e.g. Resistance breakout, swing profit target, trim risk...">
+                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Trading Plan / Notes (Optional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-pencil text-muted"></i></span>
+                                <input type="text" name="notes" id="alertNotesInput" class="form-control border-start-0" placeholder="e.g. Resistance breakout, swing profit target, trim risk...">
+                            </div>
                         </div>
                         <div class="col-12 col-md-5 d-flex align-items-center justify-content-between pt-md-4">
                             <div class="form-check form-switch mb-0">
@@ -149,9 +187,6 @@
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
             </div>
         </div>
     </div>
@@ -263,15 +298,21 @@
         const datalist = document.getElementById("stocksDatalist");
         const typeSelect = document.getElementById("alertTypeSelect");
         const targetInput = document.getElementById("alertTargetInput");
-        const presetsContainer = document.getElementById("quickPresetsContainer");
+        const smartContainer = document.getElementById("smartMilestonesContainer");
+        const offsetsContainer = document.getElementById("quickOffsetsContainer");
+        const smartTargetsSection = document.getElementById("smartTargetsSection");
+        const presetsDivider = document.getElementById("presetsDivider");
         const presetsHint = document.getElementById("presetsHint");
-        const stockBadge = document.getElementById("stockBadge");
+        const offsetsLabel = document.getElementById("offsetsLabel");
         const stockBadgeSymbol = document.getElementById("stockBadgeSymbol");
         const stockBadgeName = document.getElementById("stockBadgeName");
         const stockBadgePrice = document.getElementById("stockBadgePrice");
-        const conditionHelp = document.getElementById("conditionHelpText");
+        const conditionBadgeType = document.getElementById("conditionBadgeType");
+        const conditionBadgeDesc = document.getElementById("conditionBadgeDesc");
         const thresholdLabel = document.getElementById("thresholdLabel");
         const targetUnitPrefix = document.getElementById("targetUnitPrefix");
+        const thresholdHelp = document.getElementById("thresholdHelp");
+        const notesInput = document.getElementById("alertNotesInput");
 
         if (!stockInput || !datalist || !typeSelect || !targetInput) return;
 
@@ -279,13 +320,38 @@
         let selectedSymbol = null;
         let smartTargets = null;
         const targetsCache = {};
-        const notesInput = document.getElementById("alertNotesInput");
+
+        const conditionMeta = {
+            "PRICE_ABOVE": { type: "Price Breakout", desc: "Executes when LTP rises to or above target price" },
+            "PRICE_BELOW": { type: "Stop / Support", desc: "Executes when LTP falls to or below threshold price" },
+            "PERCENT_MOVE": { type: "Volatility Spike", desc: "Triggers on intraday magnitude change" },
+            "RSI_OVERSOLD": { type: "Momentum Reversal", desc: "Triggers when 14-period RSI breaches lower oversold bound" },
+            "RSI_OVERBOUGHT": { type: "Momentum Exhaustion", desc: "Triggers when 14-period RSI breaches upper overbought bound" },
+            "MACD_BULLISH_CROSS": { type: "Trend Reversal", desc: "MACD line crosses above signal line (algorithmic rule)" },
+            "MACD_BEARISH_CROSS": { type: "Trend Breakdown", desc: "MACD line crosses below signal line (algorithmic rule)" },
+            "SMA_CROSSOVER": { type: "Moving Average", desc: "SMA-20 crosses above SMA-50 (bullish momentum)" },
+            "SMA_BEARISH_CROSS": { type: "Moving Average", desc: "SMA-20 crosses below SMA-50 (bearish breakdown)" },
+            "GOLDEN_CROSS": { type: "Major Trend", desc: "SMA-50 crosses above SMA-200 (major long-term bull signal)" },
+            "DEATH_CROSS": { type: "Major Trend", desc: "SMA-50 crosses below SMA-200 (major long-term bear signal)" },
+            "BREAKOUT_52W_HIGH": { type: "52-Week Peak", desc: "Price breaks past 52-week high record" },
+            "BREAKDOWN_52W_LOW": { type: "52-Week Trough", desc: "Price breaks below 52-week low record" },
+            "VOLUME_SPIKE": { type: "Volume Surge", desc: "Triggers when volume exceeds multi-day average multiple" },
+            "PORTFOLIO_STOP_LOSS": { type: "Risk Protection", desc: "Portfolio-wide trailing loss limit guardrail" },
+            "PORTFOLIO_PROFIT_TARGET": { type: "Profit Taking", desc: "Portfolio aggregate capital profit target" }
+        };
 
         function getSelectedOption() {
             const val = stockInput.value.trim().toUpperCase();
             if (!val) return null;
             const options = Array.from(datalist.options);
             return options.find(o => o.value.toUpperCase() === val) || null;
+        }
+
+        function updateConditionBadge() {
+            const alertType = typeSelect.value;
+            const meta = conditionMeta[alertType] || { type: "Active Trigger", desc: "Executes when condition criteria is satisfied" };
+            if (conditionBadgeType) conditionBadgeType.textContent = meta.type;
+            if (conditionBadgeDesc) conditionBadgeDesc.textContent = meta.desc;
         }
 
         function fetchSmartTargets(symbol) {
@@ -324,21 +390,24 @@
                 if (stockBadgeSymbol) stockBadgeSymbol.textContent = selectedSymbol;
                 if (stockBadgeName) stockBadgeName.textContent = name;
                 if (stockBadgePrice) stockBadgePrice.textContent = selectedPrice ? "₹" + selectedPrice.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "—";
-                if (stockBadge) stockBadge.classList.remove("d-none");
                 fetchSmartTargets(selectedSymbol);
             } else {
                 selectedPrice = null;
                 selectedSymbol = null;
                 smartTargets = null;
-                if (stockBadge) stockBadge.classList.add("d-none");
+                if (stockBadgeSymbol) stockBadgeSymbol.textContent = "PORTFOLIO";
+                if (stockBadgeName) stockBadgeName.textContent = "Account-Wide / Drawdown Rule";
+                if (stockBadgePrice) stockBadgePrice.textContent = "Aggregate";
                 renderPresets();
             }
         }
 
         function renderPresets() {
-            if (!presetsContainer) return;
-            presetsContainer.innerHTML = "";
+            if (!smartContainer || !offsetsContainer) return;
+            smartContainer.innerHTML = "";
+            offsetsContainer.innerHTML = "";
             const alertType = typeSelect.value;
+            updateConditionBadge();
 
             // Auto technical indicator crossover rules without manual numeric threshold
             const autoConditions = [
@@ -350,27 +419,34 @@
             ];
 
             if (autoConditions.includes(alertType)) {
+                if (smartTargetsSection) smartTargetsSection.classList.add("d-none");
+                if (presetsDivider) presetsDivider.classList.add("d-none");
+                if (offsetsLabel) offsetsLabel.textContent = "Execution Engine Protocol";
                 if (thresholdLabel) thresholdLabel.textContent = "Threshold (Auto-Handled)";
                 if (targetUnitPrefix) targetUnitPrefix.textContent = "⚡";
+                if (thresholdHelp) thresholdHelp.textContent = "Event-driven rule evaluated on tick stream.";
                 targetInput.value = "0";
                 targetInput.placeholder = "0 (Auto-evaluated)";
-                if (conditionHelp) conditionHelp.textContent = "Triggers automatically on market event or crossover. No price number required.";
-                if (presetsHint) presetsHint.textContent = "Event-driven trigger";
-                const autoBadge = document.createElement("span");
-                autoBadge.className = "badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-1 px-2.5 small";
-                autoBadge.innerHTML = "<i class='bi bi-cpu me-1'></i>Algorithmic Event Trigger";
-                presetsContainer.appendChild(autoBadge);
+                targetInput.readOnly = true;
+
+                const autoBadge = document.createElement("div");
+                autoBadge.className = "d-inline-flex align-items-center gap-2 py-1.5 px-3 rounded-2 bg-info bg-opacity-10 text-info border border-info border-opacity-25 small fw-semibold";
+                autoBadge.innerHTML = "<i class='bi bi-cpu fs-6'></i> Algorithmic Event Trigger — Automatically monitors live indicator crossovers without numeric price thresholds.";
+                offsetsContainer.appendChild(autoBadge);
                 return;
             }
 
+            targetInput.readOnly = false;
             if (thresholdLabel) thresholdLabel.textContent = "Threshold / Target Value";
+            if (thresholdHelp) thresholdHelp.textContent = "Custom value or 1-click preset.";
 
             // RSI momentum bounds
             if (alertType === "RSI_OVERSOLD" || alertType === "RSI_OVERBOUGHT") {
+                if (smartTargetsSection) smartTargetsSection.classList.add("d-none");
+                if (presetsDivider) presetsDivider.classList.add("d-none");
                 if (targetUnitPrefix) targetUnitPrefix.textContent = "RSI";
+                if (offsetsLabel) offsetsLabel.textContent = "Momentum Thresholds (14-Period RSI)";
                 targetInput.placeholder = "RSI Level (e.g. 30, 70)...";
-                if (conditionHelp) conditionHelp.textContent = "14-period RSI boundary level (0 to 100).";
-                if (presetsHint) presetsHint.textContent = "Click RSI preset level:";
                 const rsiPresets = [
                     { label: "RSI 20 (Deep Oversold)", val: 20 },
                     { label: "RSI 30 (Oversold)", val: 30 },
@@ -380,137 +456,155 @@
                 rsiPresets.forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = "btn btn-sm bg-body border py-1 px-2.5 small fw-semibold text-body";
+                    btn.className = "btn btn-sm bg-body border border-secondary border-opacity-25 py-1 px-2.5 small fw-semibold text-body rounded-2";
                     btn.style.fontSize = "0.75rem";
                     btn.textContent = p.label;
                     btn.onclick = () => { targetInput.value = p.val; };
-                    presetsContainer.appendChild(btn);
+                    offsetsContainer.appendChild(btn);
                 });
                 return;
             }
 
             // Daily % Movement
             if (alertType === "PERCENT_MOVE") {
+                if (smartTargetsSection) smartTargetsSection.classList.add("d-none");
+                if (presetsDivider) presetsDivider.classList.add("d-none");
                 if (targetUnitPrefix) targetUnitPrefix.textContent = "%";
+                if (offsetsLabel) offsetsLabel.textContent = "Intraday Price Movement Magnitude";
                 targetInput.placeholder = "Daily movement % (e.g. 3.5)...";
-                if (conditionHelp) conditionHelp.textContent = "Daily price movement magnitude in percentage.";
-                if (presetsHint) presetsHint.textContent = "Click percentage move:";
                 [2, 3, 5, 8, 10].forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = "btn btn-sm bg-body border py-1 px-2.5 small fw-semibold text-body";
+                    btn.className = "btn btn-sm bg-body border border-secondary border-opacity-25 py-1 px-2.5 small fw-semibold text-body rounded-2";
                     btn.style.fontSize = "0.75rem";
                     btn.textContent = `±${p}%`;
                     btn.onclick = () => { targetInput.value = p; };
-                    presetsContainer.appendChild(btn);
+                    offsetsContainer.appendChild(btn);
                 });
                 return;
             }
 
             // Volume Surge Spike
             if (alertType === "VOLUME_SPIKE") {
+                if (smartTargetsSection) smartTargetsSection.classList.add("d-none");
+                if (presetsDivider) presetsDivider.classList.add("d-none");
                 if (targetUnitPrefix) targetUnitPrefix.textContent = "×";
+                if (offsetsLabel) offsetsLabel.textContent = "Volume Multipliers (20-Day Average)";
                 targetInput.placeholder = "Multiplier (e.g. 2 for 2x)...";
-                if (conditionHelp) conditionHelp.textContent = "Multiple of 20-day average trading volume.";
-                if (presetsHint) presetsHint.textContent = "Click volume multiple:";
                 [1.5, 2.0, 3.0, 5.0].forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = "btn btn-sm bg-body border py-1 px-2.5 small fw-semibold text-body";
+                    btn.className = "btn btn-sm bg-body border border-secondary border-opacity-25 py-1 px-2.5 small fw-semibold text-body rounded-2";
                     btn.style.fontSize = "0.75rem";
                     btn.textContent = `${p}× Avg Vol`;
                     btn.onclick = () => { targetInput.value = p; };
-                    presetsContainer.appendChild(btn);
+                    offsetsContainer.appendChild(btn);
                 });
                 return;
             }
 
             // Standard Price or Portfolio Stop/Target
+            if (smartTargetsSection) smartTargetsSection.classList.remove("d-none");
+            if (presetsDivider) presetsDivider.classList.remove("d-none");
+            if (offsetsLabel) offsetsLabel.textContent = "Quick Price Offsets from LTP";
             if (targetUnitPrefix) targetUnitPrefix.textContent = "₹";
             targetInput.placeholder = "Target price in ₹...";
-            if (conditionHelp) conditionHelp.textContent = "Target execution price threshold in ₹.";
 
             if (selectedPrice && selectedPrice > 0) {
-                if (presetsHint) presetsHint.textContent = smartTargets ? "Smart ATR Targets & Stops Available" : "Calculated from LTP ₹" + selectedPrice.toFixed(2);
-
-                // 1. Prospective Investor Smart Targets & ATR Stop Loss
+                // 1. Tier 1: Smart ATR Targets & Stops
                 if (smartTargets) {
+                    if (presetsHint) presetsHint.textContent = "Volatility & Fibonacci Model Targets";
+
                     if (smartTargets.stop_loss) {
                         const slBtn = document.createElement("button");
                         slBtn.type = "button";
-                        slBtn.className = "btn btn-sm bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2.5 num-mono fw-bold";
+                        slBtn.className = "btn btn-sm bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2.5 num-mono fw-bold rounded-2";
                         slBtn.style.fontSize = "0.74rem";
-                        slBtn.innerHTML = `🛡️ SL (ATR): ₹${smartTargets.stop_loss.toFixed(2)}`;
+                        slBtn.innerHTML = `🛡️ Stop Loss (ATR): ₹${smartTargets.stop_loss.toFixed(2)}`;
                         slBtn.title = smartTargets.stop_loss_rationale || "ATR Trailing Stop Loss";
                         slBtn.onclick = () => {
                             targetInput.value = smartTargets.stop_loss.toFixed(2);
                             typeSelect.value = "PRICE_BELOW";
+                            updateConditionBadge();
                             if (notesInput && !notesInput.value) {
                                 notesInput.value = "1.5× ATR Trailing Stop Loss reached - review risk";
                             }
                         };
-                        presetsContainer.appendChild(slBtn);
+                        smartContainer.appendChild(slBtn);
                     }
 
                     if (smartTargets.target_1) {
                         const t1Btn = document.createElement("button");
                         t1Btn.type = "button";
-                        t1Btn.className = "btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 num-mono fw-bold";
+                        t1Btn.className = "btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 num-mono fw-bold rounded-2";
                         t1Btn.style.fontSize = "0.74rem";
-                        t1Btn.innerHTML = `🎯 T1: ₹${smartTargets.target_1.toFixed(2)} (+${smartTargets.target_1_pct}%)`;
+                        t1Btn.innerHTML = `🎯 Target 1 (Swing): ₹${smartTargets.target_1.toFixed(2)} (+${smartTargets.target_1_pct}%)`;
                         t1Btn.title = `Estimated Time: ${smartTargets.target_1_eta || '1 to 2 Weeks'}`;
                         t1Btn.onclick = () => {
                             targetInput.value = smartTargets.target_1.toFixed(2);
                             typeSelect.value = "PRICE_ABOVE";
+                            updateConditionBadge();
                             if (notesInput && !notesInput.value) {
                                 notesInput.value = `Target 1 milestone reached (Est. ${smartTargets.target_1_eta || '1-2 W'})`;
                             }
                         };
-                        presetsContainer.appendChild(t1Btn);
+                        smartContainer.appendChild(t1Btn);
                     }
 
                     if (smartTargets.target_2) {
                         const t2Btn = document.createElement("button");
                         t2Btn.type = "button";
-                        t2Btn.className = "btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 num-mono fw-bold";
+                        t2Btn.className = "btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 num-mono fw-bold rounded-2";
                         t2Btn.style.fontSize = "0.74rem";
-                        t2Btn.innerHTML = `🚀 T2: ₹${smartTargets.target_2.toFixed(2)} (+${smartTargets.target_2_pct}%)`;
+                        t2Btn.innerHTML = `🚀 Target 2 (Extended): ₹${smartTargets.target_2.toFixed(2)} (+${smartTargets.target_2_pct}%)`;
                         t2Btn.title = `Estimated Time: ${smartTargets.target_2_eta || '3 to 6 Weeks'}`;
                         t2Btn.onclick = () => {
                             targetInput.value = smartTargets.target_2.toFixed(2);
                             typeSelect.value = "PRICE_ABOVE";
+                            updateConditionBadge();
                             if (notesInput && !notesInput.value) {
                                 notesInput.value = `Target 2 swing extension reached (Est. ${smartTargets.target_2_eta || '3-6 W'})`;
                             }
                         };
-                        presetsContainer.appendChild(t2Btn);
+                        smartContainer.appendChild(t2Btn);
                     }
+                } else {
+                    if (presetsHint) presetsHint.textContent = "Calculating volatility model...";
+                    const placeholder = document.createElement("span");
+                    placeholder.className = "text-muted extra-small fst-italic";
+                    placeholder.textContent = "Loading quantitative stop loss and profit targets...";
+                    smartContainer.appendChild(placeholder);
                 }
 
-                // 2. Standard Percentage Presets
+                // 2. Tier 2: Standard Percentage Presets
                 const pricePresets = [
-                    { label: `LTP: ₹${selectedPrice.toFixed(1)}`, val: selectedPrice.toFixed(2), cls: "bg-light text-secondary border" },
-                    { label: `+5%: ₹${(selectedPrice * 1.05).toFixed(1)}`, val: (selectedPrice * 1.05).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
-                    { label: `+10%: ₹${(selectedPrice * 1.10).toFixed(1)}`, val: (selectedPrice * 1.10).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
-                    { label: `-5%: ₹${(selectedPrice * 0.95).toFixed(1)}`, val: (selectedPrice * 0.95).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
-                    { label: `-10%: ₹${(selectedPrice * 0.90).toFixed(1)}`, val: (selectedPrice * 0.90).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
+                    { label: `LTP: ₹${selectedPrice.toFixed(2)}`, val: selectedPrice.toFixed(2), cls: "bg-body text-secondary border border-secondary border-opacity-25" },
+                    { label: `+5%: ₹${(selectedPrice * 1.05).toFixed(2)}`, val: (selectedPrice * 1.05).toFixed(2), cls: "bg-body text-success border border-success border-opacity-35" },
+                    { label: `+10%: ₹${(selectedPrice * 1.10).toFixed(2)}`, val: (selectedPrice * 1.10).toFixed(2), cls: "bg-body text-success border border-success border-opacity-35" },
+                    { label: `-5%: ₹${(selectedPrice * 0.95).toFixed(2)}`, val: (selectedPrice * 0.95).toFixed(2), cls: "bg-body text-danger border border-danger border-opacity-35" },
+                    { label: `-10%: ₹${(selectedPrice * 0.90).toFixed(2)}`, val: (selectedPrice * 0.90).toFixed(2), cls: "bg-body text-danger border border-danger border-opacity-35" },
                 ];
 
                 pricePresets.forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = `btn btn-sm ${p.cls} py-1 px-2.5 num-mono fw-bold`;
+                    btn.className = `btn btn-sm ${p.cls} py-1 px-2.5 num-mono fw-bold rounded-2`;
                     btn.style.fontSize = "0.72rem";
                     btn.textContent = p.label;
                     btn.onclick = () => { targetInput.value = p.val; };
-                    presetsContainer.appendChild(btn);
+                    offsetsContainer.appendChild(btn);
                 });
             } else {
-                if (presetsHint) presetsHint.textContent = "Type stock symbol above for live target presets";
-                const infoSpan = document.createElement("span");
-                infoSpan.className = "text-muted extra-small fst-italic";
-                infoSpan.textContent = "Pick a stock above to generate automatic target & stop presets.";
-                presetsContainer.appendChild(infoSpan);
+                if (presetsHint) presetsHint.textContent = "Type stock symbol to load targets";
+                const infoSpan1 = document.createElement("span");
+                infoSpan1.className = "text-muted extra-small fst-italic";
+                infoSpan1.textContent = "Select a stock above to generate automatic ATR stop loss and swing targets.";
+                smartContainer.appendChild(infoSpan1);
+
+                const infoSpan2 = document.createElement("span");
+                infoSpan2.className = "text-muted extra-small fst-italic";
+                infoSpan2.textContent = "Price offsets will calculate once a stock is selected.";
+                offsetsContainer.appendChild(infoSpan2);
             }
         }
 
@@ -519,10 +613,17 @@
         typeSelect.addEventListener("change", renderPresets);
 
         updateStockInfo();
+        updateConditionBadge();
     }
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initAlertForm);
+    } else {
+        initAlertForm();
+    }
+    document.addEventListener("htmx:afterSwap", initAlertForm);
+})();
+</script>
     } else {
         initAlertForm();
     }

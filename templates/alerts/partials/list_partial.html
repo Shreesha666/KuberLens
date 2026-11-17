@@ -4,16 +4,18 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary text-white"><i class="bi bi-bell"></i> Phase 8</span>
-                <h1 class="h3 fw-bold mb-0 text-dark">Price & Portfolio Alerts</h1>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill small fw-semibold">
+                    <i class="bi bi-shield-check me-1"></i>Real-Time Monitoring
+                </span>
+                <h1 class="h3 fw-bold mb-0 text-body">Price &amp; Portfolio Alerts</h1>
             </div>
             <p class="text-muted small mb-0">
                 Automated threshold monitoring across live quotes, technical breakout indicators, and portfolio risk limits.
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
-                <i class="bi bi-plus-circle me-1"></i> New Alert Rule
+            <button class="btn btn-primary btn-sm d-flex align-items-center gap-1.5" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
+                <i class="bi bi-plus-circle"></i> New Alert Rule
             </button>
             <form method="post" action="{% url 'alerts:evaluate' %}"
                   hx-post="{% url 'alerts:evaluate' %}"
@@ -21,22 +23,33 @@
                   hx-push-url="true"
                   class="d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Check Alerts Now
+                <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1.5" title="Evaluate all active rules immediately">
+                    <i class="bi bi-arrow-clockwise"></i> Check Alerts Now
                 </button>
             </form>
-            <a href="{% url 'notifications:list' %}" class="btn btn-outline-secondary btn-sm"
+            <a href="{% url 'notifications:list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5"
                hx-get="{% url 'notifications:list' %}" hx-target="#main-content" hx-push-url="true">
-                <i class="bi bi-inbox me-1"></i> Notifications
+                <i class="bi bi-inbox"></i> Notifications
             </a>
         </div>
     </div>
 
     <!-- Create Alert Collapsible Card -->
-    <div class="collapse mb-4" id="createAlertCollapse">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-primary text-white py-2">
-                <h6 class="fw-bold mb-0 small"><i class="bi bi-bell-fill me-1"></i> Create Real-Time Alert Rule</h6>
+    <div class="collapse show mb-4" id="createAlertCollapse">
+        <div class="card border border-secondary border-opacity-10 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-3 px-4 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 rounded-2">
+                        <i class="bi bi-bell-fill fs-6"></i>
+                    </span>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-body">Configure New Alert Trigger</h6>
+                        <span class="text-muted extra-small">Automated real-time notifications with anti-spam cooldown protection</span>
+                    </div>
+                </div>
+                <span class="badge bg-light text-secondary border small d-none d-md-inline-block">
+                    <i class="bi bi-lightning-charge text-warning me-1"></i>Zero-Latency Evaluation
+                </span>
             </div>
             <div class="card-body p-4">
                 <form method="post" action="{% url 'alerts:create' %}"
@@ -44,17 +57,19 @@
                       hx-target="#main-content"
                       hx-push-url="true">
                     {% csrf_token %}
+
                     <div class="row g-3">
-                        <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Search Stock (Symbol / Name)</label>
+                        <!-- Left: Stock / Instrument Target -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.03em;">Target Stock / Instrument</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-body-tertiary"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
                                 <input type="text"
                                        name="symbol"
                                        id="alertStockInput"
                                        list="stocksDatalist"
-                                       class="form-control text-uppercase"
-                                       placeholder="Type symbol or company name (e.g. RELIANCE)..."
+                                       class="form-control border-start-0 text-uppercase fw-semibold"
+                                       placeholder="Type symbol or company name (e.g. RELIANCE, TCS)..."
                                        autocomplete="off">
                             </div>
                             <datalist id="stocksDatalist">
@@ -65,18 +80,24 @@
                                 {% endfor %}
                             </datalist>
                             <div id="stockBadge" class="mt-2 d-none">
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 small d-inline-flex align-items-center gap-1.5">
-                                    <i class="bi bi-building"></i>
-                                    <span id="stockBadgeName" class="fw-semibold"></span>
-                                    <span class="text-muted">• LTP:</span>
-                                    <strong id="stockBadgePrice" class="num-mono text-body">₹—</strong>
-                                </span>
+                                <div class="p-2 rounded-2 bg-body-tertiary border border-secondary border-opacity-10 d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span class="badge bg-primary text-white px-2 py-1 font-monospace fw-bold" id="stockBadgeSymbol"></span>
+                                        <span class="small fw-semibold text-body text-truncate" id="stockBadgeName"></span>
+                                    </div>
+                                    <div class="text-end ps-2 flex-shrink-0">
+                                        <span class="text-muted extra-small d-block">Live LTP</span>
+                                        <span class="fw-bold num-mono text-body" id="stockBadgePrice">₹—</span>
+                                    </div>
+                                </div>
                             </div>
+                            <div class="form-text extra-small text-muted" id="stockHelpText">Leave blank to monitor account-wide portfolio drawdown.</div>
                         </div>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Alert Condition / Trigger</label>
-                            <select name="alert_type" id="alertTypeSelect" class="form-select" required>
+                        <!-- Right: Condition / Trigger -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.03em;">Alert Condition / Trigger Rule</label>
+                            <select name="alert_type" id="alertTypeSelect" class="form-select fw-semibold" required>
                                 {% for group in alert_groups %}
                                 <optgroup label="{{ group.group }}">
                                     {% for val, label in group.types %}
@@ -85,34 +106,52 @@
                                 </optgroup>
                                 {% endfor %}
                             </select>
-                            <div class="form-text extra-small text-muted" id="conditionHelpText">Select trigger rule.</div>
+                            <div class="form-text extra-small text-muted mt-1" id="conditionHelpText">Select trigger rule.</div>
                         </div>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold" id="thresholdLabel">Threshold / Target Value</label>
-                            <input type="number" step="any" name="target_value" id="alertTargetInput" class="form-control" placeholder="Target price (₹), %, or RSI..." required>
-                            
-                            <!-- Dynamic 1-Click Quick Preset Buttons -->
-                            <div id="quickPresetsContainer" class="d-flex flex-wrap gap-1 mt-1.5"></div>
-                        </div>
-
-                        <div class="col-12 col-md-8">
-                            <label class="form-label small fw-semibold">User Notes (Optional)</label>
-                            <input type="text" name="notes" id="alertNotesInput" class="form-control" placeholder="e.g. Key support breakdown, trim position, swing breakout...">
-                        </div>
-                        <div class="col-12 col-md-4 d-flex align-items-end">
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" name="is_market_hours_only" id="mktHoursOnly" checked>
-                                <label class="form-check-label small" for="mktHoursOnly">Evaluate Market Hours Only</label>
+                        <!-- Full Width: Threshold & 1-Click Quick Chips Box -->
+                        <div class="col-12">
+                            <div class="p-3 rounded-3 bg-body-tertiary bg-opacity-50 border border-secondary border-opacity-10">
+                                <div class="row align-items-center g-2.5">
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-semibold mb-1" id="thresholdLabel">Threshold / Target Value</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-body num-mono text-muted" id="targetUnitPrefix">₹</span>
+                                            <input type="number" step="any" name="target_value" id="alertTargetInput" class="form-control num-mono fw-bold" placeholder="Target value..." required>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-8">
+                                        <div class="small fw-semibold text-muted mb-1.5 d-flex align-items-center justify-content-between">
+                                            <span>Quick 1-Click Presets:</span>
+                                            <span class="extra-small text-muted fw-normal" id="presetsHint">Select stock above for smart targets</span>
+                                        </div>
+                                        <div id="quickPresetsContainer" class="d-flex flex-wrap gap-1.5 align-items-center" style="min-height: 31px;">
+                                            <span class="text-muted extra-small fst-italic">Pick a stock or indicator to reveal dynamic target presets.</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-12 text-end">
-                            <button type="submit" class="btn btn-primary btn-sm px-4">
-                                Save Alert Rule
+
+                        <!-- Bottom: User Notes & Actions -->
+                        <div class="col-12 col-md-7">
+                            <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.03em;">Trading Plan / Notes (Optional)</label>
+                            <input type="text" name="notes" id="alertNotesInput" class="form-control" placeholder="e.g. Resistance breakout, swing profit target, trim risk...">
+                        </div>
+                        <div class="col-12 col-md-5 d-flex align-items-center justify-content-between pt-md-4">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" name="is_market_hours_only" id="mktHoursOnly" checked>
+                                <label class="form-check-label small fw-medium" for="mktHoursOnly">Market Hours Only</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm">
+                                <i class="bi bi-bell-fill"></i> Save Alert Rule
                             </button>
                         </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
             </div>
         </div>
     </div>
@@ -199,14 +238,18 @@
         </div>
     </div>
     {% else %}
-    <!-- Empty State -->
-    <div class="card border text-center p-5">
-        <div class="text-muted mb-3"><i class="bi bi-bell-slash fs-1"></i></div>
-        <h5 class="fw-bold">No Active Alert Rules</h5>
-        <p class="text-muted small">Create price breakout, RSI indicator, or portfolio drawdown alerts to stay ahead of market moves.</p>
+    <!-- Modern Empty State -->
+    <div class="card border border-secondary border-opacity-10 shadow-sm text-center p-5 rounded-3 bg-body">
+        <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-3 mx-auto" style="width: 3.5rem; height: 3.5rem;">
+            <i class="bi bi-bell-slash fs-2"></i>
+        </div>
+        <h5 class="fw-bold mb-1">No Active Alert Rules</h5>
+        <p class="text-muted small mx-auto mb-3" style="max-width: 420px;">
+            Set up automated price breakouts, RSI momentum bounds, or portfolio stop-losses to stay ahead of market movements.
+        </p>
         <div>
-            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
-                <i class="bi bi-plus-circle me-1"></i> Create Your First Alert
+            <button class="btn btn-primary btn-sm px-3 py-1.5 d-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
+                <i class="bi bi-plus-circle"></i> Create Your First Alert
             </button>
         </div>
     </div>
@@ -221,15 +264,19 @@
         const typeSelect = document.getElementById("alertTypeSelect");
         const targetInput = document.getElementById("alertTargetInput");
         const presetsContainer = document.getElementById("quickPresetsContainer");
+        const presetsHint = document.getElementById("presetsHint");
         const stockBadge = document.getElementById("stockBadge");
+        const stockBadgeSymbol = document.getElementById("stockBadgeSymbol");
         const stockBadgeName = document.getElementById("stockBadgeName");
         const stockBadgePrice = document.getElementById("stockBadgePrice");
         const conditionHelp = document.getElementById("conditionHelpText");
         const thresholdLabel = document.getElementById("thresholdLabel");
+        const targetUnitPrefix = document.getElementById("targetUnitPrefix");
 
         if (!stockInput || !datalist || !typeSelect || !targetInput) return;
 
         let selectedPrice = null;
+        let selectedSymbol = null;
 
         function getSelectedOption() {
             const val = stockInput.value.trim().toUpperCase();
@@ -241,15 +288,18 @@
         function updateStockInfo() {
             const opt = getSelectedOption();
             if (opt) {
+                selectedSymbol = opt.value;
                 const name = opt.getAttribute("data-name") || "";
                 const price = opt.getAttribute("data-price");
                 selectedPrice = price ? parseFloat(price) : null;
 
+                if (stockBadgeSymbol) stockBadgeSymbol.textContent = selectedSymbol;
                 if (stockBadgeName) stockBadgeName.textContent = name;
                 if (stockBadgePrice) stockBadgePrice.textContent = selectedPrice ? "₹" + selectedPrice.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "—";
                 if (stockBadge) stockBadge.classList.remove("d-none");
             } else {
                 selectedPrice = null;
+                selectedSymbol = null;
                 if (stockBadge) stockBadge.classList.add("d-none");
             }
             renderPresets();
@@ -260,7 +310,7 @@
             presetsContainer.innerHTML = "";
             const alertType = typeSelect.value;
 
-            // Auto indicator triggers without manual threshold
+            // Auto technical indicator crossover rules without manual numeric threshold
             const autoConditions = [
                 "MACD_BULLISH_CROSS", "MACD_BEARISH_CROSS",
                 "SMA_CROSSOVER", "SMA_BEARISH_CROSS",
@@ -270,30 +320,38 @@
             ];
 
             if (autoConditions.includes(alertType)) {
-                if (thresholdLabel) thresholdLabel.textContent = "Threshold (Auto-Evaluated)";
+                if (thresholdLabel) thresholdLabel.textContent = "Threshold (Auto-Handled)";
+                if (targetUnitPrefix) targetUnitPrefix.textContent = "⚡";
                 targetInput.value = "0";
                 targetInput.placeholder = "0 (Auto-evaluated)";
-                if (conditionHelp) conditionHelp.textContent = "Triggers automatically on technical crossover or breakout. No price number required.";
+                if (conditionHelp) conditionHelp.textContent = "Triggers automatically on market event or crossover. No price number required.";
+                if (presetsHint) presetsHint.textContent = "Event-driven trigger";
+                const autoBadge = document.createElement("span");
+                autoBadge.className = "badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-1 px-2.5 small";
+                autoBadge.innerHTML = "<i class='bi bi-cpu me-1'></i>Algorithmic Event Trigger";
+                presetsContainer.appendChild(autoBadge);
                 return;
             }
 
             if (thresholdLabel) thresholdLabel.textContent = "Threshold / Target Value";
 
-            // RSI alerts
+            // RSI momentum bounds
             if (alertType === "RSI_OVERSOLD" || alertType === "RSI_OVERBOUGHT") {
+                if (targetUnitPrefix) targetUnitPrefix.textContent = "RSI";
                 targetInput.placeholder = "RSI Level (e.g. 30, 70)...";
-                if (conditionHelp) conditionHelp.textContent = "14-period RSI boundary level.";
+                if (conditionHelp) conditionHelp.textContent = "14-period RSI boundary level (0 to 100).";
+                if (presetsHint) presetsHint.textContent = "Click RSI preset level:";
                 const rsiPresets = [
-                    { label: "RSI 25 (Extreme)", val: 25 },
+                    { label: "RSI 20 (Deep Oversold)", val: 20 },
                     { label: "RSI 30 (Oversold)", val: 30 },
                     { label: "RSI 70 (Overbought)", val: 70 },
-                    { label: "RSI 80 (Extreme)", val: 80 }
+                    { label: "RSI 80 (Extreme High)", val: 80 }
                 ];
                 rsiPresets.forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = "btn btn-outline-secondary btn-sm py-0 px-2";
-                    btn.style.fontSize = "0.72rem";
+                    btn.className = "btn btn-sm bg-body border py-1 px-2.5 small fw-semibold text-body";
+                    btn.style.fontSize = "0.75rem";
                     btn.textContent = p.label;
                     btn.onclick = () => { targetInput.value = p.val; };
                     presetsContainer.appendChild(btn);
@@ -301,15 +359,17 @@
                 return;
             }
 
-            // Daily % Move
+            // Daily % Movement
             if (alertType === "PERCENT_MOVE") {
+                if (targetUnitPrefix) targetUnitPrefix.textContent = "%";
                 targetInput.placeholder = "Daily movement % (e.g. 3.5)...";
-                if (conditionHelp) conditionHelp.textContent = "Daily price change threshold in percentage.";
+                if (conditionHelp) conditionHelp.textContent = "Daily price movement magnitude in percentage.";
+                if (presetsHint) presetsHint.textContent = "Click percentage move:";
                 [2, 3, 5, 8, 10].forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = "btn btn-outline-secondary btn-sm py-0 px-2";
-                    btn.style.fontSize = "0.72rem";
+                    btn.className = "btn btn-sm bg-body border py-1 px-2.5 small fw-semibold text-body";
+                    btn.style.fontSize = "0.75rem";
                     btn.textContent = `±${p}%`;
                     btn.onclick = () => { targetInput.value = p; };
                     presetsContainer.appendChild(btn);
@@ -317,15 +377,17 @@
                 return;
             }
 
-            // Volume Surge
+            // Volume Surge Spike
             if (alertType === "VOLUME_SPIKE") {
-                targetInput.placeholder = "Volume multiplier (e.g. 2 for 2x)...";
-                if (conditionHelp) conditionHelp.textContent = "Multiplier over 20-day average trading volume.";
+                if (targetUnitPrefix) targetUnitPrefix.textContent = "×";
+                targetInput.placeholder = "Multiplier (e.g. 2 for 2x)...";
+                if (conditionHelp) conditionHelp.textContent = "Multiple of 20-day average trading volume.";
+                if (presetsHint) presetsHint.textContent = "Click volume multiple:";
                 [1.5, 2.0, 3.0, 5.0].forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = "btn btn-outline-secondary btn-sm py-0 px-2";
-                    btn.style.fontSize = "0.72rem";
+                    btn.className = "btn btn-sm bg-body border py-1 px-2.5 small fw-semibold text-body";
+                    btn.style.fontSize = "0.75rem";
                     btn.textContent = `${p}× Avg Vol`;
                     btn.onclick = () => { targetInput.value = p; };
                     presetsContainer.appendChild(btn);
@@ -333,30 +395,38 @@
                 return;
             }
 
-            // Price Above / Below or Stop Loss / Target
+            // Standard Price or Portfolio Stop/Target
+            if (targetUnitPrefix) targetUnitPrefix.textContent = "₹";
             targetInput.placeholder = "Target price in ₹...";
             if (conditionHelp) conditionHelp.textContent = "Target execution price threshold in ₹.";
 
             if (selectedPrice && selectedPrice > 0) {
+                if (presetsHint) presetsHint.textContent = "Calculated from LTP ₹" + selectedPrice.toFixed(2);
                 const pricePresets = [
-                    { label: `LTP: ₹${selectedPrice.toFixed(1)}`, val: selectedPrice.toFixed(2), cls: "btn-outline-secondary" },
-                    { label: `+3%: ₹${(selectedPrice * 1.03).toFixed(1)}`, val: (selectedPrice * 1.03).toFixed(2), cls: "btn-outline-success" },
-                    { label: `+5%: ₹${(selectedPrice * 1.05).toFixed(1)}`, val: (selectedPrice * 1.05).toFixed(2), cls: "btn-outline-success" },
-                    { label: `+10%: ₹${(selectedPrice * 1.10).toFixed(1)}`, val: (selectedPrice * 1.10).toFixed(2), cls: "btn-outline-success" },
-                    { label: `-3%: ₹${(selectedPrice * 0.97).toFixed(1)}`, val: (selectedPrice * 0.97).toFixed(2), cls: "btn-outline-danger" },
-                    { label: `-5%: ₹${(selectedPrice * 0.95).toFixed(1)}`, val: (selectedPrice * 0.95).toFixed(2), cls: "btn-outline-danger" },
-                    { label: `-10%: ₹${(selectedPrice * 0.90).toFixed(1)}`, val: (selectedPrice * 0.90).toFixed(2), cls: "btn-outline-danger" },
+                    { label: `LTP: ₹${selectedPrice.toFixed(1)}`, val: selectedPrice.toFixed(2), cls: "bg-light text-secondary border" },
+                    { label: `+3%: ₹${(selectedPrice * 1.03).toFixed(1)}`, val: (selectedPrice * 1.03).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
+                    { label: `+5%: ₹${(selectedPrice * 1.05).toFixed(1)}`, val: (selectedPrice * 1.05).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
+                    { label: `+10%: ₹${(selectedPrice * 1.10).toFixed(1)}`, val: (selectedPrice * 1.10).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
+                    { label: `-3%: ₹${(selectedPrice * 0.97).toFixed(1)}`, val: (selectedPrice * 0.97).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
+                    { label: `-5%: ₹${(selectedPrice * 0.95).toFixed(1)}`, val: (selectedPrice * 0.95).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
+                    { label: `-10%: ₹${(selectedPrice * 0.90).toFixed(1)}`, val: (selectedPrice * 0.90).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
                 ];
 
                 pricePresets.forEach(p => {
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = `btn ${p.cls} btn-sm py-0 px-1.5 num-mono`;
-                    btn.style.fontSize = "0.70rem";
+                    btn.className = `btn btn-sm ${p.cls} py-1 px-2.5 num-mono fw-bold`;
+                    btn.style.fontSize = "0.72rem";
                     btn.textContent = p.label;
                     btn.onclick = () => { targetInput.value = p.val; };
                     presetsContainer.appendChild(btn);
                 });
+            } else {
+                if (presetsHint) presetsHint.textContent = "Type stock symbol above for live target presets";
+                const infoSpan = document.createElement("span");
+                infoSpan.className = "text-muted extra-small fst-italic";
+                infoSpan.textContent = "Pick a stock above to generate automatic target & stop presets.";
+                presetsContainer.appendChild(infoSpan);
             }
         }
 

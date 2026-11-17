@@ -167,7 +167,7 @@
                     <i class="bi bi-lightbulb text-info fs-5"></i>
                     <h5 class="fw-bold mb-0 text-body">New Prospective Investor</h5>
                 </div>
-                <div class="d-flex align-items-center gap-1.5">
+                <div class="d-flex align-items-center gap-1">
                     <span class="badge {% if recommendations.new_investor.confluence_score >= 75 %}bg-success text-white{% elif recommendations.new_investor.confluence_score >= 50 %}bg-primary text-white{% else %}bg-warning text-dark{% endif %} small">
                         <i class="bi bi-shield-check"></i> {{ recommendations.new_investor.confluence_score }}% Confluence
                     </span>
@@ -180,7 +180,7 @@
                 <!-- 1. Key Trade Execution Metrics (3-Column Spacious Grid) -->
                 <div class="row g-3 mb-3 small pt-1">
                     <div class="col-4">
-                        <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Optimal Entry</span>
+                        <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Optimal Entry Zone</span>
                         <span class="fw-bold num-mono text-body text-nowrap" style="font-size: 0.88rem;">{{ recommendations.new_investor.entry_zone }}</span>
                     </div>
                     <div class="col-4">
@@ -197,7 +197,7 @@
                 </div>
 
                 <!-- 2. Target Milestones & Estimated Timeline (Dedicated Card Section) -->
-                <div class="p-2.5 rounded-3 bg-body-tertiary bg-opacity-60 border border-secondary border-opacity-10 mb-3">
+                <div class="p-2.5 p-2 rounded-3 bg-body-tertiary bg-opacity-60 border border-secondary border-opacity-10 mb-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <span class="fw-semibold text-body small d-flex align-items-center gap-1.5">
                             <i class="bi bi-crosshair text-success"></i> Target Milestones &amp; Estimated Timeline

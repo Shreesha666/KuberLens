@@ -67,16 +67,23 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
             .order_by("-current_value")
         )
 
-        # Refresh pricing for active holdings
-        for h in holdings:
-            FIFOAccountingEngine.reconcile_holding(portfolio, h.listing)
-
-        # Reload after reconciliation
-        holdings = list(
-            Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
-            .select_related("listing__instrument", "listing__exchange")
-            .order_by("-current_value")
-        )
+        # Initial reconciliation fallback only if no holdings have been generated yet
+        if not holdings:
+            from apps.holdings.models import HoldingTransaction
+            tx_listings = (
+                HoldingTransaction.objects.filter(portfolio=portfolio)
+                .values_list("listing", flat=True)
+                .distinct()
+            )
+            for listing_id in tx_listings:
+                listing_item = ExchangeListing.objects.filter(id=listing_id).first()
+                if listing_item:
+                    FIFOAccountingEngine.reconcile_holding(portfolio, listing_item)
+            holdings = list(
+                Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
+                .select_related("listing__instrument", "listing__exchange")
+                .order_by("-current_value")
+            )
         context["holdings"] = holdings
 
         total_invested = sum((h.invested_amount for h in holdings), Decimal("0.00"))

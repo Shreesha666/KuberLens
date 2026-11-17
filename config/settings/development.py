@@ -10,6 +10,10 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
 DATABASES = {
     "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
+if "sqlite" in DATABASES["default"]["ENGINE"]:
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"]["timeout"] = 30
+
 
 # Redis cache if reachable, otherwise fall back to LocMemCache
 try:

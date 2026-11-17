@@ -65,20 +65,30 @@ class HoldingListView(LoginRequiredMixin, HTMXResponseMixin, ListView):
             except Exception:
                 pass
 
-        # Reconcile all holdings
-        holdings = list(
+        # Fetch active holdings; perform initial reconciliation only if empty
+        holdings_qs = (
             Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
             .select_related("listing__instrument", "listing__exchange")
             .order_by("listing__symbol")
         )
-        for h in holdings:
-            FIFOAccountingEngine.reconcile_holding(portfolio, h.listing)
+        if not holdings_qs.exists():
+            from apps.holdings.models import HoldingTransaction
+            tx_listings = (
+                HoldingTransaction.objects.filter(portfolio=portfolio)
+                .values_list("listing", flat=True)
+                .distinct()
+            )
+            for listing_id in tx_listings:
+                listing_item = ExchangeListing.objects.filter(id=listing_id).first()
+                if listing_item:
+                    FIFOAccountingEngine.reconcile_holding(portfolio, listing_item)
+            holdings_qs = (
+                Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
+                .select_related("listing__instrument", "listing__exchange")
+                .order_by("listing__symbol")
+            )
 
-        return (
-            Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
-            .select_related("listing__instrument", "listing__exchange")
-            .order_by("listing__symbol")
-        )
+        return holdings_qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -179,7 +189,9 @@ class HoldingDetailView(LoginRequiredMixin, HTMXResponseMixin, DetailView):
         symbol = self.kwargs.get("symbol", "").upper()
         listing = get_object_or_404(ExchangeListing, symbol=symbol, is_tradeable=True)
 
-        holding = FIFOAccountingEngine.reconcile_holding(portfolio, listing)
+        holding = Holding.objects.filter(portfolio=portfolio, listing=listing).first()
+        if not holding:
+            holding = FIFOAccountingEngine.reconcile_holding(portfolio, listing)
         return holding
 
     def get_context_data(self, **kwargs):

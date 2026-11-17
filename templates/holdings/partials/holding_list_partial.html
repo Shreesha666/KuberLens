@@ -134,35 +134,37 @@
             <div class="row g-2.5 align-items-center">
                 <!-- Search Bar -->
                 <div class="col-12 col-md-4 col-lg-3">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-body-tertiary border-secondary border-opacity-25 border-end-0 text-muted">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" id="holdingSearchInput" hx-preserve="true" class="form-control bg-body-tertiary border-secondary border-opacity-25 border-start-0 ps-0"
-                               placeholder="Search symbol or company..." aria-label="Search Holdings">
+                    <div class="modern-search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="holdingSearchInput" hx-preserve="true"
+                               placeholder="Search symbol, company..." aria-label="Search Holdings">
+                        <kbd title="Press / to search">/</kbd>
                     </div>
                 </div>
 
                 <!-- Segmented Filter Tabs (All / Gainers / Losers) -->
                 <div class="col-12 col-md-5 col-lg-4">
-                    <div class="btn-group btn-group-sm w-100 p-0.5 rounded-3 bg-body-tertiary border border-secondary border-opacity-10 shadow-2xs" role="group" id="holdingFilterPills">
-                        <button type="button" class="btn btn-sm btn-light active fw-semibold rounded-2 py-1" data-filter="all">
-                            All Positions ({{ holdings|length }})
+                    <div class="segmented-control-track shadow-2xs" role="group" id="holdingFilterPills">
+                        <button type="button" class="segmented-tab-btn active" data-filter="all">
+                            <span>All Positions</span>
+                            <span class="segmented-tab-badge">{{ holdings|length }}</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-transparent text-success fw-semibold rounded-2 py-1" data-filter="gainers">
-                            <span class="rounded-circle d-inline-block me-1 bg-success" style="width: 6px; height: 6px;"></span>
-                            Profitable ({{ gainers_count }})
+                        <button type="button" class="segmented-tab-btn" data-filter="gainers">
+                            <span class="rounded-circle d-inline-block bg-success" style="width: 7px; height: 7px;"></span>
+                            <span>Profitable</span>
+                            <span class="segmented-tab-badge text-success">{{ gainers_count }}</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-transparent text-danger fw-semibold rounded-2 py-1" data-filter="losers">
-                            <span class="rounded-circle d-inline-block me-1 bg-danger" style="width: 6px; height: 6px;"></span>
-                            In Loss ({{ losers_count }})
+                        <button type="button" class="segmented-tab-btn" data-filter="losers">
+                            <span class="rounded-circle d-inline-block bg-danger" style="width: 7px; height: 7px;"></span>
+                            <span>In Loss</span>
+                            <span class="segmented-tab-badge text-danger">{{ losers_count }}</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Sector Filter Dropdown -->
                 <div class="col-6 col-md-3 col-lg-2 ms-auto">
-                    <select id="sectorFilterSelect" class="form-select form-select-sm bg-body-tertiary border-secondary border-opacity-25 shadow-2xs" aria-label="Filter by Sector">
+                    <select id="sectorFilterSelect" class="form-select modern-select-box shadow-2xs" aria-label="Filter by Sector">
                         <option value="all">All Sectors ({{ sectors|length }})</option>
                         {% for sec in sectors %}
                         <option value="{{ sec }}">{{ sec }}</option>
@@ -172,7 +174,7 @@
 
                 <!-- Sort Dropdown -->
                 <div class="col-6 col-md-4 col-lg-3">
-                    <select id="sortHoldingSelect" class="form-select form-select-sm bg-body-tertiary border-secondary border-opacity-25 shadow-2xs" aria-label="Sort Holdings">
+                    <select id="sortHoldingSelect" class="form-select modern-select-box shadow-2xs" aria-label="Sort Holdings">
                         <option value="value-desc">Sort: Highest Valuation</option>
                         <option value="pnl-desc">Sort: Highest Returns (%)</option>
                         <option value="pnl-asc">Sort: Lowest Returns (%)</option>
@@ -436,15 +438,22 @@
 
     filterPills.forEach(pill => {
         pill.addEventListener('click', function() {
-            filterPills.forEach(p => {
-                p.classList.remove('active', 'btn-light');
-                p.classList.add('btn-transparent');
-            });
-            this.classList.add('active', 'btn-light');
-            this.classList.remove('btn-transparent');
+            filterPills.forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
             currentFilter = this.getAttribute('data-filter') || 'all';
             applyFilters();
         });
+    });
+
+    // Keyboard shortcut '/' or 'Cmd/Ctrl+K' to quickly focus search
+    document.addEventListener('keydown', function(e) {
+        if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) && document.activeElement !== searchInput) {
+            if (searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
     });
 
     if (sectorSelect) {

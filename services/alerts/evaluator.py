@@ -7,11 +7,12 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import models
 from django.utils import timezone
 
 from apps.alerts.models import AlertRule, AlertType
 from apps.holdings.models import Holding
-from apps.market.models import MarketQuote
+from apps.market.models import HistoricalCandle, MarketQuote
 from apps.notifications.models import Notification, NotificationSeverity
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 from services.calendar.exchange_calendar import ExchangeCalendar
@@ -82,6 +83,26 @@ class AlertEvaluator:
                 message = f"{listing.instrument.display_name} has {direction} by {abs(quote.change_percent):.2f}%, exceeding your {target:.2f}% daily move alert."
                 severity = NotificationSeverity.INFO
 
+        elif alert_type == AlertType.BREAKOUT_52W_HIGH and quote:
+            high_52w = HistoricalCandle.objects.filter(
+                listing=listing, interval="1d", timestamp__gte=now - timedelta(days=365)
+            ).aggregate(models.Max("high"))["high__max"]
+            if high_52w and quote.price >= high_52w:
+                triggered = True
+                title = f"{listing.symbol} 52-Week High Breakout (₹{quote.price:.2f})"
+                message = f"{listing.instrument.display_name} hit a new 52-week high of ₹{quote.price:.2f} (prev high: ₹{high_52w:.2f})."
+                severity = NotificationSeverity.SUCCESS
+
+        elif alert_type == AlertType.BREAKDOWN_52W_LOW and quote:
+            low_52w = HistoricalCandle.objects.filter(
+                listing=listing, interval="1d", timestamp__gte=now - timedelta(days=365)
+            ).aggregate(models.Min("low"))["low__min"]
+            if low_52w and quote.price <= low_52w:
+                triggered = True
+                title = f"{listing.symbol} 52-Week Low Breakdown (₹{quote.price:.2f})"
+                message = f"{listing.instrument.display_name} dropped to a new 52-week low of ₹{quote.price:.2f}."
+                severity = NotificationSeverity.DANGER
+
         # 2. Technical Alerts
         elif alert_type == AlertType.RSI_OVERSOLD and tech_snap:
             if tech_snap.rsi_14 is not None and tech_snap.rsi_14 <= target:
@@ -105,12 +126,63 @@ class AlertEvaluator:
                     message = f"MACD line ({tech_snap.macd_line:.2f}) crossed above signal line ({tech_snap.macd_signal:.2f}) for {listing.symbol}."
                     severity = NotificationSeverity.SUCCESS
 
+        elif alert_type == AlertType.MACD_BEARISH_CROSS and tech_snap:
+            if tech_snap.macd_line is not None and tech_snap.macd_signal is not None:
+                if tech_snap.macd_line < tech_snap.macd_signal:
+                    triggered = True
+                    title = f"{listing.symbol} MACD Bearish Crossover"
+                    message = f"MACD line ({tech_snap.macd_line:.2f}) dropped below signal line ({tech_snap.macd_signal:.2f}) for {listing.symbol}."
+                    severity = NotificationSeverity.WARNING
+
         elif alert_type == AlertType.SMA_CROSSOVER and tech_snap:
             if tech_snap.sma_20 and tech_snap.sma_50 and tech_snap.sma_20 > tech_snap.sma_50:
                 triggered = True
                 title = f"{listing.symbol} 20 SMA Crossed Above 50 SMA"
                 message = f"Short-term 20 SMA (₹{tech_snap.sma_20:.2f}) crossed above medium-term 50 SMA (₹{tech_snap.sma_50:.2f})."
                 severity = NotificationSeverity.SUCCESS
+
+        elif alert_type == AlertType.SMA_BEARISH_CROSS and tech_snap:
+            if tech_snap.sma_20 and tech_snap.sma_50 and tech_snap.sma_20 < tech_snap.sma_50:
+                triggered = True
+                title = f"{listing.symbol} 20 SMA Crossed Below 50 SMA"
+                message = f"Short-term 20 SMA (₹{tech_snap.sma_20:.2f}) dropped below medium-term 50 SMA (₹{tech_snap.sma_50:.2f})."
+                severity = NotificationSeverity.WARNING
+
+        elif alert_type == AlertType.GOLDEN_CROSS and tech_snap:
+            if tech_snap.sma_50 and tech_snap.sma_200 and tech_snap.sma_50 > tech_snap.sma_200:
+                triggered = True
+                title = f"GOLDEN CROSS: {listing.symbol} (50 SMA > 200 SMA)"
+                message = f"{listing.instrument.display_name} confirmed a Golden Cross with 50 SMA (₹{tech_snap.sma_50:.2f}) above 200 SMA (₹{tech_snap.sma_200:.2f})."
+                severity = NotificationSeverity.SUCCESS
+
+        elif alert_type == AlertType.DEATH_CROSS and tech_snap:
+            if tech_snap.sma_50 and tech_snap.sma_200 and tech_snap.sma_50 < tech_snap.sma_200:
+                triggered = True
+                title = f"DEATH CROSS: {listing.symbol} (50 SMA < 200 SMA)"
+                message = f"{listing.instrument.display_name} confirmed a Death Cross with 50 SMA (₹{tech_snap.sma_50:.2f}) falling below 200 SMA (₹{tech_snap.sma_200:.2f})."
+                severity = NotificationSeverity.DANGER
+
+        elif alert_type == AlertType.VOLUME_SPIKE and quote and tech_snap:
+            mult = float(target) if target > 0 else 2.0
+            if tech_snap.volume_sma_20 and quote.volume >= (mult * tech_snap.volume_sma_20):
+                triggered = True
+                title = f"VOLUME SURGE: {listing.symbol} ({quote.volume:,} shares)"
+                message = f"{listing.symbol} volume spiked to {quote.volume:,}, exceeding {mult:.1f}× its 20-day average volume ({tech_snap.volume_sma_20:,})."
+                severity = NotificationSeverity.INFO
+
+        elif alert_type == AlertType.BOLLINGER_UPPER_BREAK and quote and tech_snap:
+            if tech_snap.bollinger_upper and quote.price >= tech_snap.bollinger_upper:
+                triggered = True
+                title = f"{listing.symbol} Pierced Upper Bollinger Band"
+                message = f"{listing.symbol} price (₹{quote.price:.2f}) reached or exceeded its Upper Bollinger Band (₹{tech_snap.bollinger_upper:.2f})."
+                severity = NotificationSeverity.INFO
+
+        elif alert_type == AlertType.BOLLINGER_LOWER_BREAK and quote and tech_snap:
+            if tech_snap.bollinger_lower and quote.price <= tech_snap.bollinger_lower:
+                triggered = True
+                title = f"{listing.symbol} Pierced Lower Bollinger Band"
+                message = f"{listing.symbol} price (₹{quote.price:.2f}) touched or dropped below its Lower Bollinger Band (₹{tech_snap.bollinger_lower:.2f})."
+                severity = NotificationSeverity.WARNING
 
         # 3. Portfolio Alerts
         elif alert_type == AlertType.PORTFOLIO_STOP_LOSS and listing and quote:

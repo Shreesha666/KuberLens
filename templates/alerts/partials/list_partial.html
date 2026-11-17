@@ -46,24 +46,59 @@
                     {% csrf_token %}
                     <div class="row g-3">
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Symbol (e.g. RELIANCE, TCS)</label>
-                            <input type="text" name="symbol" class="form-control text-uppercase" placeholder="Stock symbol (leave empty for portfolio)...">
+                            <label class="form-label small fw-semibold">Search Stock (Symbol / Name)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-body-tertiary"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text"
+                                       name="symbol"
+                                       id="alertStockInput"
+                                       list="stocksDatalist"
+                                       class="form-control text-uppercase"
+                                       placeholder="Type symbol or company name (e.g. RELIANCE)..."
+                                       autocomplete="off">
+                            </div>
+                            <datalist id="stocksDatalist">
+                                {% for item in listings %}
+                                <option value="{{ item.symbol }}" data-name="{{ item.instrument.display_name }}" data-price="{{ item.current_price|default:'' }}">
+                                    {{ item.search_label }}
+                                </option>
+                                {% endfor %}
+                            </datalist>
+                            <div id="stockBadge" class="mt-2 d-none">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-2.5 small d-inline-flex align-items-center gap-1.5">
+                                    <i class="bi bi-building"></i>
+                                    <span id="stockBadgeName" class="fw-semibold"></span>
+                                    <span class="text-muted">• LTP:</span>
+                                    <strong id="stockBadgePrice" class="num-mono text-body">₹—</strong>
+                                </span>
+                            </div>
                         </div>
+
                         <div class="col-12 col-md-4">
                             <label class="form-label small fw-semibold">Alert Condition / Trigger</label>
-                            <select name="alert_type" class="form-select" required>
-                                {% for val, label in alert_types %}
-                                <option value="{{ val }}">{{ label }}</option>
+                            <select name="alert_type" id="alertTypeSelect" class="form-select" required>
+                                {% for group in alert_groups %}
+                                <optgroup label="{{ group.group }}">
+                                    {% for val, label in group.types %}
+                                    <option value="{{ val }}">{{ label }}</option>
+                                    {% endfor %}
+                                </optgroup>
                                 {% endfor %}
                             </select>
+                            <div class="form-text extra-small text-muted" id="conditionHelpText">Select trigger rule.</div>
                         </div>
+
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Threshold / Target Value</label>
-                            <input type="number" step="any" name="target_value" class="form-control" placeholder="Target price (₹), %, or RSI..." required>
+                            <label class="form-label small fw-semibold" id="thresholdLabel">Threshold / Target Value</label>
+                            <input type="number" step="any" name="target_value" id="alertTargetInput" class="form-control" placeholder="Target price (₹), %, or RSI..." required>
+                            
+                            <!-- Dynamic 1-Click Quick Preset Buttons -->
+                            <div id="quickPresetsContainer" class="d-flex flex-wrap gap-1 mt-1.5"></div>
                         </div>
+
                         <div class="col-12 col-md-8">
                             <label class="form-label small fw-semibold">User Notes (Optional)</label>
-                            <input type="text" name="notes" class="form-control" placeholder="e.g. Key support breakdown, trim position, swing breakout...">
+                            <input type="text" name="notes" id="alertNotesInput" class="form-control" placeholder="e.g. Key support breakdown, trim position, swing breakout...">
                         </div>
                         <div class="col-12 col-md-4 d-flex align-items-end">
                             <div class="form-check form-switch mb-2">
@@ -177,4 +212,167 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    function initAlertForm() {
+        const stockInput = document.getElementById("alertStockInput");
+        const datalist = document.getElementById("stocksDatalist");
+        const typeSelect = document.getElementById("alertTypeSelect");
+        const targetInput = document.getElementById("alertTargetInput");
+        const presetsContainer = document.getElementById("quickPresetsContainer");
+        const stockBadge = document.getElementById("stockBadge");
+        const stockBadgeName = document.getElementById("stockBadgeName");
+        const stockBadgePrice = document.getElementById("stockBadgePrice");
+        const conditionHelp = document.getElementById("conditionHelpText");
+        const thresholdLabel = document.getElementById("thresholdLabel");
+
+        if (!stockInput || !datalist || !typeSelect || !targetInput) return;
+
+        let selectedPrice = null;
+
+        function getSelectedOption() {
+            const val = stockInput.value.trim().toUpperCase();
+            if (!val) return null;
+            const options = Array.from(datalist.options);
+            return options.find(o => o.value.toUpperCase() === val) || null;
+        }
+
+        function updateStockInfo() {
+            const opt = getSelectedOption();
+            if (opt) {
+                const name = opt.getAttribute("data-name") || "";
+                const price = opt.getAttribute("data-price");
+                selectedPrice = price ? parseFloat(price) : null;
+
+                if (stockBadgeName) stockBadgeName.textContent = name;
+                if (stockBadgePrice) stockBadgePrice.textContent = selectedPrice ? "₹" + selectedPrice.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "—";
+                if (stockBadge) stockBadge.classList.remove("d-none");
+            } else {
+                selectedPrice = null;
+                if (stockBadge) stockBadge.classList.add("d-none");
+            }
+            renderPresets();
+        }
+
+        function renderPresets() {
+            if (!presetsContainer) return;
+            presetsContainer.innerHTML = "";
+            const alertType = typeSelect.value;
+
+            // Auto indicator triggers without manual threshold
+            const autoConditions = [
+                "MACD_BULLISH_CROSS", "MACD_BEARISH_CROSS",
+                "SMA_CROSSOVER", "SMA_BEARISH_CROSS",
+                "GOLDEN_CROSS", "DEATH_CROSS",
+                "BREAKOUT_52W_HIGH", "BREAKDOWN_52W_LOW",
+                "BOLLINGER_UPPER_BREAK", "BOLLINGER_LOWER_BREAK"
+            ];
+
+            if (autoConditions.includes(alertType)) {
+                if (thresholdLabel) thresholdLabel.textContent = "Threshold (Auto-Evaluated)";
+                targetInput.value = "0";
+                targetInput.placeholder = "0 (Auto-evaluated)";
+                if (conditionHelp) conditionHelp.textContent = "Triggers automatically on technical crossover or breakout. No price number required.";
+                return;
+            }
+
+            if (thresholdLabel) thresholdLabel.textContent = "Threshold / Target Value";
+
+            // RSI alerts
+            if (alertType === "RSI_OVERSOLD" || alertType === "RSI_OVERBOUGHT") {
+                targetInput.placeholder = "RSI Level (e.g. 30, 70)...";
+                if (conditionHelp) conditionHelp.textContent = "14-period RSI boundary level.";
+                const rsiPresets = [
+                    { label: "RSI 25 (Extreme)", val: 25 },
+                    { label: "RSI 30 (Oversold)", val: 30 },
+                    { label: "RSI 70 (Overbought)", val: 70 },
+                    { label: "RSI 80 (Extreme)", val: 80 }
+                ];
+                rsiPresets.forEach(p => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn btn-outline-secondary btn-sm py-0 px-2";
+                    btn.style.fontSize = "0.72rem";
+                    btn.textContent = p.label;
+                    btn.onclick = () => { targetInput.value = p.val; };
+                    presetsContainer.appendChild(btn);
+                });
+                return;
+            }
+
+            // Daily % Move
+            if (alertType === "PERCENT_MOVE") {
+                targetInput.placeholder = "Daily movement % (e.g. 3.5)...";
+                if (conditionHelp) conditionHelp.textContent = "Daily price change threshold in percentage.";
+                [2, 3, 5, 8, 10].forEach(p => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn btn-outline-secondary btn-sm py-0 px-2";
+                    btn.style.fontSize = "0.72rem";
+                    btn.textContent = `±${p}%`;
+                    btn.onclick = () => { targetInput.value = p; };
+                    presetsContainer.appendChild(btn);
+                });
+                return;
+            }
+
+            // Volume Surge
+            if (alertType === "VOLUME_SPIKE") {
+                targetInput.placeholder = "Volume multiplier (e.g. 2 for 2x)...";
+                if (conditionHelp) conditionHelp.textContent = "Multiplier over 20-day average trading volume.";
+                [1.5, 2.0, 3.0, 5.0].forEach(p => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn btn-outline-secondary btn-sm py-0 px-2";
+                    btn.style.fontSize = "0.72rem";
+                    btn.textContent = `${p}× Avg Vol`;
+                    btn.onclick = () => { targetInput.value = p; };
+                    presetsContainer.appendChild(btn);
+                });
+                return;
+            }
+
+            // Price Above / Below or Stop Loss / Target
+            targetInput.placeholder = "Target price in ₹...";
+            if (conditionHelp) conditionHelp.textContent = "Target execution price threshold in ₹.";
+
+            if (selectedPrice && selectedPrice > 0) {
+                const pricePresets = [
+                    { label: `LTP: ₹${selectedPrice.toFixed(1)}`, val: selectedPrice.toFixed(2), cls: "btn-outline-secondary" },
+                    { label: `+3%: ₹${(selectedPrice * 1.03).toFixed(1)}`, val: (selectedPrice * 1.03).toFixed(2), cls: "btn-outline-success" },
+                    { label: `+5%: ₹${(selectedPrice * 1.05).toFixed(1)}`, val: (selectedPrice * 1.05).toFixed(2), cls: "btn-outline-success" },
+                    { label: `+10%: ₹${(selectedPrice * 1.10).toFixed(1)}`, val: (selectedPrice * 1.10).toFixed(2), cls: "btn-outline-success" },
+                    { label: `-3%: ₹${(selectedPrice * 0.97).toFixed(1)}`, val: (selectedPrice * 0.97).toFixed(2), cls: "btn-outline-danger" },
+                    { label: `-5%: ₹${(selectedPrice * 0.95).toFixed(1)}`, val: (selectedPrice * 0.95).toFixed(2), cls: "btn-outline-danger" },
+                    { label: `-10%: ₹${(selectedPrice * 0.90).toFixed(1)}`, val: (selectedPrice * 0.90).toFixed(2), cls: "btn-outline-danger" },
+                ];
+
+                pricePresets.forEach(p => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = `btn ${p.cls} btn-sm py-0 px-1.5 num-mono`;
+                    btn.style.fontSize = "0.70rem";
+                    btn.textContent = p.label;
+                    btn.onclick = () => { targetInput.value = p.val; };
+                    presetsContainer.appendChild(btn);
+                });
+            }
+        }
+
+        stockInput.addEventListener("input", updateStockInfo);
+        stockInput.addEventListener("change", updateStockInfo);
+        typeSelect.addEventListener("change", renderPresets);
+
+        updateStockInfo();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initAlertForm);
+    } else {
+        initAlertForm();
+    }
+    document.addEventListener("htmx:afterSwap", initAlertForm);
+})();
+</script>
 

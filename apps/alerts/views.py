@@ -31,15 +31,70 @@ class AlertListView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
             "listing__instrument", "listing__exchange"
         ).order_by("-created_at")
 
-        # Top listings for quick dropdown
-        popular_listings = ExchangeListing.objects.filter(
-            is_tradeable=True, is_primary=True
-        ).select_related("instrument")[:40]
+        from apps.market.models import MarketQuote
+
+        # All tradeable listings with latest quote price for auto-populate and search
+        listings = list(
+            ExchangeListing.objects.filter(is_tradeable=True)
+            .select_related("instrument", "exchange")
+            .order_by("symbol")
+        )
+
+        listing_ids = [item.id for item in listings]
+        quotes_map = {}
+        for q in MarketQuote.objects.filter(listing_id__in=listing_ids).order_by("listing_id", "-retrieved_at"):
+            if q.listing_id not in quotes_map:
+                quotes_map[q.listing_id] = q
+
+        for item in listings:
+            q_obj = quotes_map.get(item.id)
+            item.current_price = float(q_obj.price) if q_obj else None
+            item.search_label = f"{item.symbol} — {item.instrument.display_name}" + (f" (₹{item.current_price:,.2f})" if item.current_price else "")
+
+        # Categorized Alert Conditions for intuitive selection
+        alert_groups = [
+            {
+                "group": "Price & Breakout Alerts",
+                "types": [
+                    (AlertType.PRICE_ABOVE, "Price Crosses Above (Target ₹)"),
+                    (AlertType.PRICE_BELOW, "Price Crosses Below (Stop ₹)"),
+                    (AlertType.PERCENT_MOVE, "Daily % Movement (>= ±%)"),
+                    (AlertType.BREAKOUT_52W_HIGH, "52-Week High Breakout"),
+                    (AlertType.BREAKDOWN_52W_LOW, "52-Week Low Breakdown"),
+                ],
+            },
+            {
+                "group": "Technical Indicators & Signals",
+                "types": [
+                    (AlertType.RSI_OVERSOLD, "RSI Oversold (<= Threshold, e.g. 30)"),
+                    (AlertType.RSI_OVERBOUGHT, "RSI Overbought (>= Threshold, e.g. 70)"),
+                    (AlertType.MACD_BULLISH_CROSS, "MACD Bullish Crossover (MACD > Signal)"),
+                    (AlertType.MACD_BEARISH_CROSS, "MACD Bearish Crossover (MACD < Signal)"),
+                    (AlertType.SMA_CROSSOVER, "Moving Average: 20 SMA Crosses Above 50 SMA"),
+                    (AlertType.SMA_BEARISH_CROSS, "Moving Average: 20 SMA Crosses Below 50 SMA"),
+                    (AlertType.GOLDEN_CROSS, "Golden Cross: 50 SMA Crosses Above 200 SMA"),
+                    (AlertType.DEATH_CROSS, "Death Cross: 50 SMA Crosses Below 200 SMA"),
+                    (AlertType.VOLUME_SPIKE, "Volume Surge (> Multiplier × 20-Day Avg)"),
+                    (AlertType.BOLLINGER_UPPER_BREAK, "Price Touches Upper Bollinger Band"),
+                    (AlertType.BOLLINGER_LOWER_BREAK, "Price Touches Lower Bollinger Band"),
+                ],
+            },
+            {
+                "group": "Portfolio & Risk Guardrails",
+                "types": [
+                    (AlertType.PORTFOLIO_STOP_LOSS, "Holding Stop-Loss Hit (Exit Trigger)"),
+                    (AlertType.PORTFOLIO_TARGET, "Holding Profit Target Hit (Take Profit)"),
+                    (AlertType.PORTFOLIO_DRAWDOWN, "Portfolio Drawdown Alert"),
+                    (AlertType.CONCENTRATION_THRESHOLD, "Holding Concentration Exceeds Threshold (> %)"),
+                ],
+            },
+        ]
 
         context["active_nav"] = "alerts_notifications"
         context["alerts"] = alerts
         context["alert_types"] = AlertType.choices
-        context["popular_listings"] = popular_listings
+        context["alert_groups"] = alert_groups
+        context["listings"] = listings
         return context
 
 

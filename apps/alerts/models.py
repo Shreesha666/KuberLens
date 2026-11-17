@@ -18,18 +18,27 @@ class AlertType(models.TextChoices):
     PRICE_ABOVE = "PRICE_ABOVE", "Price Crosses Above"
     PRICE_BELOW = "PRICE_BELOW", "Price Crosses Below"
     PERCENT_MOVE = "PERCENT_MOVE", "Daily % Movement Above"
+    BREAKOUT_52W_HIGH = "BREAKOUT_52W_HIGH", "52-Week High Breakout"
+    BREAKDOWN_52W_LOW = "BREAKDOWN_52W_LOW", "52-Week Low Breakdown"
 
     # Technical alerts
-    RSI_OVERSOLD = "RSI_OVERSOLD", "RSI Oversold (< Threshold)"
-    RSI_OVERBOUGHT = "RSI_OVERBOUGHT", "RSI Overbought (> Threshold)"
+    RSI_OVERSOLD = "RSI_OVERSOLD", "RSI Oversold (<= Threshold)"
+    RSI_OVERBOUGHT = "RSI_OVERBOUGHT", "RSI Overbought (>= Threshold)"
     MACD_BULLISH_CROSS = "MACD_BULLISH_CROSS", "MACD Bullish Crossover"
-    SMA_CROSSOVER = "SMA_CROSSOVER", "SMA 20 Crosses SMA 50"
+    MACD_BEARISH_CROSS = "MACD_BEARISH_CROSS", "MACD Bearish Crossover"
+    SMA_CROSSOVER = "SMA_CROSSOVER", "SMA 20 Crosses Above SMA 50"
+    SMA_BEARISH_CROSS = "SMA_BEARISH_CROSS", "SMA 20 Crosses Below SMA 50"
+    GOLDEN_CROSS = "GOLDEN_CROSS", "Golden Cross: 50 SMA > 200 SMA"
+    DEATH_CROSS = "DEATH_CROSS", "Death Cross: 50 SMA < 200 SMA"
+    VOLUME_SPIKE = "VOLUME_SPIKE", "Volume Surge (> 2x 20-Day Avg)"
+    BOLLINGER_UPPER_BREAK = "BOLLINGER_UPPER_BREAK", "Price Touches Upper Bollinger Band"
+    BOLLINGER_LOWER_BREAK = "BOLLINGER_LOWER_BREAK", "Price Touches Lower Bollinger Band"
 
     # Portfolio alerts
     PORTFOLIO_STOP_LOSS = "PORTFOLIO_STOP_LOSS", "Holding Stop-Loss Hit"
     PORTFOLIO_TARGET = "PORTFOLIO_TARGET", "Holding Profit Target Hit"
     PORTFOLIO_DRAWDOWN = "PORTFOLIO_DRAWDOWN", "Portfolio Drawdown Alert"
-    CONCENTRATION_THRESHOLD = "CONCENTRATION_THRESHOLD", "Holding Concentration (> 15%)"
+    CONCENTRATION_THRESHOLD = "CONCENTRATION_THRESHOLD", "Holding Concentration (> Threshold %)"
 
 
 class AlertRule(AuditedModel):

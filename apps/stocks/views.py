@@ -153,6 +153,10 @@ class StockDetailView(HTMXResponseMixin, DetailView):
         listing = self.object
         context["page_title"] = f"{listing.symbol} - {listing.instrument.display_name}"
 
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        context["is_market_open"] = ExchangeCalendar.is_market_open()
+        context["market_session_status"] = ExchangeCalendar.get_session_status()
+
         # 1. Retrieve Current Quote (Live, Delayed, Cached, or Offline)
         try:
             quote = MarketDataService.get_quote(listing)

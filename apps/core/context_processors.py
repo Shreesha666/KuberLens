@@ -15,14 +15,21 @@ def shell_context(request):
         except Exception:
             unread_notifs = 0
 
+    try:
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        session_status = ExchangeCalendar.get_session_status()
+    except Exception:
+        session_status = {
+            "is_open": False,
+            "session_name": "Market Closed",
+            "exchange": "NSE",
+        }
+
     return {
         "platform_title": "KuberLens",
         "current_theme": current_theme,
-        "market_status": {
-            "is_open": False,
-            "session_name": "Post-Market",
-            "exchange": "NSE",
-        },
+        "market_status": session_status,
+        "is_market_open": session_status.get("is_open", False),
         "market_ticker": [
             {
                 "symbol": "NIFTY 50",

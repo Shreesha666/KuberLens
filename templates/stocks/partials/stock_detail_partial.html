@@ -17,19 +17,21 @@
                         {{ listing.instrument.legal_name }} &bull; ISIN: <span class="num-mono">{{ listing.instrument.isin }}</span> &bull; Industry: {{ listing.instrument.industry }}
                     </div>
                     <div class="d-flex align-items-center gap-2 mt-2">
+                    <span class="badge bg-light text-secondary border">
                         <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
-                           class="btn btn-sm btn-primary"
                            hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
                            hx-target="#main-content" hx-push-url="true">
                             <i class="bi bi-plus-circle"></i> Add to Portfolio
                         </a>
+                    </span>
                         {% if holding %}
+                        <span class="badge bg-light text-secondary border">
                         <a href="{% url 'holdings:detail' listing.symbol %}"
-                           class="btn btn-sm btn-outline-success"
                            hx-get="{% url 'holdings:detail' listing.symbol %}"
                            hx-target="#main-content" hx-push-url="true">
                             <i class="bi bi-wallet2"></i> View Holding ({{ holding.total_quantity }} shares)
                         </a>
+                        </span>
                         {% endif %}
                     </div>
                 </div>
@@ -308,9 +310,15 @@
                 <span class="badge {% if quote.change >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} fw-semibold">
                     {% if quote.change >= 0 %}+{% endif %}{{ quote.change|floatformat:2 }} ({{ quote.change_percent|floatformat:2 }}%)
                 </span>
-                <span class="badge bg-light text-muted border small d-none d-md-inline-block">
-                    <i class="bi bi-circle-fill text-{% if quote.market_status == 'OPEN' %}success{% else %}secondary{% endif %} me-1" style="font-size: 6px;"></i>{{ quote.get_market_status_display|default:"Market Closed" }}
+                {% if is_market_open %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small d-none d-md-inline-flex align-items-center gap-1.5" title="Exchange is actively trading">
+                    <span class="spinner-grow spinner-grow-sm text-success" style="width: 0.4rem; height: 0.4rem;" role="status"></span>Live Market
                 </span>
+                {% else %}
+                <span class="badge bg-light text-muted border small d-none d-md-inline-flex align-items-center gap-1" title="{{ market_session_status.session_name|default:market_status.session_name|default:'Market Closed' }}">
+                    <i class="bi bi-moon-stars text-secondary" style="font-size: 0.65rem;"></i>{{ market_session_status.session_name|default:market_status.session_name|default:"Market Closed" }}
+                </span>
+                {% endif %}
                 {% endif %}
                 <span class="badge bg-light text-secondary border small ms-1">1D</span>
             </div>

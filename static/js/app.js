@@ -33,14 +33,28 @@ document.addEventListener("DOMContentLoaded", function () {
     // 2. HTMX Event Handlers
     const progressBar = document.getElementById("htmx-progress-bar");
 
-    document.addEventListener("htmx:configRequest", function () {
+    function isPollingRequest(event) {
+        const elt = event?.detail?.elt;
+        if (!elt) return false;
+        const trigger = elt.getAttribute("hx-trigger") || "";
+        return trigger.includes("every") || elt.hasAttribute("data-silent-refresh");
+    }
+
+    document.addEventListener("htmx:configRequest", function (event) {
+        // Skip progress bar animation for background polling / periodic sync
+        if (isPollingRequest(event)) {
+            return;
+        }
         if (progressBar) {
             progressBar.style.opacity = "1";
             progressBar.style.width = "40%";
         }
     });
 
-    document.addEventListener("htmx:afterRequest", function () {
+    document.addEventListener("htmx:afterRequest", function (event) {
+        if (isPollingRequest(event)) {
+            return;
+        }
         if (progressBar) {
             progressBar.style.width = "100%";
             setTimeout(() => {
@@ -71,6 +85,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Handle HTMX Response Errors Gracefully
     document.addEventListener("htmx:responseError", function (event) {
+        if (isPollingRequest(event)) {
+            return; // Silent failover for background sync blips
+        }
         const status = event.detail.xhr.status;
         showToast("Error", `Request failed with HTTP status ${status}. Please try again.`, "danger");
     });

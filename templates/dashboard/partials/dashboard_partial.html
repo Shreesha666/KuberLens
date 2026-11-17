@@ -1,6 +1,6 @@
 {% load core_tags %}
 <div class="container-fluid p-0"
-     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'dashboard:dashboard' %}" hx-target="#main-content" hx-swap="innerHTML"{% endif %}>
+     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'dashboard:dashboard' %}" hx-target="#main-content" hx-swap="innerHTML show:none" data-silent-refresh="true"{% endif %}>
     <!-- Top Row: Welcome & Quick Actions -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>

@@ -1,6 +1,6 @@
 {% load core_tags %}
 <div class="portfolio-overview-container"
-     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-swap="innerHTML"{% endif %}>
+     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'portfolio:overview' %}" hx-target="#main-content" hx-swap="innerHTML show:none" data-silent-refresh="true"{% endif %}>
 
     <!-- Hero Portfolio Valuation Banner -->
     <div class="card wealth-hero-banner border-0 mb-4 position-relative">

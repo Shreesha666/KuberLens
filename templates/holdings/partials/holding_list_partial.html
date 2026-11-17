@@ -1,6 +1,6 @@
 {% load core_tags %}
 <div class="holding-list-container"
-     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-swap="innerHTML"{% endif %}>
+     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-swap="innerHTML show:none" data-silent-refresh="true"{% endif %}>
 
     <!-- Holdings Header -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
@@ -129,8 +129,10 @@
 
     <!-- Holdings Table Card with Interactive Filter & Search Bar -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="border: 1px solid rgba(226, 232, 240, 0.8) !important;">
-        <!-- Filter and Search Toolbar -->
-        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 pt-3 px-4 pb-3">
+        <!-- Filter and Search Toolbar (Preserved across background auto-sync) -->
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 pt-3 px-4 pb-3"
+             id="holdingsFilterToolbar"
+             hx-preserve="true">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2.5">
                 <!-- Left Group: Search Bar & Segmented Filter Tabs -->
                 <div class="d-flex flex-wrap align-items-center gap-2.5 flex-grow-1" style="min-width: 0;">
@@ -368,15 +370,33 @@
 
     if (!tableBody) return;
 
-    let currentFilter = 'all';
-    let currentSector = 'all';
+    // Detect if user already has an active filter or sector selected in preserved toolbar
+    const activePill = document.querySelector('#holdingFilterPills button.active');
+    let currentFilter = activePill ? (activePill.getAttribute('data-filter') || 'all') : 'all';
+    let currentSector = sectorSelect ? sectorSelect.value : 'all';
+
+    // Dynamically update count badges on preserved toolbar to reflect freshly synced prices
+    const rows = Array.from(tableBody.querySelectorAll('.holding-row'));
+    let gainCount = 0;
+    let lossCount = 0;
+    rows.forEach(r => {
+        const s = r.getAttribute('data-pnl-status');
+        if (s === 'gain') gainCount++;
+        else if (s === 'loss') lossCount++;
+    });
+    const allBadge = document.querySelector('#holdingFilterPills button[data-filter="all"] .segmented-tab-badge');
+    const gainBadge = document.querySelector('#holdingFilterPills button[data-filter="gainers"] .segmented-tab-badge');
+    const lossBadge = document.querySelector('#holdingFilterPills button[data-filter="losers"] .segmented-tab-badge');
+    if (allBadge) allBadge.textContent = rows.length;
+    if (gainBadge) gainBadge.textContent = gainCount;
+    if (lossBadge) lossBadge.textContent = lossCount;
 
     function applyFilters() {
         const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
-        const rows = tableBody.querySelectorAll('.holding-row');
+        const currentRows = tableBody.querySelectorAll('.holding-row');
         let visibleCount = 0;
 
-        rows.forEach(row => {
+        currentRows.forEach(row => {
             const sym = row.getAttribute('data-symbol') || '';
             const name = row.getAttribute('data-name') || '';
             const sector = row.getAttribute('data-sector') || '';
@@ -397,7 +417,7 @@
         });
 
         if (noMatchAlert) {
-            if (visibleCount === 0 && rows.length > 0) {
+            if (visibleCount === 0 && currentRows.length > 0) {
                 noMatchAlert.classList.remove('d-none');
             } else {
                 noMatchAlert.classList.add('d-none');
@@ -408,9 +428,9 @@
     function applySorting() {
         if (!sortSelect) return;
         const sortVal = sortSelect.value;
-        const rows = Array.from(tableBody.querySelectorAll('.holding-row'));
+        const currentRows = Array.from(tableBody.querySelectorAll('.holding-row'));
 
-        rows.sort((a, b) => {
+        currentRows.sort((a, b) => {
             if (sortVal === 'value-desc') {
                 return parseFloat(b.getAttribute('data-value') || 0) - parseFloat(a.getAttribute('data-value') || 0);
             } else if (sortVal === 'pnl-desc') {
@@ -427,44 +447,59 @@
             return 0;
         });
 
-        rows.forEach(row => tableBody.appendChild(row));
+        currentRows.forEach(row => tableBody.appendChild(row));
     }
 
-    if (searchInput) {
+    // Attach listeners idempotently (preserved across HTMX background updates)
+    if (searchInput && !searchInput.dataset.hasListener) {
+        searchInput.dataset.hasListener = "true";
         searchInput.addEventListener('input', applyFilters);
     }
 
     filterPills.forEach(pill => {
-        pill.addEventListener('click', function() {
-            filterPills.forEach(p => p.classList.remove('active'));
-            this.classList.add('active');
-            currentFilter = this.getAttribute('data-filter') || 'all';
-            applyFilters();
-        });
-    });
-
-    // Keyboard shortcut '/' or 'Cmd/Ctrl+K' to quickly focus search
-    document.addEventListener('keydown', function(e) {
-        if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) && document.activeElement !== searchInput) {
-            if (searchInput) {
-                e.preventDefault();
-                searchInput.focus();
-                searchInput.select();
-            }
+        if (!pill.dataset.hasListener) {
+            pill.dataset.hasListener = "true";
+            pill.addEventListener('click', function() {
+                filterPills.forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.getAttribute('data-filter') || 'all';
+                applyFilters();
+            });
         }
     });
 
-    if (sectorSelect) {
+    // Keyboard shortcut '/' or 'Cmd/Ctrl+K' to quickly focus search
+    if (!window._holdingsKeydownAttached) {
+        window._holdingsKeydownAttached = true;
+        document.addEventListener('keydown', function(e) {
+            const input = document.getElementById('holdingSearchInput');
+            if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) && document.activeElement !== input) {
+                if (input) {
+                    e.preventDefault();
+                    input.focus();
+                    input.select();
+                }
+            }
+        });
+    }
+
+    if (sectorSelect && !sectorSelect.dataset.hasListener) {
+        sectorSelect.dataset.hasListener = "true";
         sectorSelect.addEventListener('change', function() {
             currentSector = this.value;
             applyFilters();
         });
     }
 
-    if (sortSelect) {
+    if (sortSelect && !sortSelect.dataset.hasListener) {
+        sortSelect.dataset.hasListener = "true";
         sortSelect.addEventListener('change', function() {
             applySorting();
         });
     }
+
+    // Immediately re-apply active filters and sort order to newly synced rows
+    applyFilters();
+    applySorting();
 })();
 </script>

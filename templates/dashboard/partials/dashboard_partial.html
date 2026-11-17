@@ -1,11 +1,22 @@
 {% load core_tags %}
-<div class="container-fluid p-0">
+<div class="container-fluid p-0"
+     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'dashboard:dashboard' %}" hx-target="#main-content" hx-swap="innerHTML"{% endif %}>
     <!-- Top Row: Welcome & Quick Actions -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
                 <h2 class="h3 fw-bold mb-0">Executive Dashboard</h2>
                 <span class="badge bg-primary bg-opacity-10 text-primary fw-medium px-2 py-1">Institutional Overview</span>
+                {% if is_market_open %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2 rounded-pill d-inline-flex align-items-center gap-1.5 small" title="Auto-syncing live quotes every 15 seconds">
+                        <span class="spinner-grow spinner-grow-sm text-success" style="width: 0.45rem; height: 0.45rem;" role="status"></span>
+                        LIVE 15s
+                    </span>
+                {% else %}
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 py-1 px-2 rounded-pill small" title="Market session closed. Finalized closing quotes.">
+                        <i class="bi bi-moon-stars me-1"></i>Market Closed
+                    </span>
+                {% endif %}
             </div>
             <p class="text-muted small mb-0">Portfolio performance, quantitative trade setups, and live Indian market intelligence.</p>
         </div>

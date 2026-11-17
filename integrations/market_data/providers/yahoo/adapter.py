@@ -103,6 +103,80 @@ class YahooFinanceProvider(MarketDataProvider):
                 raise RateLimitError(f"Yahoo Finance rate limit exceeded: {e}") from e
             raise ProviderConnectionError(f"Failed to fetch quote from Yahoo Finance: {e}") from e
 
+    def get_batch_quotes(self, listings: list) -> list[MarketQuoteDTO]:
+        """
+        Retrieves quotes for multiple listings concurrently via Yahoo Finance Tickers.
+        High throughput, single batch request taking ~1.5 - 3s for 20+ symbols.
+        """
+        if not listings:
+            return []
+
+        start_t = time.time()
+        ticker_map = {self._to_yahoo_ticker(l): l for l in listings}
+        tickers_str = " ".join(ticker_map.keys())
+
+        try:
+            import yfinance as yf
+            batch = yf.Tickers(tickers_str)
+            now = timezone.now()
+            quotes: list[MarketQuoteDTO] = []
+
+            for ticker_str, listing in ticker_map.items():
+                t = batch.tickers.get(ticker_str)
+                if not t:
+                    continue
+                fast_info = getattr(t, "fast_info", None)
+                if not fast_info:
+                    continue
+
+                last_p = getattr(fast_info, "last_price", None)
+                prev_p = getattr(fast_info, "previous_close", None)
+                if last_p is None:
+                    continue
+
+                price = Decimal(str(round(last_p, 4)))
+                prev_close = Decimal(str(round(prev_p, 4))) if prev_p is not None else price
+                open_val = getattr(fast_info, "open", None)
+                high_val = getattr(fast_info, "day_high", None)
+                low_val = getattr(fast_info, "day_low", None)
+
+                open_p = Decimal(str(round(open_val, 4))) if open_val else price
+                high_p = Decimal(str(round(high_val, 4))) if high_val else price
+                low_p = Decimal(str(round(low_val, 4))) if low_val else price
+                change = price - prev_close
+                p_change = (change / prev_close * 100) if prev_close else Decimal("0")
+                vol = int(getattr(fast_info, "last_volume", 0) or 0)
+
+                dto = MarketQuoteDTO(
+                    symbol=listing.symbol,
+                    exchange=getattr(listing.exchange, "code", "NSE"),
+                    price=price,
+                    change=change,
+                    change_percent=p_change,
+                    open=open_p,
+                    high=high_p,
+                    low=low_p,
+                    close=price,
+                    previous_close=prev_close,
+                    volume=vol,
+                    source_provider=self.code,
+                    source_type=self.source_type,
+                    freshness_status=FreshnessStatus.FRESH,
+                    source_timestamp=now,
+                    retrieved_at=now,
+                    measured_latency_ms=int((time.time() - start_t) * 1000),
+                    configured_delay_minutes=self.configured_delay_minutes,
+                )
+                try:
+                    quotes.append(MarketDataNormalizer.validate_quote(dto))
+                except Exception as norm_err:
+                    logger.debug("Quote normalization failed for %s: %s", listing.symbol, norm_err)
+
+            return quotes
+        except Exception as e:
+            logger.warning("Batch quote fetch failed in YahooFinanceProvider: %s", e)
+            return []
+
     def get_historical_candles(
         self,
         listing,

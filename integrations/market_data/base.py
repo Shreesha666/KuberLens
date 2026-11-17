@@ -73,6 +73,16 @@ class MarketDataProvider(ABC):
     def get_quote(self, listing: Any) -> MarketQuoteDTO:
         """Fetch latest quote for an exchange listing."""
 
+    def get_batch_quotes(self, listings: list[Any]) -> list[MarketQuoteDTO]:
+        """Fetch quotes for multiple listings in batch. Default fallback: sequential get_quote."""
+        results = []
+        for l in listings:
+            try:
+                results.append(self.get_quote(l))
+            except Exception:
+                continue
+        return results
+
     @abstractmethod
     def get_historical_candles(
         self,

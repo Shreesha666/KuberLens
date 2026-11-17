@@ -1,4 +1,6 @@
 {% load core_tags %}
+<div class="holding-list-container"
+     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'holdings:list' %}" hx-target="#main-content" hx-swap="innerHTML"{% endif %}>
 <!-- Holdings Header -->
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
@@ -13,6 +15,16 @@
         <div class="d-flex align-items-center gap-2">
             <h1 class="h3 fw-bold text-body mb-0">My Equity Holdings</h1>
             <span class="badge bg-secondary-subtle text-body border small">{{ holdings|length }} Open Positions</span>
+            {% if is_market_open %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2 rounded-pill d-inline-flex align-items-center gap-1.5 small" title="Auto-syncing live quotes every 15 seconds">
+                    <span class="spinner-grow spinner-grow-sm text-success" style="width: 0.45rem; height: 0.45rem;" role="status"></span>
+                    LIVE 15s
+                </span>
+            {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 py-1 px-2 rounded-pill small" title="Market session closed. Finalized closing quotes.">
+                    <i class="bi bi-moon-stars me-1"></i>Market Closed
+                </span>
+            {% endif %}
         </div>
     </div>
     <div class="d-flex flex-wrap gap-2">
@@ -137,7 +149,7 @@
                     <span class="input-group-text bg-body-tertiary border-end-0">
                         <i class="bi bi-search text-muted"></i>
                     </span>
-                    <input type="text" id="holdingSearchInput" class="form-control bg-body-tertiary border-start-0 ps-0"
+                    <input type="text" id="holdingSearchInput" hx-preserve="true" class="form-control bg-body-tertiary border-start-0 ps-0"
                            placeholder="Search symbol or name..." aria-label="Search Holdings">
                 </div>
             </div>
@@ -446,3 +458,4 @@
     }
 })();
 </script>
+</div>

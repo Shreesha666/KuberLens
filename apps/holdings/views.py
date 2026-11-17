@@ -55,6 +55,16 @@ class HoldingListView(LoginRequiredMixin, HTMXResponseMixin, ListView):
 
     def get_queryset(self):
         portfolio = self.get_portfolio()
+
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        from services.market_data.service import MarketDataService
+
+        if ExchangeCalendar.is_market_open():
+            try:
+                MarketDataService.sync_portfolio_quotes(portfolio=portfolio, max_age_seconds=15)
+            except Exception:
+                pass
+
         # Reconcile all holdings
         holdings = list(
             Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
@@ -131,6 +141,10 @@ class HoldingListView(LoginRequiredMixin, HTMXResponseMixin, ListView):
         )
         context["gainers_count"] = gainers_count
         context["losers_count"] = losers_count
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        is_market_open = ExchangeCalendar.is_market_open()
+        context["is_market_open"] = is_market_open
+        context["auto_refresh_interval"] = 15 if is_market_open else 0
         context["sectors"] = sorted(sectors_set)
         return context
 

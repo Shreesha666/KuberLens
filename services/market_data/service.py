@@ -341,3 +341,101 @@ class MarketDataService:
             log.save()
             logger.error("Bhavcopy ingestion failed for %s: %s", target_date, e)
             raise
+
+    @classmethod
+    def sync_portfolio_quotes(
+        cls,
+        portfolio=None,
+        force_refresh: bool = False,
+        max_age_seconds: int = 15,
+    ) -> int:
+        """
+        Fast batch synchronization of all active portfolio holdings quotes.
+        Throttled to max_age_seconds (default 15s) using Django cache to prevent redundant provider calls.
+        Reconciles FIFO holding valuations atomically.
+        """
+        from apps.holdings.models import Holding
+        from services.portfolio.accounting import FIFOAccountingEngine
+
+        cache_key = f"portfolio:sync_lock:{getattr(portfolio, 'id', 'global')}"
+        if not force_refresh:
+            if cache.get(cache_key):
+                return 0
+            # Also check DB timestamp for multi-process safety
+            latest_quote = (
+                MarketQuote.objects.filter(listing__holdings__portfolio=portfolio).order_by("-retrieved_at").first()
+                if portfolio
+                else MarketQuote.objects.order_by("-retrieved_at").first()
+            )
+            if latest_quote and (timezone.now() - latest_quote.retrieved_at).total_seconds() < max_age_seconds:
+                cache.set(cache_key, latest_quote.retrieved_at.isoformat(), timeout=max_age_seconds)
+                return 0
+
+        holdings_qs = Holding.objects.filter(total_quantity__gt=0).select_related(
+            "listing__exchange", "listing__instrument"
+        )
+        if portfolio:
+            holdings_qs = holdings_qs.filter(portfolio=portfolio)
+
+        holdings_list = list(holdings_qs)
+        if not holdings_list:
+            return 0
+
+        listing_map = {}
+        for h in holdings_list:
+            listing_map[h.listing.id] = h.listing
+
+        listings = list(listing_map.values())
+        provider = ProviderRegistry.get("YAHOO")
+        quotes_dto = provider.get_batch_quotes(listings)
+        if not quotes_dto:
+            return 0
+
+        quote_lookup = {q.symbol: q for q in quotes_dto}
+        created_quotes = []
+        now = timezone.now()
+
+        with transaction.atomic():
+            for listing in listings:
+                dto = quote_lookup.get(listing.symbol)
+                if not dto:
+                    continue
+
+                source_type_str = dto.source_type if isinstance(dto.source_type, str) else getattr(dto.source_type, "value", "DELAYED")
+                created_quotes.append(
+                    MarketQuote(
+                        listing=listing,
+                        price=dto.price,
+                        change=dto.change,
+                        change_percent=dto.change_percent,
+                        open=dto.open,
+                        high=dto.high,
+                        low=dto.low,
+                        close=dto.close,
+                        previous_close=dto.previous_close,
+                        volume=dto.volume,
+                        source_provider=dto.source_provider,
+                        source_type=source_type_str,
+                        freshness_status=FreshnessStatus.FRESH.value,
+                        source_timestamp=now,
+                        retrieved_at=now,
+                        measured_latency_ms=dto.measured_latency_ms,
+                        configured_delay_minutes=dto.configured_delay_minutes,
+                    )
+                )
+
+            if created_quotes:
+                MarketQuote.objects.bulk_create(created_quotes)
+
+            # Reconcile FIFO holdings for all affected positions
+            for h in holdings_list:
+                dto = quote_lookup.get(h.listing.symbol)
+                if dto:
+                    FIFOAccountingEngine.reconcile_holding(
+                        portfolio=h.portfolio,
+                        listing=h.listing,
+                        current_price=dto.price,
+                    )
+
+        cache.set(cache_key, now.isoformat(), timeout=max_age_seconds)
+        return len(created_quotes)

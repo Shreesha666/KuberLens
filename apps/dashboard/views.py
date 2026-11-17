@@ -35,6 +35,16 @@ class DashboardView(HTMXResponseMixin, TemplateView):
         if not portfolio:
             portfolio = Portfolio.objects.first()
 
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        from services.market_data.service import MarketDataService
+
+        is_market_open = ExchangeCalendar.is_market_open()
+        if portfolio and is_market_open:
+            try:
+                MarketDataService.sync_portfolio_quotes(portfolio=portfolio, max_age_seconds=15)
+            except Exception:
+                pass
+
         holdings = []
         if portfolio:
             holdings = list(
@@ -96,6 +106,8 @@ class DashboardView(HTMXResponseMixin, TemplateView):
         }
         context["recent_setups"] = recent_setups
         context["active_ipos"] = active_ipos
+        context["is_market_open"] = is_market_open
+        context["auto_refresh_interval"] = 15 if is_market_open else 0
         context["top_holdings"] = sorted(
             holdings, key=lambda x: x.current_value, reverse=True
         )[:5]

@@ -108,10 +108,15 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
 
         sector_breakdown = []
         concentration_warnings = []
+        sector_colors = [
+            "#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#06b6d4",
+            "#f43f5e", "#6366f1", "#f97316", "#14b8a6", "#84cc16", "#64748b"
+        ]
 
-        for sec, val in sorted(sectors.items(), key=lambda x: x[1], reverse=True):
+        for idx, (sec, val) in enumerate(sorted(sectors.items(), key=lambda x: x[1], reverse=True)):
             pct = round((val / current_val * Decimal("100.0")), 1) if current_val > 0 else Decimal("0.0")
-            sector_breakdown.append({"sector": sec, "value": val, "percent": pct})
+            color = sector_colors[idx % len(sector_colors)]
+            sector_breakdown.append({"sector": sec, "value": val, "percent": pct, "color": color})
             if pct >= Decimal("35.0"):
                 concentration_warnings.append(f"High Sector Concentration: {sec} represents {pct}% of your holdings.")
 

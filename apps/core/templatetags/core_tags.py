@@ -27,12 +27,30 @@ def financial_color(value):
 
 @register.filter
 def format_inr(value):
-    """Format a monetary amount in Indian Rupee format."""
+    """Format a monetary amount in Indian Rupee format with proper negative placement e.g. -₹1,02,425.21."""
     if value is None or value == "":
         return "₹0.00"
     try:
         val = Decimal(str(value))
+        if val < 0:
+            return f"-₹{abs(val):,.2f}"
         return f"₹{val:,.2f}"
+    except Exception:
+        return f"₹{value}"
+
+
+@register.filter
+def format_inr_signed(value):
+    """Format monetary amount with explicit + / - sign e.g. +₹1,013.54 or -₹1,011.50."""
+    if value is None or value == "":
+        return "₹0.00"
+    try:
+        val = Decimal(str(value))
+        if val > 0:
+            return f"+₹{val:,.2f}"
+        elif val < 0:
+            return f"-₹{abs(val):,.2f}"
+        return "₹0.00"
     except Exception:
         return f"₹{value}"
 

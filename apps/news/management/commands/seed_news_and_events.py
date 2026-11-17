@@ -74,7 +74,19 @@ SAMPLE_NEWS_TEMPLATES = [
 class Command(BaseCommand):
     help = "Seeds sample news articles and corporate events for active exchange listings."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--clear",
+            action="store_true",
+            help="Clear existing news articles and corporate events before seeding fresh ones.",
+        )
+
     def handle(self, *args, **options):
+        if options.get("clear"):
+            self.stdout.write(self.style.WARNING("Clearing existing news articles and events..."))
+            NewsArticle.objects.all().delete()
+            CorporateEvent.objects.all().delete()
+
         self.stdout.write(self.style.NOTICE("Seeding news articles and corporate calendar events..."))
 
         listings = list(ExchangeListing.objects.filter(is_tradeable=True, is_primary=True).select_related("instrument"))

@@ -12,6 +12,12 @@
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <form method="post" action="{% url 'news:refresh' %}" class="d-inline" hx-post="{% url 'news:refresh' %}" hx-target="#main-content">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1.5" title="Refresh news with latest announcements">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Feed
+                </button>
+            </form>
             <a href="{% url 'news:feed' %}" class="btn btn-primary btn-sm"
                hx-get="{% url 'news:feed' %}" hx-target="#main-content" hx-push-url="true">
                 <i class="bi bi-card-text me-1"></i> News Feed

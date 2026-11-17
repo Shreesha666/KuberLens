@@ -2,9 +2,13 @@
 News and Corporate Events Views.
 Provides the market news feed and corporate action calendar.
 """
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.shortcuts import redirect
+from django.views import View
 from django.views.generic import TemplateView
 
 from apps.core.mixins import HTMXResponseMixin
@@ -96,3 +100,21 @@ class CorporateEventsCalendarView(LoginRequiredMixin, HTMXResponseMixin, Templat
         context["event_types"] = CorporateEventType.choices
         context["statuses"] = EventStatus.choices
         return context
+
+
+class RefreshNewsFeedView(LoginRequiredMixin, View):
+    """
+    Refreshes the market news feed and corporate actions up to the current date and time.
+    """
+    def post(self, request, *args, **kwargs):
+        try:
+            call_command("seed_news_and_events", clear=True)
+            messages.success(request, "Market news and corporate events refreshed with latest announcements.")
+        except Exception as e:
+            messages.error(request, f"Could not refresh news: {e}")
+
+        if request.htmx:
+            feed_view = NewsFeedView.as_view()
+            return feed_view(request)
+        return redirect("news:feed")
+

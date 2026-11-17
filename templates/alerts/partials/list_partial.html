@@ -1,4 +1,4 @@
-{% load humanize %}
+{% load humanize core_tags %}
 <!-- Alert Rules List Partial -->
 <div class="container-fluid px-0">
     <!-- Header -->
@@ -236,30 +236,28 @@
                         <td class="ps-4">
                             {% if alert.listing %}
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="badge bg-primary text-white font-monospace fw-bold px-2 py-1.5 rounded-2" style="font-size: 0.78rem; min-width: 56px; text-align: center;">
-                                    {{ alert.listing.symbol }}
-                                </span>
+                                {% stock_logo alert.listing size=34 css_class="rounded-2 border border-secondary border-opacity-10 flex-shrink-0" %}
                                 <div class="text-truncate">
-                                    <a href="{% url 'stocks:stock_detail' alert.listing.symbol %}"
-                                       hx-get="{% url 'stocks:stock_detail' alert.listing.symbol %}"
-                                       hx-target="#main-content"
-                                       hx-push-url="true"
-                                       class="fw-bold text-body text-decoration-none d-block text-truncate" style="font-size: 0.88rem;">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <a href="{% url 'stocks:stock_detail' alert.listing.symbol %}"
+                                           hx-get="{% url 'stocks:stock_detail' alert.listing.symbol %}"
+                                           hx-target="#main-content"
+                                           hx-push-url="true"
+                                           class="fw-bold text-body text-decoration-none hover-primary">
+                                            {{ alert.listing.symbol }}
+                                        </a>
+                                        <span class="badge bg-light text-secondary border border-secondary border-opacity-15 px-1.5 py-0.5 rounded extra-small">
+                                            {{ alert.listing.exchange.code|default:"NSE" }}
+                                        </span>
+                                    </div>
+                                    <div class="text-muted text-truncate" style="font-size: 0.76rem;" title="{{ alert.listing.instrument.display_name }}">
                                         {{ alert.listing.instrument.display_name|default:alert.listing.symbol }}
-                                    </a>
-                                    <div class="extra-small text-muted d-flex align-items-center gap-1 mt-0.5">
-                                        <span>LTP:</span>
-                                        {% if alert.current_price %}
-                                        <span class="fw-bold text-body num-mono">₹{{ alert.current_price|floatformat:2|intcomma }}</span>
-                                        {% else %}
-                                        <span>—</span>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                             {% else %}
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle p-2 rounded-2">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 rounded-2">
                                     <i class="bi bi-wallet2 fs-6"></i>
                                 </span>
                                 <div>
@@ -270,30 +268,48 @@
                             {% endif %}
                         </td>
                         <td>
-                            <div class="d-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-pill bg-body-tertiary border border-secondary border-opacity-15 small fw-semibold">
-                                {% if "ABOVE" in alert.alert_type or "HIGH" in alert.alert_type or "GOLDEN" in alert.alert_type %}
-                                <i class="bi bi-arrow-up-right text-success me-1"></i>
-                                {% elif "BELOW" in alert.alert_type or "LOW" in alert.alert_type or "DEATH" in alert.alert_type %}
-                                <i class="bi bi-arrow-down-right text-danger me-1"></i>
-                                {% elif "RSI" in alert.alert_type %}
-                                <i class="bi bi-activity text-warning me-1"></i>
-                                {% elif "VOLUME" in alert.alert_type %}
-                                <i class="bi bi-bar-chart-fill text-primary me-1"></i>
-                                {% else %}
-                                <i class="bi bi-bell text-secondary me-1"></i>
-                                {% endif %}
-                                <span class="text-body">{{ alert.get_alert_type_display }}</span>
-                            </div>
+                            {% if "ABOVE" in alert.alert_type or "HIGH" in alert.alert_type or "GOLDEN" in alert.alert_type %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 rounded-2 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-arrow-up-right fw-bold"></i>
+                                <span>{{ alert.get_alert_type_display }}</span>
+                            </span>
+                            {% elif "BELOW" in alert.alert_type or "LOW" in alert.alert_type or "DEATH" in alert.alert_type %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1.5 rounded-2 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-arrow-down-right fw-bold"></i>
+                                <span>{{ alert.get_alert_type_display }}</span>
+                            </span>
+                            {% elif "RSI" in alert.alert_type %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 px-2.5 py-1.5 rounded-2 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-activity"></i>
+                                <span>{{ alert.get_alert_type_display }}</span>
+                            </span>
+                            {% elif "VOLUME" in alert.alert_type %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1.5 rounded-2 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-bar-chart-fill"></i>
+                                <span>{{ alert.get_alert_type_display }}</span>
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2.5 py-1.5 rounded-2 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-bell"></i>
+                                <span>{{ alert.get_alert_type_display }}</span>
+                            </span>
+                            {% endif %}
+
                             {% if alert.is_market_hours_only %}
                             <div class="extra-small text-muted d-flex align-items-center gap-1 mt-1">
-                                <i class="bi bi-clock"></i>
+                                <i class="bi bi-clock-history"></i>
                                 <span>Market Hours Only</span>
+                            </div>
+                            {% else %}
+                            <div class="extra-small text-muted d-flex align-items-center gap-1 mt-1">
+                                <i class="bi bi-globe"></i>
+                                <span>24×7 Active</span>
                             </div>
                             {% endif %}
                         </td>
                         <td>
                             {% if alert.target_value > 0 %}
-                            <div>
+                            <div class="d-flex align-items-center gap-1.5">
                                 <span class="fw-bold num-mono fs-6 text-body">
                                     {% if "PERCENT" in alert.alert_type %}
                                     ±{{ alert.target_value|floatformat:1 }}%
@@ -306,14 +322,17 @@
                                     {% endif %}
                                 </span>
                             </div>
-                            {% if alert.diff_pct is not None %}
-                            <div class="mt-1">
+                            <div class="extra-small text-muted d-flex align-items-center gap-1.5 mt-0.5">
+                                {% if alert.current_price %}
+                                <span>LTP: <strong class="num-mono text-body">₹{{ alert.current_price|floatformat:2|intcomma }}</strong></span>
+                                {% endif %}
+                                {% if alert.diff_pct is not None %}
                                 {% if alert.diff_pct > 0 %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono px-2 py-0.5 rounded-pill">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono px-1.5 py-0.5 rounded-pill">
                                     +{{ alert.diff_pct|floatformat:1 }}% away
                                 </span>
                                 {% elif alert.diff_pct < 0 %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono px-2 py-0.5 rounded-pill">
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono px-1.5 py-0.5 rounded-pill">
                                     {{ alert.diff_pct|floatformat:1 }}% away
                                 </span>
                                 {% else %}
@@ -321,8 +340,8 @@
                                     At Target
                                 </span>
                                 {% endif %}
+                                {% endif %}
                             </div>
-                            {% endif %}
                             {% else %}
                             <span class="badge bg-info-subtle text-info border border-info-subtle small fw-semibold">
                                 <i class="bi bi-cpu me-1"></i>Auto Event

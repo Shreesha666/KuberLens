@@ -29,6 +29,9 @@ class NewsFeedView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
     template_name = "news/feed.html"
     partial_template_name = "news/partials/feed_partial.html"
 
+    def post(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         cat_filter = self.request.GET.get("category", "").strip().upper()
@@ -114,7 +117,9 @@ class RefreshNewsFeedView(LoginRequiredMixin, View):
             messages.error(request, f"Could not refresh news: {e}")
 
         if request.htmx:
-            feed_view = NewsFeedView.as_view()
-            return feed_view(request)
+            return NewsFeedView.as_view()(request, *args, **kwargs)
         return redirect("news:feed")
+
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
 

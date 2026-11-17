@@ -315,10 +315,19 @@
                                 <span class="num-mono text-danger fw-semibold">{{ p.rec.stop_loss }}</span>
                             </td>
                             <td>
-                                <div class="num-mono text-success fw-semibold">
-                                    {% for tgt in p.rec.target_levels %}
-                                    <span class="me-1">{{ tgt }}{% if not forloop.last %},{% endif %}</span>
-                                    {% endfor %}
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <span class="num-mono text-success fw-bold">{{ p.rec.target_levels.0 }}</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.65rem;">
+                                            Est. {{ p.rec.target_1_eta }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <span class="num-mono text-success fw-bold">{{ p.rec.target_levels.1 }}</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.65rem;">
+                                            Est. {{ p.rec.target_2_eta }}
+                                        </span>
+                                    </div>
                                 </div>
                             </td>
                             <td class="text-center">

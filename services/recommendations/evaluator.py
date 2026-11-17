@@ -228,6 +228,33 @@ class RecommendationEvaluator:
         entry_lower = round(min(effective_support * Decimal("1.005"), current_price * Decimal("0.97")), 2)
         entry_upper = round(max(entry_lower + Decimal("0.50"), current_price * Decimal("0.995")), 2)
 
+        # Time-to-Target & Velocity Modeling (ATR Volatility Velocity Engine)
+        dist_1 = max(Decimal("0.50"), target_1 - current_price)
+        dist_2 = max(Decimal("1.00"), target_2 - current_price)
+        tgt_1_pct = round((dist_1 / current_price * Decimal("100.0")), 1)
+        tgt_2_pct = round((dist_2 / current_price * Decimal("100.0")), 1)
+
+        daily_drift = max(Decimal("0.25"), atr_val * Decimal("0.35"))
+        est_days_t1 = max(7, int(dist_1 / daily_drift))
+        est_days_t2 = max(est_days_t1 + 14, int(dist_2 / daily_drift))
+
+        def format_horizon(trading_days: int) -> str:
+            weeks = max(1, round(trading_days / 5))
+            if weeks <= 2:
+                return "1 to 2 Weeks"
+            elif weeks <= 4:
+                return f"{weeks-1} to {weeks+1} Weeks"
+            elif weeks <= 8:
+                return f"{weeks-2} to {weeks+1} Weeks"
+            elif weeks <= 14:
+                return f"{weeks-2} to {weeks+2} Weeks"
+            else:
+                months = max(3, round(weeks / 4.3))
+                return f"{months} to {months+2} Months"
+
+        t1_eta = format_horizon(est_days_t1)
+        t2_eta = format_horizon(est_days_t2)
+
         new_investor_rec = {
             "status": status,
             "entry_zone": f"₹{entry_lower} - ₹{entry_upper}",
@@ -237,6 +264,14 @@ class RecommendationEvaluator:
             "target_levels": [f"₹{target_1}", f"₹{target_2}"],
             "target_1_value": float(target_1),
             "target_2_value": float(target_2),
+            "target_1_pct": float(tgt_1_pct),
+            "target_2_pct": float(tgt_2_pct),
+            "target_1_eta": t1_eta,
+            "target_2_eta": t2_eta,
+            "target_1_days": est_days_t1,
+            "target_2_days": est_days_t2,
+            "target_methodology": "Structural Resistance & 1.618× Fibonacci Swing Extension",
+            "velocity_rationale": f"Calculated from 14-day ATR (₹{atr_val:,.2f}) net drift velocity (~₹{daily_drift:,.2f}/day)",
             "risk_reward": f"1 : {rr_ratio}",
             "rr_ratio_value": rr_ratio,
             "confluence_score": confluence_score,

@@ -88,15 +88,11 @@
         <div class="row g-2 pt-3 border-top border-secondary border-opacity-10 small">
             <div class="col-6 col-md-3">
                 <span class="text-muted d-block">Day Range</span>
-                <span class="fw-semibold num-mono">
-                    {% if quote and quote.low and quote.high %}₹{{ quote.low|floatformat:1 }} - ₹{{ quote.high|floatformat:1 }}{% else %}—{% endif %}
-                </span>
+                <span class="fw-semibold num-mono">{% if quote and quote.low and quote.high %}₹{{ quote.low|floatformat:1 }} - ₹{{ quote.high|floatformat:1 }}{% else %}—{% endif %}</span>
             </div>
             <div class="col-6 col-md-3">
                 <span class="text-muted d-block">52-Week Range</span>
-                <span class="fw-semibold num-mono">
-                    {% if low_52w and high_52w %}₹{{ low_52w|floatformat:1 }} - ₹{{ high_52w|floatformat:1 }}{% else %}—{% endif %}
-                </span>
+                <span class="fw-semibold num-mono">{% if low_52w and high_52w %}₹{{ low_52w|floatformat:1 }} - ₹{{ high_52w|floatformat:1 }}{% else %}—{% endif %}</span>
             </div>
             <div class="col-6 col-md-3">
                 <span class="text-muted d-block">Volume</span>

@@ -193,75 +193,195 @@
 
     <!-- Alert Rules Table -->
     {% if alerts %}
-    <div class="card border-0 shadow-sm">
+    <div class="card border border-secondary border-opacity-10 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header bg-body border-bottom border-secondary border-opacity-10 py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-2.5">
+                <div>
+                    <h6 class="fw-bold mb-0 text-body" style="text-transform: none; font-size: 0.95rem;">Active Monitoring Rules</h6>
+                    <span class="text-muted extra-small">Automated tick-level price monitoring and technical indicator triggers</span>
+                </div>
+                <div class="d-flex align-items-center gap-1.5 ms-md-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 rounded-pill small fw-semibold">
+                        {{ total_count }} Rules
+                    </span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill small fw-semibold">
+                        {{ active_count }} Active
+                    </span>
+                    {% if triggered_count > 0 %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 rounded-pill small fw-semibold">
+                        {{ triggered_count }} Triggered
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm" style="width: 220px;">
+                    <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="alertTableSearch" class="form-control border-start-0" placeholder="Filter by symbol, note...">
+                </div>
+            </div>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0" id="alertRulesTable">
+                <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">
                     <tr>
+                        <th class="ps-4">Target Instrument</th>
+                        <th>Condition / Trigger</th>
+                        <th>Threshold &amp; Proximity</th>
+                        <th>Trading Plan / Notes</th>
                         <th>Status</th>
-                        <th>Target Stock</th>
-                        <th>Condition</th>
-                        <th>Target Threshold</th>
-                        <th>Notes</th>
-                        <th>Triggered</th>
-                        <th class="text-end">Actions</th>
+                        <th>Trigger History</th>
+                        <th class="text-end pe-4">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for alert in alerts %}
                     <tr>
-                        <td style="width: 100px;">
+                        <td class="ps-4">
+                            {% if alert.listing %}
+                            <div class="d-flex align-items-center gap-2.5">
+                                <span class="badge bg-primary text-white font-monospace fw-bold px-2 py-1 rounded-2">
+                                    {{ alert.listing.symbol }}
+                                </span>
+                                <div class="text-truncate" style="max-width: 200px;">
+                                    <a href="{% url 'stocks:stock_detail' alert.listing.symbol %}"
+                                       hx-get="{% url 'stocks:stock_detail' alert.listing.symbol %}"
+                                       hx-target="#main-content"
+                                       hx-push-url="true"
+                                       class="fw-bold text-body text-decoration-none d-block text-truncate">
+                                        {{ alert.listing.instrument.display_name|default:alert.listing.symbol }}
+                                    </a>
+                                    <div class="extra-small text-muted d-flex align-items-center gap-1">
+                                        <span>LTP:</span>
+                                        {% if alert.current_price %}
+                                        <span class="fw-bold text-body num-mono">₹{{ alert.current_price|floatformat:2 }}</span>
+                                        {% else %}
+                                        <span>—</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle p-2 rounded-2">
+                                    <i class="bi bi-wallet2"></i>
+                                </span>
+                                <div>
+                                    <span class="fw-bold text-body small">Portfolio-Wide</span>
+                                    <span class="extra-small text-muted d-block">Account Risk Rule</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-2 bg-body-tertiary border border-secondary border-opacity-10 small fw-semibold">
+                                {% if "ABOVE" in alert.alert_type or "HIGH" in alert.alert_type or "GOLDEN" in alert.alert_type %}
+                                <i class="bi bi-arrow-up-right text-success"></i>
+                                {% elif "BELOW" in alert.alert_type or "LOW" in alert.alert_type or "DEATH" in alert.alert_type %}
+                                <i class="bi bi-arrow-down-right text-danger"></i>
+                                {% elif "RSI" in alert.alert_type %}
+                                <i class="bi bi-activity text-warning"></i>
+                                {% elif "VOLUME" in alert.alert_type %}
+                                <i class="bi bi-bar-chart-fill text-primary"></i>
+                                {% else %}
+                                <i class="bi bi-bell text-secondary"></i>
+                                {% endif %}
+                                <span>{{ alert.get_alert_type_display }}</span>
+                            </div>
+                            {% if alert.is_market_hours_only %}
+                            <div class="extra-small text-muted mt-1">
+                                <i class="bi bi-clock me-1"></i>Market Hours Only
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if alert.target_value > 0 %}
+                            <div class="d-flex align-items-baseline gap-1.5">
+                                <span class="fw-bold num-mono fs-6 text-body">
+                                    {% if "PERCENT" in alert.alert_type %}
+                                    ±{{ alert.target_value|floatformat:1 }}%
+                                    {% elif "RSI" in alert.alert_type %}
+                                    RSI {{ alert.target_value|floatformat:0 }}
+                                    {% elif "VOLUME" in alert.alert_type %}
+                                    {{ alert.target_value|floatformat:1 }}×
+                                    {% else %}
+                                    ₹{{ alert.target_value|floatformat:2 }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% if alert.diff_pct is not None %}
+                            <div class="mt-0.5">
+                                {% if alert.diff_pct > 0 %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono">
+                                    +{{ alert.diff_pct|floatformat:1 }}% away
+                                </span>
+                                {% elif alert.diff_pct < 0 %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono">
+                                    {{ alert.diff_pct|floatformat:1 }}% away
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 extra-small">
+                                    At Target
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-info-subtle text-info border border-info-subtle small fw-semibold">
+                                <i class="bi bi-cpu me-1"></i>Auto Event
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="max-width: 220px;">
+                            {% if alert.notes %}
+                            <div class="small text-body text-truncate" title="{{ alert.notes }}">
+                                <i class="bi bi-card-text text-muted me-1"></i>{{ alert.notes }}
+                            </div>
+                            {% else %}
+                            <span class="text-muted extra-small fst-italic">No thesis notes</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <form method="post" action="{% url 'alerts:toggle' alert.id %}"
                                   hx-post="{% url 'alerts:toggle' alert.id %}"
                                   hx-target="#main-content"
                                   hx-push-url="true"
                                   class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm {% if alert.is_active %}btn-success text-white{% else %}btn-secondary{% endif %} py-0 px-2" title="Click to toggle status">
-                                    {% if alert.is_active %}Active{% else %}Paused{% endif %}
+                                {% if alert.is_active %}
+                                <button type="submit" class="btn btn-sm btn-outline-success py-0.5 px-2.5 rounded-pill d-inline-flex align-items-center gap-1.5 small fw-semibold" title="Click to pause monitoring">
+                                    <span class="rounded-circle bg-success" style="width: 6px; height: 6px; display: inline-block;"></span> Active
                                 </button>
+                                {% else %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary py-0.5 px-2.5 rounded-pill d-inline-flex align-items-center gap-1.5 small fw-semibold" title="Click to resume monitoring">
+                                    <span class="rounded-circle bg-secondary" style="width: 6px; height: 6px; display: inline-block;"></span> Paused
+                                </button>
+                                {% endif %}
                             </form>
                         </td>
                         <td>
-                            {% if alert.listing %}
-                            <a href="{% url 'stocks:stock_detail' alert.listing.symbol %}"
-                               hx-get="{% url 'stocks:stock_detail' alert.listing.symbol %}"
-                               hx-target="#main-content"
-                               hx-push-url="true"
-                               class="fw-bold text-primary text-decoration-none">
-                                {{ alert.listing.symbol }}
-                            </a>
-                            {% if alert.listing.instrument.display_name %}
-                            <span class="text-muted small">({{ alert.listing.instrument.display_name }})</span>
-                            {% endif %}
-                            {% else %}
-                            <span class="badge bg-secondary-subtle text-muted">Portfolio-Wide</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark border">{{ alert.get_alert_type_display }}</span>
-                        </td>
-                        <td>
-                            <code class="fw-bold fs-6">₹{{ alert.target_value|floatformat:2 }}</code>
-                        </td>
-                        <td class="small text-muted">{{ alert.notes|default:"—" }}</td>
-                        <td class="small text-muted">
                             {% if alert.trigger_count > 0 %}
-                            <span class="badge bg-warning-subtle text-warning-emphasis">{{ alert.trigger_count }}x</span>
-                            <div class="small">{{ alert.last_triggered_at|date:"d M H:i" }}</div>
+                            <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+                                <i class="bi bi-bell-fill me-1"></i>{{ alert.trigger_count }}× Fired
+                            </span>
+                            <div class="extra-small text-muted mt-0.5">{{ alert.last_triggered_at|date:"d M, H:i" }}</div>
                             {% else %}
-                            <span>Never</span>
+                            <span class="badge bg-light text-secondary border px-2 py-1 extra-small">
+                                <i class="bi bi-radar me-1 text-success"></i>Monitoring
+                            </span>
+                            <div class="extra-small text-muted mt-0.5">Never triggered</div>
                             {% endif %}
                         </td>
-                        <td class="text-end">
+                        <td class="text-end pe-4">
                             <form method="post" action="{% url 'alerts:delete' alert.id %}"
                                   hx-post="{% url 'alerts:delete' alert.id %}"
                                   hx-target="#main-content"
                                   hx-push-url="true"
                                   class="d-inline"
-                                  onsubmit="return confirm('Delete this alert rule?');">
+                                  onsubmit="return confirm('Delete alert rule for {{ alert.listing.symbol|default:'Portfolio' }}?');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">
+                                <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-2" title="Delete alert rule">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
@@ -612,18 +732,24 @@
         stockInput.addEventListener("change", updateStockInfo);
         typeSelect.addEventListener("change", renderPresets);
 
+        const tableSearch = document.getElementById("alertTableSearch");
+        if (tableSearch) {
+            tableSearch.addEventListener("input", function() {
+                const q = this.value.toLowerCase().trim();
+                const rows = document.querySelectorAll("#alertRulesTable tbody tr");
+                rows.forEach(r => {
+                    const txt = r.textContent.toLowerCase();
+                    r.style.display = txt.includes(q) ? "" : "none";
+                });
+            });
+        }
+
         updateStockInfo();
         updateConditionBadge();
     }
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initAlertForm);
-    } else {
-        initAlertForm();
-    }
-    document.addEventListener("htmx:afterSwap", initAlertForm);
-})();
-</script>
     } else {
         initAlertForm();
     }

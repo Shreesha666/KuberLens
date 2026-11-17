@@ -52,6 +52,38 @@ class AlertListView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
             item.current_price = float(q_obj.price) if q_obj else None
             item.search_label = f"{item.symbol} — {item.instrument.display_name}" + (f" (₹{item.current_price:,.2f})" if item.current_price else "")
 
+        # Enrich alert objects with live pricing, distance/proximity, and stats
+        alerts_list = list(alerts)
+        active_count = 0
+        triggered_count = 0
+        paused_count = 0
+
+        for a in alerts_list:
+            if a.is_active:
+                active_count += 1
+            else:
+                paused_count += 1
+            if a.trigger_count > 0:
+                triggered_count += 1
+
+            if a.listing_id and a.listing_id in quotes_map:
+                q = quotes_map[a.listing_id]
+                a.current_price = float(q.price)
+                if a.target_value and a.current_price > 0:
+                    target_val = float(a.target_value)
+                    a.diff_amount = target_val - a.current_price
+                    a.diff_pct = (a.diff_amount / a.current_price) * 100.0
+            else:
+                a.current_price = None
+                a.diff_amount = None
+                a.diff_pct = None
+
+        context["alerts"] = alerts_list
+        context["active_count"] = active_count
+        context["triggered_count"] = triggered_count
+        context["paused_count"] = paused_count
+        context["total_count"] = len(alerts_list)
+
         # Categorized Alert Conditions for intuitive selection
         alert_groups = [
             {

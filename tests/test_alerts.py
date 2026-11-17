@@ -176,11 +176,25 @@ class TestAlertEvaluatorAndViews:
         alert.refresh_from_db()
         assert alert.is_active is False
 
-        # 4. Evaluate Action
+        # 4. Update/Edit Alert View
+        update_data = {
+            "alert_type": AlertType.PRICE_BELOW,
+            "target_value": "1850.50",
+            "notes": "Updated stop thesis",
+            "is_market_hours_only": "on",
+        }
+        update_res = self.client.post(reverse("alerts:update", kwargs={"pk": alert.id}), update_data)
+        assert update_res.status_code == 302
+        alert.refresh_from_db()
+        assert alert.alert_type == AlertType.PRICE_BELOW
+        assert alert.target_value == Decimal("1850.50")
+        assert alert.notes == "Updated stop thesis"
+
+        # 5. Evaluate Action
         eval_res = self.client.post(reverse("alerts:evaluate"))
         assert eval_res.status_code == 302
 
-        # 5. Delete Alert View
+        # 6. Delete Alert View
         del_res = self.client.post(reverse("alerts:delete", kwargs={"pk": alert.id}))
         assert del_res.status_code == 302
         assert not AlertRule.objects.filter(pk=alert.id).exists()

@@ -192,6 +192,33 @@ class AlertDeleteView(LoginRequiredMixin, View):
         return redirect("alerts:list")
 
 
+class AlertUpdateView(LoginRequiredMixin, View):
+    """
+    Updates an existing user alert rule.
+    """
+    def post(self, request, pk, *args, **kwargs):
+        alert = get_object_or_404(AlertRule, pk=pk, user=request.user)
+        alert_type = request.POST.get("alert_type", alert.alert_type).strip()
+        target_str = request.POST.get("target_value", str(alert.target_value)).strip()
+        notes = request.POST.get("notes", alert.notes).strip()
+        market_hours_only = request.POST.get("is_market_hours_only") == "on"
+
+        try:
+            target_value = Decimal(target_str)
+        except Exception:
+            target_value = alert.target_value
+
+        if alert_type in AlertType.values:
+            alert.alert_type = alert_type
+        alert.target_value = target_value
+        alert.notes = notes
+        alert.is_market_hours_only = market_hours_only
+        alert.save(update_fields=["alert_type", "target_value", "notes", "is_market_hours_only"])
+
+        messages.success(request, f"Updated alert rule for {alert.listing.symbol if alert.listing else 'Portfolio'}.")
+        return redirect("alerts:list")
+
+
 class AlertRunEvaluationView(LoginRequiredMixin, View):
     """
     Manually triggers evaluation of all user's active alerts and dispatches notifications.

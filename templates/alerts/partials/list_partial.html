@@ -396,17 +396,88 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
-                            <form method="post" action="{% url 'alerts:delete' alert.id %}"
-                                  hx-post="{% url 'alerts:delete' alert.id %}"
-                                  hx-target="#main-content"
-                                  hx-push-url="true"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Delete alert rule for {{ alert.listing.symbol|default:'Portfolio' }}?');">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm text-danger border-0 p-1.5 rounded-2 bg-transparent opacity-75 hover-opacity-100" title="Delete alert rule">
-                                    <i class="bi bi-trash fs-6"></i>
+                            <div class="d-inline-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm text-primary border-0 p-1.5 rounded-2 bg-transparent opacity-75 hover-opacity-100" data-bs-toggle="modal" data-bs-target="#editAlertModal-{{ alert.id }}" title="Edit alert rule">
+                                    <i class="bi bi-pencil fs-6"></i>
                                 </button>
-                            </form>
+                                <form method="post" action="{% url 'alerts:delete' alert.id %}"
+                                      hx-post="{% url 'alerts:delete' alert.id %}"
+                                      hx-target="#main-content"
+                                      hx-push-url="true"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Delete alert rule for {{ alert.listing.symbol|default:'Portfolio' }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm text-danger border-0 p-1.5 rounded-2 bg-transparent opacity-75 hover-opacity-100" title="Delete alert rule">
+                                        <i class="bi bi-trash fs-6"></i>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Edit Alert Modal -->
+                            <div class="modal fade" id="editAlertModal-{{ alert.id }}" tabindex="-1" aria-labelledby="editAlertModalLabel-{{ alert.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow-lg rounded-3">
+                                        <form method="post" action="{% url 'alerts:update' alert.id %}"
+                                              hx-post="{% url 'alerts:update' alert.id %}"
+                                              hx-target="#main-content"
+                                              hx-push-url="true">
+                                            {% csrf_token %}
+                                            <div class="modal-header border-bottom border-secondary border-opacity-10 py-3 px-4">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 rounded-2">
+                                                        <i class="bi bi-pencil-square fs-6"></i>
+                                                    </span>
+                                                    <div class="text-start">
+                                                        <div class="fw-bold mb-0 text-body" style="font-size: 0.98rem;">Edit Alert Rule</div>
+                                                        <span class="text-muted extra-small">
+                                                            {% if alert.listing %}{{ alert.listing.symbol }} — {{ alert.listing.instrument.display_name }}{% else %}Portfolio-Wide Alert{% endif %}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body p-4 text-start">
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Alert Condition / Trigger Rule</label>
+                                                    <select name="alert_type" class="form-select fw-semibold" required>
+                                                        {% for group in alert_groups %}
+                                                        <optgroup label="{{ group.group }}">
+                                                            {% for val, label in group.types %}
+                                                            <option value="{{ val }}" {% if alert.alert_type == val %}selected{% endif %}>{{ label }}</option>
+                                                            {% endfor %}
+                                                        </optgroup>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Threshold / Target Value</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-body num-mono text-muted fw-bold">₹</span>
+                                                        <input type="number" step="any" name="target_value" class="form-control num-mono fw-bold" value="{{ alert.target_value|floatformat:2 }}" required>
+                                                    </div>
+                                                    {% if alert.current_price %}
+                                                    <div class="form-text extra-small text-muted mt-1">Live LTP is currently ₹{{ alert.current_price|floatformat:2|intcomma }}.</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-semibold text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">Trading Plan / Notes</label>
+                                                    <input type="text" name="notes" class="form-control" value="{{ alert.notes }}" placeholder="e.g. Resistance breakout, swing profit target...">
+                                                </div>
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" name="is_market_hours_only" id="editMktHours-{{ alert.id }}" {% if alert.is_market_hours_only %}checked{% endif %}>
+                                                    <label class="form-check-label small fw-medium" for="editMktHours-{{ alert.id }}">Market Hours Only</label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-top border-secondary border-opacity-10 py-2.5 px-4">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold d-inline-flex align-items-center gap-1.5" data-bs-dismiss="modal">
+                                                    <i class="bi bi-check2"></i> Save Changes
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -425,7 +496,7 @@
             Set up automated price breakouts, RSI momentum bounds, or portfolio stop-losses to stay ahead of market movements.
         </p>
         <div>
-            <button class="btn btn-primary btn-sm px-3 py-1.5 d-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
+            <button class="btn btn-primary btn-sm px-3 py-1.5 d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#createAlertCollapse">
                 <i class="bi bi-plus-circle"></i> Create Your First Alert
             </button>
         </div>

@@ -277,12 +277,40 @@
 
         let selectedPrice = null;
         let selectedSymbol = null;
+        let smartTargets = null;
+        const targetsCache = {};
+        const notesInput = document.getElementById("alertNotesInput");
 
         function getSelectedOption() {
             const val = stockInput.value.trim().toUpperCase();
             if (!val) return null;
             const options = Array.from(datalist.options);
             return options.find(o => o.value.toUpperCase() === val) || null;
+        }
+
+        function fetchSmartTargets(symbol) {
+            if (!symbol) {
+                smartTargets = null;
+                renderPresets();
+                return;
+            }
+            if (targetsCache[symbol]) {
+                smartTargets = targetsCache[symbol];
+                renderPresets();
+                return;
+            }
+            fetch("/alerts/stock-targets/" + encodeURIComponent(symbol) + "/")
+                .then(res => res.json())
+                .then(data => {
+                    if (data && !data.error) {
+                        targetsCache[symbol] = data;
+                        if (selectedSymbol === symbol) {
+                            smartTargets = data;
+                            renderPresets();
+                        }
+                    }
+                })
+                .catch(() => {});
         }
 
         function updateStockInfo() {
@@ -297,12 +325,14 @@
                 if (stockBadgeName) stockBadgeName.textContent = name;
                 if (stockBadgePrice) stockBadgePrice.textContent = selectedPrice ? "₹" + selectedPrice.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "—";
                 if (stockBadge) stockBadge.classList.remove("d-none");
+                fetchSmartTargets(selectedSymbol);
             } else {
                 selectedPrice = null;
                 selectedSymbol = null;
+                smartTargets = null;
                 if (stockBadge) stockBadge.classList.add("d-none");
+                renderPresets();
             }
-            renderPresets();
         }
 
         function renderPresets() {
@@ -401,13 +431,67 @@
             if (conditionHelp) conditionHelp.textContent = "Target execution price threshold in ₹.";
 
             if (selectedPrice && selectedPrice > 0) {
-                if (presetsHint) presetsHint.textContent = "Calculated from LTP ₹" + selectedPrice.toFixed(2);
+                if (presetsHint) presetsHint.textContent = smartTargets ? "Smart ATR Targets & Stops Available" : "Calculated from LTP ₹" + selectedPrice.toFixed(2);
+
+                // 1. Prospective Investor Smart Targets & ATR Stop Loss
+                if (smartTargets) {
+                    if (smartTargets.stop_loss) {
+                        const slBtn = document.createElement("button");
+                        slBtn.type = "button";
+                        slBtn.className = "btn btn-sm bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2.5 num-mono fw-bold";
+                        slBtn.style.fontSize = "0.74rem";
+                        slBtn.innerHTML = `🛡️ SL (ATR): ₹${smartTargets.stop_loss.toFixed(2)}`;
+                        slBtn.title = smartTargets.stop_loss_rationale || "ATR Trailing Stop Loss";
+                        slBtn.onclick = () => {
+                            targetInput.value = smartTargets.stop_loss.toFixed(2);
+                            typeSelect.value = "PRICE_BELOW";
+                            if (notesInput && !notesInput.value) {
+                                notesInput.value = "1.5× ATR Trailing Stop Loss reached - review risk";
+                            }
+                        };
+                        presetsContainer.appendChild(slBtn);
+                    }
+
+                    if (smartTargets.target_1) {
+                        const t1Btn = document.createElement("button");
+                        t1Btn.type = "button";
+                        t1Btn.className = "btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 num-mono fw-bold";
+                        t1Btn.style.fontSize = "0.74rem";
+                        t1Btn.innerHTML = `🎯 T1: ₹${smartTargets.target_1.toFixed(2)} (+${smartTargets.target_1_pct}%)`;
+                        t1Btn.title = `Estimated Time: ${smartTargets.target_1_eta || '1 to 2 Weeks'}`;
+                        t1Btn.onclick = () => {
+                            targetInput.value = smartTargets.target_1.toFixed(2);
+                            typeSelect.value = "PRICE_ABOVE";
+                            if (notesInput && !notesInput.value) {
+                                notesInput.value = `Target 1 milestone reached (Est. ${smartTargets.target_1_eta || '1-2 W'})`;
+                            }
+                        };
+                        presetsContainer.appendChild(t1Btn);
+                    }
+
+                    if (smartTargets.target_2) {
+                        const t2Btn = document.createElement("button");
+                        t2Btn.type = "button";
+                        t2Btn.className = "btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 num-mono fw-bold";
+                        t2Btn.style.fontSize = "0.74rem";
+                        t2Btn.innerHTML = `🚀 T2: ₹${smartTargets.target_2.toFixed(2)} (+${smartTargets.target_2_pct}%)`;
+                        t2Btn.title = `Estimated Time: ${smartTargets.target_2_eta || '3 to 6 Weeks'}`;
+                        t2Btn.onclick = () => {
+                            targetInput.value = smartTargets.target_2.toFixed(2);
+                            typeSelect.value = "PRICE_ABOVE";
+                            if (notesInput && !notesInput.value) {
+                                notesInput.value = `Target 2 swing extension reached (Est. ${smartTargets.target_2_eta || '3-6 W'})`;
+                            }
+                        };
+                        presetsContainer.appendChild(t2Btn);
+                    }
+                }
+
+                // 2. Standard Percentage Presets
                 const pricePresets = [
                     { label: `LTP: ₹${selectedPrice.toFixed(1)}`, val: selectedPrice.toFixed(2), cls: "bg-light text-secondary border" },
-                    { label: `+3%: ₹${(selectedPrice * 1.03).toFixed(1)}`, val: (selectedPrice * 1.03).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
                     { label: `+5%: ₹${(selectedPrice * 1.05).toFixed(1)}`, val: (selectedPrice * 1.05).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
                     { label: `+10%: ₹${(selectedPrice * 1.10).toFixed(1)}`, val: (selectedPrice * 1.10).toFixed(2), cls: "bg-success bg-opacity-10 text-success border border-success border-opacity-25" },
-                    { label: `-3%: ₹${(selectedPrice * 0.97).toFixed(1)}`, val: (selectedPrice * 0.97).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
                     { label: `-5%: ₹${(selectedPrice * 0.95).toFixed(1)}`, val: (selectedPrice * 0.95).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
                     { label: `-10%: ₹${(selectedPrice * 0.90).toFixed(1)}`, val: (selectedPrice * 0.90).toFixed(2), cls: "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" },
                 ];

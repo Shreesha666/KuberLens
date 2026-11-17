@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import TemplateView
@@ -173,3 +174,39 @@ class AlertRunEvaluationView(LoginRequiredMixin, View):
         else:
             messages.info(request, "Alert check complete: All conditions currently normal (0 triggers).")
         return redirect("alerts:list")
+
+
+class AlertStockTargetsView(LoginRequiredMixin, View):
+    """
+    JSON endpoint providing live ATR Stop Loss, Target 1, Target 2, and momentum
+    timelines from the New Prospective Investor engine for 1-click alert presets.
+    """
+    def get(self, request, symbol: str, *args, **kwargs):
+        sym = symbol.strip().upper()
+        listing = ExchangeListing.objects.filter(symbol=sym, is_tradeable=True).first()
+        if not listing:
+            return JsonResponse({"error": "Listing not found"}, status=404)
+
+        from apps.market.models import MarketQuote
+        from services.recommendations.evaluator import RecommendationEvaluator
+
+        quote = MarketQuote.objects.filter(listing=listing).first()
+        ltp = float(quote.price) if quote else None
+
+        rec = RecommendationEvaluator.evaluate(listing, quote=quote)
+        new_inv = rec.get("new_investor", {})
+
+        return JsonResponse({
+            "symbol": listing.symbol,
+            "name": listing.instrument.display_name,
+            "ltp": ltp,
+            "stop_loss": new_inv.get("stop_loss_value"),
+            "stop_loss_label": new_inv.get("stop_loss"),
+            "stop_loss_rationale": new_inv.get("stop_loss_rationale"),
+            "target_1": new_inv.get("target_1_value"),
+            "target_1_pct": new_inv.get("target_1_pct"),
+            "target_1_eta": new_inv.get("target_1_eta"),
+            "target_2": new_inv.get("target_2_value"),
+            "target_2_pct": new_inv.get("target_2_pct"),
+            "target_2_eta": new_inv.get("target_2_eta"),
+        })

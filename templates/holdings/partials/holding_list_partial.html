@@ -52,89 +52,72 @@
         </div>
     </div>
 
-    <!-- Holdings Summary Metric Cards -->
-    <div class="row g-3 mb-4">
-        <!-- Card 1: Total Invested -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated border-accent-primary h-100 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Total Invested</span>
-                        <span class="badge badge-soft-primary p-2 rounded-3"><i class="bi bi-cash-stack fs-5"></i></span>
-                    </div>
-                    <h3 class="fw-bold num-mono mt-1 mb-0 text-body" style="font-size: 1.625rem;">
-                        {{ total_invested|format_inr }}
-                    </h3>
+    <!-- Holdings Summary Metric Strip -->
+    <div class="wealth-kpi-strip mb-4">
+        <div class="row g-0 align-items-stretch">
+            <!-- Cell 1: Total Invested -->
+            <div class="col-12 col-sm-6 col-lg-3 wealth-kpi-cell wealth-kpi-divider">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.05em;">Total Invested</span>
+                    <span class="badge badge-soft-primary p-1.5 rounded-3"><i class="bi bi-cash-stack fs-6"></i></span>
                 </div>
-                <div class="mt-3 pt-2.5 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
-                    <span>Capital deployed in active positions</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 2: Current Value -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated border-accent-info h-100 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Current Value</span>
-                        <span class="badge badge-soft-info p-2 rounded-3"><i class="bi bi-wallet2 fs-5"></i></span>
-                    </div>
-                    <h3 class="fw-bold num-mono mt-1 mb-0 text-body" style="font-size: 1.625rem;">
-                        {{ total_current_value|format_inr }}
-                    </h3>
-                </div>
-                <div class="mt-3 pt-2.5 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
-                    <span>Mark-to-market live valuation</span>
+                <h3 class="fw-bold num-mono mb-1 text-body" style="font-size: 1.45rem;">
+                    {{ total_invested|format_inr }}
+                </h3>
+                <div class="small text-muted d-flex align-items-center justify-content-between" style="font-size: 0.74rem;">
+                    <span>Capital in active lots</span>
+                    <span class="num-mono fw-semibold text-body">{{ holdings|length }} Stocks</span>
                 </div>
             </div>
-        </div>
 
-        <!-- Card 3: Today's P&L -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated {% if total_day_pnl >= 0 %}border-accent-success{% else %}border-accent-danger{% endif %} h-100 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Today's Session P&L</span>
-                        <span class="badge {% if total_day_pnl >= 0 %}badge-soft-success{% else %}badge-soft-danger{% endif %} p-2 rounded-3">
-                            <i class="bi bi-activity fs-5"></i>
-                        </span>
-                    </div>
-                    <h3 class="fw-bold num-mono mt-1 mb-0 {{ total_day_pnl|financial_color }}" style="font-size: 1.625rem;">
-                        {{ total_day_pnl|format_inr_signed }}
-                    </h3>
+            <!-- Cell 2: Current Value -->
+            <div class="col-12 col-sm-6 col-lg-3 wealth-kpi-cell wealth-kpi-divider">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.05em;">Current Market Value</span>
+                    <span class="badge badge-soft-info p-1.5 rounded-3"><i class="bi bi-wallet2 fs-6"></i></span>
                 </div>
-                <div class="mt-3 pt-2.5 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
-                    <span class="text-muted">Today's Move:</span>
+                <h3 class="fw-bold num-mono mb-1 text-body" style="font-size: 1.45rem;">
+                    {{ total_current_value|format_inr }}
+                </h3>
+                <div class="small text-muted d-flex align-items-center justify-content-between" style="font-size: 0.74rem;">
+                    <span>Live MTM Valuation</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2">100% Equity</span>
+                </div>
+            </div>
+
+            <!-- Cell 3: Today's P&L -->
+            <div class="col-12 col-sm-6 col-lg-3 wealth-kpi-cell wealth-kpi-divider">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.05em;">Today's Session P&L</span>
+                    <span class="badge {% if total_day_pnl >= 0 %}badge-soft-success{% else %}badge-soft-danger{% endif %} p-1.5 rounded-3">
+                        <i class="bi bi-activity fs-6"></i>
+                    </span>
+                </div>
+                <h3 class="fw-bold num-mono mb-1 {{ total_day_pnl|financial_color }}" style="font-size: 1.45rem;">
+                    {{ total_day_pnl|format_inr_signed }}
+                </h3>
+                <div class="small d-flex align-items-center justify-content-between" style="font-size: 0.74rem;">
+                    <span class="text-muted">Day Move:</span>
                     <span class="badge {% if total_day_pnl >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if total_day_pnl >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono px-2 py-0.5 rounded-pill">
                         {% if total_day_pnl >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ day_pnl_percent|floatformat:2 }}% Today
                     </span>
                 </div>
             </div>
-        </div>
 
-        <!-- Card 4: Overall Returns -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated {% if total_unrealised_pnl >= 0 %}border-accent-success{% else %}border-accent-danger{% endif %} h-100 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Overall Returns</span>
-                        <span class="badge {% if total_unrealised_pnl >= 0 %}badge-soft-success{% else %}badge-soft-danger{% endif %} p-2 rounded-3">
-                            <i class="bi bi-graph-up-arrow fs-5"></i>
-                        </span>
-                    </div>
-                    <h3 class="fw-bold num-mono mt-1 mb-0 {{ total_unrealised_pnl|financial_color }}" style="font-size: 1.625rem;">
-                        {{ total_unrealised_pnl|format_inr_signed }}
-                    </h3>
+            <!-- Cell 4: Overall Returns -->
+            <div class="col-12 col-sm-6 col-lg-3 wealth-kpi-cell">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.05em;">Overall Unrealised Returns</span>
+                    <span class="badge {% if total_unrealised_pnl >= 0 %}badge-soft-success{% else %}badge-soft-danger{% endif %} p-1.5 rounded-3">
+                        <i class="bi bi-graph-up-arrow fs-6"></i>
+                    </span>
                 </div>
-                <div class="mt-3 pt-2.5 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
+                <h3 class="fw-bold num-mono mb-1 {{ total_unrealised_pnl|financial_color }}" style="font-size: 1.45rem;">
+                    {{ total_unrealised_pnl|format_inr_signed }}
+                </h3>
+                <div class="small d-flex align-items-center justify-content-between" style="font-size: 0.74rem;">
                     <span class="badge {% if total_unrealised_pnl >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if total_unrealised_pnl >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono px-2 py-0.5 rounded-pill">
-                        {% if total_invested > 0 %}
-                            {% widthratio total_unrealised_pnl total_invested 100 as pnl_pct %}
-                            {% if total_unrealised_pnl >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ pnl_pct }}% ROI
-                        {% else %}
-                            0.00%
-                        {% endif %}
+                        {% if total_unrealised_pnl >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ pnl_roi_percent }}% ROI
                     </span>
                     <span class="text-muted">
                         <strong class="text-success">{{ gainers_count }} ▲</strong> / <strong class="text-danger">{{ losers_count }} ▼</strong>
@@ -145,9 +128,9 @@
     </div>
 
     <!-- Holdings Table Card with Interactive Filter & Search Bar -->
-    <div class="card border-0 shadow-sm rounded-3">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="border: 1px solid rgba(226, 232, 240, 0.8) !important;">
         <!-- Filter and Search Toolbar -->
-        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 pt-3 px-4 pb-3">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 pt-3.5 px-4 pb-3">
             <div class="row g-2.5 align-items-center">
                 <!-- Search Bar -->
                 <div class="col-12 col-md-4 col-lg-3">
@@ -156,29 +139,31 @@
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" id="holdingSearchInput" hx-preserve="true" class="form-control bg-body-tertiary border-secondary border-opacity-25 border-start-0 ps-0"
-                               placeholder="Search symbol or name..." aria-label="Search Holdings">
+                               placeholder="Search symbol or company..." aria-label="Search Holdings">
                     </div>
                 </div>
 
-                <!-- Filter Pills (All / Gainers / Losers) -->
+                <!-- Segmented Filter Tabs (All / Gainers / Losers) -->
                 <div class="col-12 col-md-5 col-lg-4">
-                    <div class="btn-group btn-group-sm w-100 p-0.5 rounded-3 bg-body-tertiary border border-secondary border-opacity-10" role="group" id="holdingFilterPills">
+                    <div class="btn-group btn-group-sm w-100 p-0.5 rounded-3 bg-body-tertiary border border-secondary border-opacity-10 shadow-2xs" role="group" id="holdingFilterPills">
                         <button type="button" class="btn btn-sm btn-light active fw-semibold rounded-2 py-1" data-filter="all">
-                            All ({{ holdings|length }})
+                            All Positions ({{ holdings|length }})
                         </button>
                         <button type="button" class="btn btn-sm btn-transparent text-success fw-semibold rounded-2 py-1" data-filter="gainers">
-                            Gainers ({{ gainers_count }})
+                            <span class="rounded-circle d-inline-block me-1 bg-success" style="width: 6px; height: 6px;"></span>
+                            Profitable ({{ gainers_count }})
                         </button>
                         <button type="button" class="btn btn-sm btn-transparent text-danger fw-semibold rounded-2 py-1" data-filter="losers">
-                            Losers ({{ losers_count }})
+                            <span class="rounded-circle d-inline-block me-1 bg-danger" style="width: 6px; height: 6px;"></span>
+                            In Loss ({{ losers_count }})
                         </button>
                     </div>
                 </div>
 
                 <!-- Sector Filter Dropdown -->
                 <div class="col-6 col-md-3 col-lg-2 ms-auto">
-                    <select id="sectorFilterSelect" class="form-select form-select-sm bg-body-tertiary border-secondary border-opacity-25" aria-label="Filter by Sector">
-                        <option value="all">All Sectors</option>
+                    <select id="sectorFilterSelect" class="form-select form-select-sm bg-body-tertiary border-secondary border-opacity-25 shadow-2xs" aria-label="Filter by Sector">
+                        <option value="all">All Sectors ({{ sectors|length }})</option>
                         {% for sec in sectors %}
                         <option value="{{ sec }}">{{ sec }}</option>
                         {% endfor %}
@@ -187,12 +172,12 @@
 
                 <!-- Sort Dropdown -->
                 <div class="col-6 col-md-4 col-lg-3">
-                    <select id="sortHoldingSelect" class="form-select form-select-sm bg-body-tertiary border-secondary border-opacity-25" aria-label="Sort Holdings">
-                        <option value="value-desc">Sort: Highest Value</option>
+                    <select id="sortHoldingSelect" class="form-select form-select-sm bg-body-tertiary border-secondary border-opacity-25 shadow-2xs" aria-label="Sort Holdings">
+                        <option value="value-desc">Sort: Highest Valuation</option>
                         <option value="pnl-desc">Sort: Highest Returns (%)</option>
                         <option value="pnl-asc">Sort: Lowest Returns (%)</option>
                         <option value="weight-desc">Sort: Highest Weight</option>
-                        <option value="day-desc">Sort: Top Day Gainers</option>
+                        <option value="day-desc">Sort: Top Session Gainers</option>
                         <option value="symbol-asc">Sort: Symbol (A-Z)</option>
                     </select>
                 </div>
@@ -203,23 +188,23 @@
         <div class="card-body px-0 py-0">
             {% if holdings %}
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="holdingsDataTable">
+                <table class="table workstation-table table-hover align-middle mb-0" id="holdingsDataTable">
                     <thead class="table-light text-muted small text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
                         <tr>
-                            <th class="ps-4 py-3">Company & Symbol</th>
-                            <th class="py-3">Sector & Exchange</th>
+                            <th class="ps-4 py-3">Company &amp; Symbol</th>
+                            <th class="py-3">Sector &amp; Exchange</th>
                             <th class="text-end py-3">Qty</th>
                             <th class="text-end py-3">Avg Buy</th>
                             <th class="text-end py-3">LTP (Today)</th>
                             <th class="text-end py-3">Current Value</th>
-                            <th class="text-end py-3">Unrealised P&L</th>
+                            <th class="text-end py-3">Unrealised P&amp;L</th>
                             <th class="text-end py-3" style="min-width: 110px;">Weight</th>
                             <th class="text-center pe-4 py-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="holdingsTableBody">
                         {% for h in holdings %}
-                        <tr class="holding-row border-bottom border-secondary border-opacity-10"
+                        <tr class="holding-row border-bottom border-secondary border-opacity-10 transition-all"
                             data-symbol="{{ h.listing.symbol|lower }}"
                             data-name="{{ h.listing.instrument.display_name|lower }}"
                             data-sector="{{ h.listing.instrument.sector }}"
@@ -317,7 +302,7 @@
                                        class="btn btn-outline-primary btn-sm px-2.5 py-1 d-inline-flex align-items-center gap-1"
                                        hx-get="{% url 'holdings:detail' h.listing.symbol %}"
                                        hx-target="#main-content" hx-push-url="true"
-                                       title="Inspect FIFO Lots & Tax Lots">
+                                       title="Inspect FIFO Lots &amp; Tax Lots">
                                         <i class="bi bi-layers-half"></i>
                                         <span class="d-none d-xl-inline">Lots</span>
                                     </a>

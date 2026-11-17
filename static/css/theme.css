@@ -934,3 +934,147 @@ body {
     transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ==========================================================================
+   Modern Wealth Workstation & Holdings Desk Design System
+   ========================================================================== */
+
+.wealth-hero-banner {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(255, 255, 255, 0.98) 50%, rgba(16, 185, 129, 0.05) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+[data-bs-theme="dark"] .wealth-hero-banner {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(51, 65, 85, 0.7) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.wealth-kpi-strip {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+.wealth-kpi-cell {
+    padding: 1rem 1.25rem;
+    transition: background-color 0.15s ease;
+}
+
+.wealth-kpi-cell:hover {
+    background-color: var(--bg-card-hover);
+}
+
+.wealth-kpi-divider {
+    border-right: 1px solid var(--border-color);
+}
+
+@media (max-width: 991.98px) {
+    .wealth-kpi-divider {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+.donut-segment {
+    transition: stroke-width 0.25s ease, opacity 0.25s ease;
+    cursor: pointer;
+}
+
+.donut-segment:hover {
+    stroke-width: 6.5;
+    opacity: 0.9;
+}
+
+.holding-filter-pill {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.80rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.holding-filter-pill:hover {
+    background-color: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: rgba(37, 99, 235, 0.4);
+}
+
+.holding-filter-pill.active {
+    background-color: var(--color-blue);
+    color: #ffffff;
+    border-color: var(--color-blue);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.holding-filter-pill.active .badge {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+.stock-avatar-squircle {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card-hover);
+    overflow: hidden;
+}
+
+.workstation-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.workstation-table thead th {
+    background-color: rgba(248, 250, 252, 0.85);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.70rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+}
+
+[data-bs-theme="dark"] .workstation-table thead th {
+    background-color: rgba(30, 41, 59, 0.85);
+}
+
+.workstation-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.workstation-table tbody tr:hover {
+    background-color: var(--bg-card-hover);
+}
+
+.workstation-table tbody td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    vertical-align: middle;
+}
+
+[data-bs-theme="dark"] .workstation-table tbody td {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+

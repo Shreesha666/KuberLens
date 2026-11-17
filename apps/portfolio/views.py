@@ -113,10 +113,21 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
             "#f43f5e", "#6366f1", "#f97316", "#14b8a6", "#84cc16", "#64748b"
         ]
 
+        cumulative_pct = Decimal("0.0")
         for idx, (sec, val) in enumerate(sorted(sectors.items(), key=lambda x: x[1], reverse=True)):
             pct = round((val / current_val * Decimal("100.0")), 1) if current_val > 0 else Decimal("0.0")
             color = sector_colors[idx % len(sector_colors)]
-            sector_breakdown.append({"sector": sec, "value": val, "percent": pct, "color": color})
+            dash_array = f"{pct} {100 - pct}"
+            dash_offset = f"-{cumulative_pct}"
+            cumulative_pct += pct
+            sector_breakdown.append({
+                "sector": sec,
+                "value": val,
+                "percent": pct,
+                "color": color,
+                "dash_array": dash_array,
+                "dash_offset": dash_offset,
+            })
             if pct >= Decimal("35.0"):
                 concentration_warnings.append(f"High Sector Concentration: {sec} represents {pct}% of your holdings.")
 
@@ -172,6 +183,18 @@ class PortfolioOverviewView(LoginRequiredMixin, HTMXResponseMixin, TemplateView)
         context["concentration_warnings"] = concentration_warnings
         context["is_market_open"] = is_market_open
         context["auto_refresh_interval"] = 15 if is_market_open else 0
+
+        # Asset Class Proportions
+        equity_pct = round((current_val / total_net_worth * Decimal("100.0")), 1) if total_net_worth > 0 else Decimal("0.0")
+        cash_pct = round((portfolio.cash_balance / total_net_worth * Decimal("100.0")), 1) if total_net_worth > 0 else Decimal("0.0")
+        context["equity_pct"] = equity_pct
+        context["cash_pct"] = cash_pct
+
+        # Top Session Movers
+        holdings_sorted_day = sorted(holdings, key=lambda x: getattr(x, "day_pnl", Decimal("0.00")), reverse=True)
+        context["top_day_gainer"] = holdings_sorted_day[0] if holdings_sorted_day and holdings_sorted_day[0].day_pnl > 0 else None
+        context["top_day_drag"] = holdings_sorted_day[-1] if holdings_sorted_day and holdings_sorted_day[-1].day_pnl < 0 else None
+
         return context
 
 

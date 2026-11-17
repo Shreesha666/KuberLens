@@ -146,6 +146,12 @@ class HoldingListView(LoginRequiredMixin, HTMXResponseMixin, ListView):
         context["is_market_open"] = is_market_open
         context["auto_refresh_interval"] = 15 if is_market_open else 0
         context["sectors"] = sorted(sectors_set)
+
+        pnl_roi_pct = round((total_unreal / total_inv * Decimal("100.0")), 2) if total_inv > Decimal("0.00") else Decimal("0.00")
+        context["pnl_roi_percent"] = pnl_roi_pct
+        holdings_sorted_day = sorted(holdings, key=lambda x: getattr(x, "day_pnl", Decimal("0.00")), reverse=True)
+        context["top_day_gainer"] = holdings_sorted_day[0] if holdings_sorted_day and holdings_sorted_day[0].day_pnl > 0 else None
+        context["top_day_drag"] = holdings_sorted_day[-1] if holdings_sorted_day and holdings_sorted_day[-1].day_pnl < 0 else None
         return context
 
 

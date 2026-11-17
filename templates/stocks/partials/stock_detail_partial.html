@@ -177,50 +177,77 @@
                 </div>
             </div>
             <div class="card-body px-4 py-2">
-                <div class="row g-3 mb-3 small align-items-start">
-                    <div class="col-6 col-md-2">
-                        <span class="text-muted d-block">Optimal Entry Zone</span>
-                        <span class="fw-bold num-mono text-body">{{ recommendations.new_investor.entry_zone }}</span>
+                <!-- 1. Key Trade Execution Metrics (3-Column Spacious Grid) -->
+                <div class="row g-3 mb-3 small pt-1">
+                    <div class="col-4">
+                        <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Optimal Entry</span>
+                        <span class="fw-bold num-mono text-body text-nowrap" style="font-size: 0.88rem;">{{ recommendations.new_investor.entry_zone }}</span>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <span class="text-muted d-block">Stop Loss (ATR)</span>
-                        <span class="fw-bold num-mono text-loss">{{ recommendations.new_investor.stop_loss }}</span>
-                        <div class="text-muted" style="font-size: 0.7rem;">{{ recommendations.new_investor.stop_loss_rationale }}</div>
+                    <div class="col-4">
+                        <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Stop Loss (ATR)</span>
+                        <span class="fw-bold num-mono text-loss text-nowrap" style="font-size: 0.88rem;">{{ recommendations.new_investor.stop_loss }}</span>
+                        {% if recommendations.new_investor.stop_loss_rationale %}
+                        <div class="text-muted text-truncate" style="font-size: 0.68rem;" title="{{ recommendations.new_investor.stop_loss_rationale }}">1.5× ATR Buffer</div>
+                        {% endif %}
                     </div>
-                    <div class="col-6 col-md-2">
-                        <span class="text-muted d-block">Risk / Reward</span>
-                        <span class="fw-bold num-mono text-body">{{ recommendations.new_investor.risk_reward }}</span>
+                    <div class="col-4">
+                        <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Risk / Reward</span>
+                        <span class="badge bg-light text-body border num-mono fw-bold px-2 py-1" style="font-size: 0.82rem;">{{ recommendations.new_investor.risk_reward }}</span>
                     </div>
-                    <div class="col-12 col-md-5">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="text-muted small fw-semibold">Target Milestones &amp; Estimated Timeline</span>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 0.65rem;">
-                                <i class="bi bi-clock-history me-1"></i>ATR Volatility Velocity
-                            </span>
-                        </div>
-                        <div class="d-flex flex-column gap-1">
-                            <div class="d-flex align-items-center justify-content-between bg-body-tertiary px-2 py-1 rounded border border-secondary border-opacity-10">
-                                <span class="num-mono fw-bold text-success" style="font-size: 0.82rem;">
-                                    T1: {{ recommendations.new_investor.target_levels.0 }}
-                                    <small class="text-muted fw-normal">(+{{ recommendations.new_investor.target_1_pct }}%)</small>
-                                </span>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.70rem;">
-                                    Est. {{ recommendations.new_investor.target_1_eta }}
-                                </span>
+                </div>
+
+                <!-- 2. Target Milestones & Estimated Timeline (Dedicated Card Section) -->
+                <div class="p-2.5 rounded-3 bg-body-tertiary bg-opacity-60 border border-secondary border-opacity-10 mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-semibold text-body small d-flex align-items-center gap-1.5">
+                            <i class="bi bi-crosshair text-success"></i> Target Milestones &amp; Estimated Timeline
+                        </span>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-0.5 px-2 rounded-pill" style="font-size: 0.65rem;">
+                            <i class="bi bi-clock-history me-1"></i>ATR Volatility Velocity
+                        </span>
+                    </div>
+                    <div class="row g-2">
+                        <!-- Target 1 -->
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2 rounded bg-body border border-secondary border-opacity-10 h-100 d-flex flex-column justify-content-between">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-bold text-success num-mono" style="font-size: 0.88rem;">
+                                        T1: {{ recommendations.new_investor.target_levels.0 }}
+                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success num-mono fw-bold" style="font-size: 0.68rem;">
+                                        +{{ recommendations.new_investor.target_1_pct }}%
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between text-muted small" style="font-size: 0.72rem;">
+                                    <span>Swing Pivot</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-15">
+                                        Est. {{ recommendations.new_investor.target_1_eta }}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="d-flex align-items-center justify-content-between bg-body-tertiary px-2 py-1 rounded border border-secondary border-opacity-10">
-                                <span class="num-mono fw-bold text-success" style="font-size: 0.82rem;">
-                                    T2: {{ recommendations.new_investor.target_levels.1 }}
-                                    <small class="text-muted fw-normal">(+{{ recommendations.new_investor.target_2_pct }}%)</small>
-                                </span>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.70rem;">
-                                    Est. {{ recommendations.new_investor.target_2_eta }}
-                                </span>
+                        </div>
+                        <!-- Target 2 -->
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2 rounded bg-body border border-secondary border-opacity-10 h-100 d-flex flex-column justify-content-between">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-bold text-success num-mono" style="font-size: 0.88rem;">
+                                        T2: {{ recommendations.new_investor.target_levels.1 }}
+                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success num-mono fw-bold" style="font-size: 0.68rem;">
+                                        +{{ recommendations.new_investor.target_2_pct }}%
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between text-muted small" style="font-size: 0.72rem;">
+                                    <span>1.618× Ext.</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-15">
+                                        Est. {{ recommendations.new_investor.target_2_eta }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div class="text-muted mt-1" style="font-size: 0.68rem;">
-                            <i class="bi bi-info-circle me-1"></i>{{ recommendations.new_investor.target_methodology }} &bull; {{ recommendations.new_investor.velocity_rationale }}
-                        </div>
+                    </div>
+                    <div class="text-muted mt-2 pt-1 border-top border-secondary border-opacity-10" style="font-size: 0.68rem;">
+                        <i class="bi bi-info-circle me-1"></i>{{ recommendations.new_investor.target_methodology }} &bull; {{ recommendations.new_investor.velocity_rationale }}
                     </div>
                 </div>
 

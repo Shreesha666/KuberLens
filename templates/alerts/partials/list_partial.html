@@ -222,10 +222,10 @@
                 <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">
                     <tr>
                         <th class="ps-4" style="width: 22%;">Target Instrument</th>
-                        <th style="width: 20%;">Condition</th>
-                        <th style="width: 17%;">Target &amp; Proximity</th>
-                        <th style="width: 22%;">Trading Plan / Notes</th>
-                        <th class="text-center" style="width: 7%;">Status</th>
+                        <th style="width: 18%;">Condition</th>
+                        <th style="width: 22%;">Target &amp; Proximity</th>
+                        <th style="width: 18%;">Trading Plan / Notes</th>
+                        <th class="text-center" style="width: 8%;">Status</th>
                         <th class="text-center" style="width: 7%;">Triggers</th>
                         <th class="text-end pe-4" style="width: 5%;"></th>
                     </tr>
@@ -309,43 +309,52 @@
                         </td>
                         <td>
                             {% if alert.target_value > 0 %}
-                            <div class="d-flex align-items-center gap-1.5">
-                                <span class="fw-bold num-mono fs-6 text-body">
-                                    {% if "PERCENT" in alert.alert_type %}
-                                    ±{{ alert.target_value|floatformat:1 }}%
-                                    {% elif "RSI" in alert.alert_type %}
-                                    RSI {{ alert.target_value|floatformat:0 }}
-                                    {% elif "VOLUME" in alert.alert_type %}
-                                    {{ alert.target_value|floatformat:1 }}×
-                                    {% else %}
-                                    ₹{{ alert.target_value|floatformat:2|intcomma }}
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div>
+                                    <div class="d-flex align-items-baseline gap-1.5">
+                                        <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.04em;">Target</span>
+                                        <span class="fw-bold num-mono text-body" style="font-size: 0.95rem;">
+                                            {% if "PERCENT" in alert.alert_type %}
+                                            ±{{ alert.target_value|floatformat:1 }}%
+                                            {% elif "RSI" in alert.alert_type %}
+                                            RSI {{ alert.target_value|floatformat:0 }}
+                                            {% elif "VOLUME" in alert.alert_type %}
+                                            {{ alert.target_value|floatformat:1 }}×
+                                            {% else %}
+                                            ₹{{ alert.target_value|floatformat:2|intcomma }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if alert.current_price %}
+                                    <div class="d-flex align-items-baseline gap-1 text-muted extra-small text-nowrap mt-0.5" style="font-size: 0.73rem;">
+                                        <span>LTP:</span>
+                                        <span class="num-mono fw-semibold text-body">₹{{ alert.current_price|floatformat:2|intcomma }}</span>
+                                    </div>
                                     {% endif %}
-                                </span>
-                            </div>
-                            <div class="extra-small text-muted d-flex align-items-center gap-1.5 mt-0.5">
-                                {% if alert.current_price %}
-                                <span>LTP: <strong class="num-mono text-body">₹{{ alert.current_price|floatformat:2|intcomma }}</strong></span>
-                                {% endif %}
+                                </div>
                                 {% if alert.diff_pct is not None %}
-                                {% if alert.diff_pct > 0 %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono px-1.5 py-0.5 rounded-pill">
-                                    +{{ alert.diff_pct|floatformat:1 }}% away
-                                </span>
-                                {% elif alert.diff_pct < 0 %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono px-1.5 py-0.5 rounded-pill">
-                                    {{ alert.diff_pct|floatformat:1 }}% away
-                                </span>
-                                {% else %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 extra-small rounded-pill">
-                                    At Target
-                                </span>
-                                {% endif %}
+                                <div class="text-end flex-shrink-0">
+                                    {% if alert.diff_pct > 0 %}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono px-2 py-1 rounded-2 text-nowrap fw-semibold">
+                                        +{{ alert.diff_pct|floatformat:1 }}% away
+                                    </span>
+                                    {% elif alert.diff_pct < 0 %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono px-2 py-1 rounded-2 text-nowrap fw-semibold">
+                                        {{ alert.diff_pct|floatformat:1 }}% away
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 extra-small rounded-2 text-nowrap fw-semibold">
+                                        At Target
+                                    </span>
+                                    {% endif %}
+                                </div>
                                 {% endif %}
                             </div>
                             {% else %}
                             <span class="badge bg-info-subtle text-info border border-info-subtle small fw-semibold">
                                 <i class="bi bi-cpu me-1"></i>Auto Event
                             </span>
+                            <div class="extra-small text-muted mt-0.5">Tick crossover</div>
                             {% endif %}
                         </td>
                         <td>

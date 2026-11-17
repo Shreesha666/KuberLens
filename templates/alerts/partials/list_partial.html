@@ -1,3 +1,4 @@
+{% load humanize %}
 <!-- Alert Rules List Partial -->
 <div class="container-fluid px-0">
     <!-- Header -->
@@ -194,30 +195,24 @@
     <!-- Alert Rules Table -->
     {% if alerts %}
     <div class="card border border-secondary border-opacity-10 shadow-sm rounded-3 overflow-hidden">
-        <div class="card-header bg-body border-bottom border-secondary border-opacity-10 py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div class="d-flex flex-wrap align-items-center gap-2.5">
-                <div>
-                    <h6 class="fw-bold mb-0 text-body" style="text-transform: none; font-size: 0.95rem;">Active Monitoring Rules</h6>
-                    <span class="text-muted extra-small">Automated tick-level price monitoring and technical indicator triggers</span>
+        <div class="card-header bg-body border-bottom border-secondary border-opacity-10 py-3 px-4">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-md-8">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <div class="fw-bold mb-0 text-body" style="text-transform: none; font-size: 0.98rem;">Active Monitoring Rules</div>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5 rounded-pill extra-small fw-semibold">{{ total_count }} Rules</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill extra-small fw-semibold">{{ active_count }} Active</span>
+                        {% if triggered_count > 0 %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 rounded-pill extra-small fw-semibold">{{ triggered_count }} Triggered</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted extra-small mb-0">Automated tick-level price monitoring and technical indicator triggers</p>
                 </div>
-                <div class="d-flex align-items-center gap-1.5 ms-md-2">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 rounded-pill small fw-semibold">
-                        {{ total_count }} Rules
-                    </span>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill small fw-semibold">
-                        {{ active_count }} Active
-                    </span>
-                    {% if triggered_count > 0 %}
-                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5 rounded-pill small fw-semibold">
-                        {{ triggered_count }} Triggered
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <div class="input-group input-group-sm" style="width: 220px;">
-                    <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" id="alertTableSearch" class="form-control border-start-0" placeholder="Filter by symbol, note...">
+                <div class="col-12 col-md-4 text-md-end">
+                    <div class="input-group input-group-sm ms-md-auto" style="max-width: 250px;">
+                        <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="alertTableSearch" class="form-control border-start-0" placeholder="Filter by symbol, note...">
+                    </div>
                 </div>
             </div>
         </div>
@@ -226,13 +221,13 @@
             <table class="table table-hover align-middle mb-0" id="alertRulesTable">
                 <thead class="table-light text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.04em;">
                     <tr>
-                        <th class="ps-4">Target Instrument</th>
-                        <th>Condition / Trigger</th>
-                        <th>Threshold &amp; Proximity</th>
-                        <th>Trading Plan / Notes</th>
-                        <th>Status</th>
-                        <th>Trigger History</th>
-                        <th class="text-end pe-4">Actions</th>
+                        <th class="ps-4" style="width: 22%;">Target Instrument</th>
+                        <th style="width: 20%;">Condition</th>
+                        <th style="width: 17%;">Target &amp; Proximity</th>
+                        <th style="width: 22%;">Trading Plan / Notes</th>
+                        <th class="text-center" style="width: 7%;">Status</th>
+                        <th class="text-center" style="width: 7%;">Triggers</th>
+                        <th class="text-end pe-4" style="width: 5%;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -241,21 +236,21 @@
                         <td class="ps-4">
                             {% if alert.listing %}
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="badge bg-primary text-white font-monospace fw-bold px-2 py-1 rounded-2">
+                                <span class="badge bg-primary text-white font-monospace fw-bold px-2 py-1.5 rounded-2" style="font-size: 0.78rem; min-width: 56px; text-align: center;">
                                     {{ alert.listing.symbol }}
                                 </span>
-                                <div class="text-truncate" style="max-width: 200px;">
+                                <div class="text-truncate">
                                     <a href="{% url 'stocks:stock_detail' alert.listing.symbol %}"
                                        hx-get="{% url 'stocks:stock_detail' alert.listing.symbol %}"
                                        hx-target="#main-content"
                                        hx-push-url="true"
-                                       class="fw-bold text-body text-decoration-none d-block text-truncate">
+                                       class="fw-bold text-body text-decoration-none d-block text-truncate" style="font-size: 0.88rem;">
                                         {{ alert.listing.instrument.display_name|default:alert.listing.symbol }}
                                     </a>
-                                    <div class="extra-small text-muted d-flex align-items-center gap-1">
+                                    <div class="extra-small text-muted d-flex align-items-center gap-1 mt-0.5">
                                         <span>LTP:</span>
                                         {% if alert.current_price %}
-                                        <span class="fw-bold text-body num-mono">₹{{ alert.current_price|floatformat:2 }}</span>
+                                        <span class="fw-bold text-body num-mono">₹{{ alert.current_price|floatformat:2|intcomma }}</span>
                                         {% else %}
                                         <span>—</span>
                                         {% endif %}
@@ -263,41 +258,42 @@
                                 </div>
                             </div>
                             {% else %}
-                            <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center gap-2.5">
                                 <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle p-2 rounded-2">
-                                    <i class="bi bi-wallet2"></i>
+                                    <i class="bi bi-wallet2 fs-6"></i>
                                 </span>
                                 <div>
                                     <span class="fw-bold text-body small">Portfolio-Wide</span>
-                                    <span class="extra-small text-muted d-block">Account Risk Rule</span>
+                                    <span class="extra-small text-muted d-block mt-0.5">Account Risk Rule</span>
                                 </div>
                             </div>
                             {% endif %}
                         </td>
                         <td>
-                            <div class="d-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-2 bg-body-tertiary border border-secondary border-opacity-10 small fw-semibold">
+                            <div class="d-inline-flex align-items-center gap-1.5 py-1 px-2.5 rounded-pill bg-body-tertiary border border-secondary border-opacity-15 small fw-semibold">
                                 {% if "ABOVE" in alert.alert_type or "HIGH" in alert.alert_type or "GOLDEN" in alert.alert_type %}
-                                <i class="bi bi-arrow-up-right text-success"></i>
+                                <i class="bi bi-arrow-up-right text-success me-1"></i>
                                 {% elif "BELOW" in alert.alert_type or "LOW" in alert.alert_type or "DEATH" in alert.alert_type %}
-                                <i class="bi bi-arrow-down-right text-danger"></i>
+                                <i class="bi bi-arrow-down-right text-danger me-1"></i>
                                 {% elif "RSI" in alert.alert_type %}
-                                <i class="bi bi-activity text-warning"></i>
+                                <i class="bi bi-activity text-warning me-1"></i>
                                 {% elif "VOLUME" in alert.alert_type %}
-                                <i class="bi bi-bar-chart-fill text-primary"></i>
+                                <i class="bi bi-bar-chart-fill text-primary me-1"></i>
                                 {% else %}
-                                <i class="bi bi-bell text-secondary"></i>
+                                <i class="bi bi-bell text-secondary me-1"></i>
                                 {% endif %}
-                                <span>{{ alert.get_alert_type_display }}</span>
+                                <span class="text-body">{{ alert.get_alert_type_display }}</span>
                             </div>
                             {% if alert.is_market_hours_only %}
-                            <div class="extra-small text-muted mt-1">
-                                <i class="bi bi-clock me-1"></i>Market Hours Only
+                            <div class="extra-small text-muted d-flex align-items-center gap-1 mt-1">
+                                <i class="bi bi-clock"></i>
+                                <span>Market Hours Only</span>
                             </div>
                             {% endif %}
                         </td>
                         <td>
                             {% if alert.target_value > 0 %}
-                            <div class="d-flex align-items-baseline gap-1.5">
+                            <div>
                                 <span class="fw-bold num-mono fs-6 text-body">
                                     {% if "PERCENT" in alert.alert_type %}
                                     ±{{ alert.target_value|floatformat:1 }}%
@@ -306,22 +302,22 @@
                                     {% elif "VOLUME" in alert.alert_type %}
                                     {{ alert.target_value|floatformat:1 }}×
                                     {% else %}
-                                    ₹{{ alert.target_value|floatformat:2 }}
+                                    ₹{{ alert.target_value|floatformat:2|intcomma }}
                                     {% endif %}
                                 </span>
                             </div>
                             {% if alert.diff_pct is not None %}
-                            <div class="mt-0.5">
+                            <div class="mt-1">
                                 {% if alert.diff_pct > 0 %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 extra-small num-mono px-2 py-0.5 rounded-pill">
                                     +{{ alert.diff_pct|floatformat:1 }}% away
                                 </span>
                                 {% elif alert.diff_pct < 0 %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono">
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 extra-small num-mono px-2 py-0.5 rounded-pill">
                                     {{ alert.diff_pct|floatformat:1 }}% away
                                 </span>
                                 {% else %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 extra-small">
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 extra-small rounded-pill">
                                     At Target
                                 </span>
                                 {% endif %}
@@ -333,16 +329,17 @@
                             </span>
                             {% endif %}
                         </td>
-                        <td style="max-width: 220px;">
+                        <td>
                             {% if alert.notes %}
-                            <div class="small text-body text-truncate" title="{{ alert.notes }}">
-                                <i class="bi bi-card-text text-muted me-1"></i>{{ alert.notes }}
+                            <div class="small text-body d-flex align-items-start gap-1.5" title="{{ alert.notes }}">
+                                <i class="bi bi-card-text text-muted flex-shrink-0 mt-0.5"></i>
+                                <span>{{ alert.notes }}</span>
                             </div>
                             {% else %}
-                            <span class="text-muted extra-small fst-italic">No thesis notes</span>
+                            <span class="text-muted extra-small">—</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-center">
                             <form method="post" action="{% url 'alerts:toggle' alert.id %}"
                                   hx-post="{% url 'alerts:toggle' alert.id %}"
                                   hx-target="#main-content"
@@ -350,27 +347,24 @@
                                   class="d-inline">
                                 {% csrf_token %}
                                 {% if alert.is_active %}
-                                <button type="submit" class="btn btn-sm btn-outline-success py-0.5 px-2.5 rounded-pill d-inline-flex align-items-center gap-1.5 small fw-semibold" title="Click to pause monitoring">
+                                <button type="submit" class="btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2.5 rounded-pill small fw-semibold d-inline-flex align-items-center gap-1.5" title="Click to pause monitoring">
                                     <span class="rounded-circle bg-success" style="width: 6px; height: 6px; display: inline-block;"></span> Active
                                 </button>
                                 {% else %}
-                                <button type="submit" class="btn btn-sm btn-outline-secondary py-0.5 px-2.5 rounded-pill d-inline-flex align-items-center gap-1.5 small fw-semibold" title="Click to resume monitoring">
+                                <button type="submit" class="btn btn-sm bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 py-1 px-2.5 rounded-pill small fw-semibold d-inline-flex align-items-center gap-1.5" title="Click to resume monitoring">
                                     <span class="rounded-circle bg-secondary" style="width: 6px; height: 6px; display: inline-block;"></span> Paused
                                 </button>
                                 {% endif %}
                             </form>
                         </td>
-                        <td>
+                        <td class="text-center">
                             {% if alert.trigger_count > 0 %}
-                            <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+                            <span class="badge bg-warning text-dark fw-bold px-2 py-1 rounded-pill">
                                 <i class="bi bi-bell-fill me-1"></i>{{ alert.trigger_count }}× Fired
                             </span>
                             <div class="extra-small text-muted mt-0.5">{{ alert.last_triggered_at|date:"d M, H:i" }}</div>
                             {% else %}
-                            <span class="badge bg-light text-secondary border px-2 py-1 extra-small">
-                                <i class="bi bi-radar me-1 text-success"></i>Monitoring
-                            </span>
-                            <div class="extra-small text-muted mt-0.5">Never triggered</div>
+                            <span class="text-muted small">Never</span>
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
@@ -381,8 +375,8 @@
                                   class="d-inline"
                                   onsubmit="return confirm('Delete alert rule for {{ alert.listing.symbol|default:'Portfolio' }}?');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-danger btn-sm p-1 px-2 rounded-2" title="Delete alert rule">
-                                    <i class="bi bi-trash"></i>
+                                <button type="submit" class="btn btn-sm text-danger border-0 p-1.5 rounded-2 bg-transparent opacity-75 hover-opacity-100" title="Delete alert rule">
+                                    <i class="bi bi-trash fs-6"></i>
                                 </button>
                             </form>
                         </td>

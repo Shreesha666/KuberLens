@@ -1,0 +1,9 @@
+{% extends "base/shell.html" %}
+
+{% block title %}Paper Trading Terminal | {{ platform_title }}{% endblock %}
+
+{% block content %}
+<div id="paper-terminal-container">
+    {% include "paper_trading/partials/terminal_partial.html" %}
+</div>
+{% endblock %}

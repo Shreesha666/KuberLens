@@ -187,3 +187,112 @@ def estimate_charges_api(request):
         })
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+
+@login_required
+def terminal_view(request):
+    """
+    Paper Trading Terminal Dashboard.
+    Displays virtual account balances, open positions, active orders, tradebook, and performance analytics.
+    """
+    account, _ = PaperAccount.objects.get_or_create(user=request.user)
+
+    # Evaluate pending orders and stop-loss / target brackets against latest quotes
+    PaperTradingExecutionEngine.evaluate_pending_orders_and_brackets(account=account)
+    account.refresh_from_db()
+
+    # Positions with updated MTM
+    positions = list(account.positions.select_related("listing__instrument", "listing__exchange").all())
+    for pos in positions:
+        latest_price = PaperTradingExecutionEngine.get_latest_price(pos.listing)
+        pos.recalculate_pnl(latest_price)
+
+    # Pending orders
+    pending_orders = account.orders.filter(status=OrderStatus.PENDING).select_related(
+        "listing__instrument", "listing__exchange"
+    ).order_by("-created_at")
+
+    # Tradebook records
+    trades = account.trades.select_related(
+        "listing__instrument", "listing__exchange"
+    ).order_by("-executed_at")
+
+    # Analytics calculation
+    total_trades_count = trades.count()
+    closed_trades = [t for t in trades if t.net_realized_pnl is not None]
+    closed_count = len(closed_trades)
+    winning_trades = [t for t in closed_trades if t.net_realized_pnl > Decimal("0.00")]
+    losing_trades = [t for t in closed_trades if t.net_realized_pnl < Decimal("0.00")]
+
+    win_count = len(winning_trades)
+    loss_count = len(losing_trades)
+    win_rate = round(Decimal(str(win_count / closed_count * 100)), 1) if closed_count > 0 else Decimal("0.0")
+
+    total_gross_gain = sum((t.net_realized_pnl for t in winning_trades), Decimal("0.00"))
+    total_gross_loss = abs(sum((t.net_realized_pnl for t in losing_trades), Decimal("0.00")))
+    profit_factor = (
+        round((total_gross_gain / total_gross_loss), 2)
+        if total_gross_loss > Decimal("0.00")
+        else (round(total_gross_gain, 2) if total_gross_gain > Decimal("0.00") else Decimal("0.0"))
+    )
+
+    total_charges_paid = sum((t.total_charges for t in trades), Decimal("0.00"))
+
+    context = {
+        "page_title": "Paper Trading Terminal",
+        "active_nav": "paper_trading",
+        "account": account,
+        "positions": positions,
+        "pending_orders": pending_orders,
+        "trades": trades,
+        "analytics": {
+            "total_trades": total_trades_count,
+            "closed_trades": closed_count,
+            "win_count": win_count,
+            "loss_count": loss_count,
+            "win_rate": win_rate,
+            "profit_factor": profit_factor,
+            "total_charges_paid": total_charges_paid,
+        },
+    }
+
+    template_name = "paper_trading/partials/terminal_partial.html" if request.htmx else "paper_trading/terminal.html"
+    return render(request, template_name, context)
+
+
+@login_required
+@require_POST
+def cancel_order_view(request, order_id):
+    """Cancels a pending limit or stop-loss order."""
+    account, _ = PaperAccount.objects.get_or_create(user=request.user)
+    order = get_object_or_404(PaperOrder, id=order_id, account=account)
+    PaperTradingExecutionEngine.cancel_order(order)
+    return terminal_view(request)
+
+
+@login_required
+@require_POST
+def square_off_position_view(request, position_id):
+    """Automatically squares off an open position at market price."""
+    account, _ = PaperAccount.objects.get_or_create(user=request.user)
+    position = get_object_or_404(PaperPosition, id=position_id, account=account)
+    PaperTradingExecutionEngine.square_off_position(position)
+    return terminal_view(request)
+
+
+@login_required
+@require_POST
+def reset_account_view(request):
+    """Resets the virtual paper trading account to initial or custom capital."""
+    account, _ = PaperAccount.objects.get_or_create(user=request.user)
+    try:
+        capital_val = request.POST.get("capital", "1000000.00").strip()
+        new_capital = Decimal(capital_val)
+        if new_capital <= Decimal("0.00"):
+            new_capital = Decimal("1000000.00")
+    except Exception:
+        new_capital = Decimal("1000000.00")
+
+    account.reset_account(new_capital)
+    return terminal_view(request)
+

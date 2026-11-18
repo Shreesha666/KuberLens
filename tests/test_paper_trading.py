@@ -657,3 +657,113 @@ class TestPaperTradingViews:
         assert b"Order Rejected" in response.content
         assert b"Insufficient CNC holdings" in response.content
 
+    def test_terminal_view_anonymous_redirect(self, client):
+        """Anonymous user is redirected to login from terminal."""
+        from django.urls import reverse
+
+        response = client.get(reverse("paper_trading:terminal"))
+        assert response.status_code == 302
+        assert "/accounts/login/" in response.url
+
+    def test_terminal_view_full_render(self, client, paper_setup):
+        """Authenticated user gets terminal dashboard."""
+        user = paper_setup["user"]
+        from django.urls import reverse
+
+        client.force_login(user)
+        response = client.get(reverse("paper_trading:terminal"))
+        assert response.status_code == 200
+        assert b"Paper Trading Terminal" in response.content
+        assert b"Available Cash" in response.content
+        assert b"Open Positions" in response.content
+
+    def test_terminal_view_htmx_partial(self, client, paper_setup):
+        """HTMX request returns partial without full HTML shell wrapper."""
+        user = paper_setup["user"]
+        from django.urls import reverse
+
+        client.force_login(user)
+        response = client.get(reverse("paper_trading:terminal"), HTTP_HX_REQUEST="true")
+        assert response.status_code == 200
+        assert b"<!DOCTYPE html>" not in response.content
+        assert b"paper-terminal-root" in response.content
+
+    def test_cancel_order_view_htmx(self, client, paper_setup):
+        """Cancelling pending order updates terminal."""
+        user = paper_setup["user"]
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+        from django.urls import reverse
+
+        order = PaperOrder.objects.create(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            order_type=OrderType.LIMIT,
+            quantity=10,
+            limit_price=Decimal("100.00"),
+            status=OrderStatus.PENDING,
+        )
+
+        client.force_login(user)
+        url = reverse("paper_trading:order_cancel", kwargs={"order_id": order.id})
+        response = client.post(url, HTTP_HX_REQUEST="true")
+        assert response.status_code == 200
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.CANCELLED
+
+    def test_square_off_position_view_htmx(self, client, paper_setup):
+        """Squaring off position via terminal endpoint removes the position."""
+        user = paper_setup["user"]
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+        from django.urls import reverse
+
+        pos = PaperPosition.objects.create(
+            account=account,
+            listing=listing,
+            product_type=ProductType.CNC,
+            quantity=25,
+            average_price=Decimal("100.00"),
+            current_price=Decimal("100.00"),
+        )
+
+        client.force_login(user)
+        url = reverse("paper_trading:position_square_off", kwargs={"position_id": pos.id})
+        response = client.post(url, HTTP_HX_REQUEST="true")
+        assert response.status_code == 200
+
+        assert PaperPosition.objects.filter(id=pos.id).count() == 0
+
+    def test_reset_account_view_htmx(self, client, paper_setup):
+        """Resetting account restores capital and wipes positions."""
+        user = paper_setup["user"]
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+        from django.urls import reverse
+
+        PaperPosition.objects.create(
+            account=account,
+            listing=listing,
+            product_type=ProductType.CNC,
+            quantity=50,
+            average_price=Decimal("100.00"),
+            current_price=Decimal("100.00"),
+        )
+        account.cash_balance = Decimal("200000.00")
+        account.realized_pnl = Decimal("50000.00")
+        account.save()
+
+        client.force_login(user)
+        url = reverse("paper_trading:account_reset")
+        response = client.post(url, {"capital": "750000.00"}, HTTP_HX_REQUEST="true")
+        assert response.status_code == 200
+
+        account.refresh_from_db()
+        assert account.initial_capital == Decimal("750000.00")
+        assert account.cash_balance == Decimal("750000.00")
+        assert account.realized_pnl == Decimal("0.00")
+        assert account.positions.count() == 0
+

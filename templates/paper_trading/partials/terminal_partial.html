@@ -1,0 +1,488 @@
+{% load core_tags %}
+<div class="container-fluid px-4 py-3" id="paper-terminal-root" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <!-- Header & Virtual Capital Status -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h1 class="h3 fw-bold mb-0 text-body">Paper Trading Terminal</h1>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold">Virtual Account (NSE/BSE)</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-shield-check"></i> 100% Zero Capital Risk
+                </span>
+            </div>
+            <p class="text-muted small mb-0">
+                Real-time simulated execution with dynamic slippage, margin management, and statutory fees.
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm"
+                    data-bs-toggle="modal" data-bs-target="#resetAccountModal">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Virtual Capital
+            </button>
+            <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm"
+                    hx-get="{% url 'paper_trading:terminal' %}" hx-target="#paper-terminal-root" hx-swap="outerHTML">
+                <i class="bi bi-arrow-repeat"></i> Refresh MTM
+            </button>
+        </div>
+    </div>
+
+    <!-- Account Capital Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Account Value -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Total Account Value</span>
+                    <span class="badge {% if account.total_return_pct >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} border small">
+                        {% if account.total_return_pct >= 0 %}+{% endif %}{{ account.total_return_pct }}%
+                    </span>
+                </div>
+                <div class="h4 fw-bold num-mono text-body mb-1">₹{{ account.total_portfolio_value|floatformat:2 }}</div>
+                <div class="text-muted small" style="font-size: 0.75rem;">
+                    Initial: <span class="num-mono">₹{{ account.initial_capital|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Available Cash Balance -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Available Cash</span>
+                    <i class="bi bi-wallet2 text-primary fs-5"></i>
+                </div>
+                <div class="h4 fw-bold num-mono text-primary mb-1">₹{{ account.available_margin|floatformat:2 }}</div>
+                <div class="text-muted small" style="font-size: 0.75rem;">
+                    Margin Used: <span class="num-mono">₹{{ account.margin_utilized|floatformat:2 }} ({{ account.margin_utilization_pct }}%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Floating Unrealized P&L -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Open Floating P&L</span>
+                    <i class="bi bi-activity text-info fs-5"></i>
+                </div>
+                <div class="h4 fw-bold num-mono {% if account.unrealized_pnl >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
+                    {% if account.unrealized_pnl >= 0 %}+{% endif %}₹{{ account.unrealized_pnl|floatformat:2 }}
+                </div>
+                <div class="text-muted small" style="font-size: 0.75rem;">
+                    Real-time Mark-to-Market
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Lifetime Realized P&L & Win Rate -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Realized Net P&L</span>
+                    <span class="badge bg-light text-secondary border small">Win Rate: {{ analytics.win_rate }}%</span>
+                </div>
+                <div class="h4 fw-bold num-mono {% if account.realized_pnl >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
+                    {% if account.realized_pnl >= 0 %}+{% endif %}₹{{ account.realized_pnl|floatformat:2 }}
+                </div>
+                <div class="text-muted small" style="font-size: 0.75rem;">
+                    Across <span class="fw-semibold">{{ analytics.closed_trades }}</span> completed trades
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal Tabs Navigation -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-body border-bottom pt-3 pb-0 px-4">
+            <ul class="nav nav-tabs card-header-tabs" id="terminalTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold d-flex align-items-center gap-2" id="positions-tab"
+                            data-bs-toggle="tab" data-bs-target="#positions-pane" type="button" role="tab" aria-controls="positions-pane" aria-selected="true">
+                        <i class="bi bi-collection"></i> Open Positions
+                        <span class="badge {% if positions %}bg-primary text-white{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill small">
+                            {{ positions|length }}
+                        </span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="orders-tab"
+                            data-bs-toggle="tab" data-bs-target="#orders-pane" type="button" role="tab" aria-controls="orders-pane" aria-selected="false">
+                        <i class="bi bi-clock-history"></i> Pending Orders
+                        <span class="badge {% if pending_orders %}bg-warning text-dark{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill small">
+                            {{ pending_orders|length }}
+                        </span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="tradebook-tab"
+                            data-bs-toggle="tab" data-bs-target="#tradebook-pane" type="button" role="tab" aria-controls="tradebook-pane" aria-selected="false">
+                        <i class="bi bi-journal-text"></i> Executed Tradebook
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill small">
+                            {{ trades|length }}
+                        </span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="analytics-tab"
+                            data-bs-toggle="tab" data-bs-target="#analytics-pane" type="button" role="tab" aria-controls="analytics-pane" aria-selected="false">
+                        <i class="bi bi-pie-chart"></i> Performance Analytics
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="tab-content" id="terminalTabContent">
+
+                <!-- TAB 1: POSITIONS -->
+                <div class="tab-pane fade show active p-0" id="positions-pane" role="tabpanel" aria-labelledby="positions-tab" tabindex="0">
+                    {% if positions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Instrument</th>
+                                    <th>Product</th>
+                                    <th class="text-end">Qty / Side</th>
+                                    <th class="text-end">Avg Price</th>
+                                    <th class="text-end">LTP (₹)</th>
+                                    <th class="text-end">Current Value</th>
+                                    <th class="text-end">Unrealized P&L</th>
+                                    <th>Protective Bracket</th>
+                                    <th class="text-center pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pos in positions %}
+                                <tr>
+                                    <!-- Instrument -->
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% stock_logo pos.listing size=28 css_class="p-0.5" %}
+                                            <div>
+                                                <a href="{% url 'stocks:stock_detail' pos.listing.symbol %}"
+                                                   hx-get="{% url 'stocks:stock_detail' pos.listing.symbol %}"
+                                                   hx-target="#main-content" hx-push-url="true"
+                                                   class="fw-bold text-decoration-none text-body">
+                                                    {{ pos.listing.symbol }}
+                                                </a>
+                                                <span class="badge bg-secondary-subtle text-body border ms-1" style="font-size: 0.65rem;">{{ pos.listing.exchange.code }}</span>
+                                                <div class="text-muted" style="font-size: 0.72rem;">{{ pos.listing.instrument.display_name }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Product -->
+                                    <td>
+                                        <span class="badge {% if pos.product_type == 'CNC' %}bg-secondary-subtle text-body border{% else %}bg-info-subtle text-info-emphasis border border-info-subtle{% endif %}">
+                                            {{ pos.product_type }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Quantity / Side -->
+                                    <td class="text-end">
+                                        <span class="fw-bold num-mono {% if pos.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ pos.quantity }}
+                                        </span>
+                                        <span class="badge {% if pos.quantity > 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} border ms-1" style="font-size: 0.65rem;">
+                                            {{ pos.side }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Avg Price -->
+                                    <td class="text-end num-mono">₹{{ pos.average_price|floatformat:2 }}</td>
+
+                                    <!-- LTP -->
+                                    <td class="text-end num-mono fw-semibold">₹{{ pos.current_price|floatformat:2 }}</td>
+
+                                    <!-- Current Market Value -->
+                                    <td class="text-end num-mono">₹{{ pos.current_market_value|floatformat:2 }}</td>
+
+                                    <!-- Unrealized PnL -->
+                                    <td class="text-end">
+                                        <div class="fw-bold num-mono {% if pos.unrealized_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if pos.unrealized_pnl >= 0 %}+{% endif %}₹{{ pos.unrealized_pnl|floatformat:2 }}
+                                        </div>
+                                        <div class="small num-mono {% if pos.unrealized_pnl_percent >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.72rem;">
+                                            {% if pos.unrealized_pnl_percent >= 0 %}+{% endif %}{{ pos.unrealized_pnl_percent }}%
+                                        </div>
+                                    </td>
+
+                                    <!-- Bracket Target & Stop-loss -->
+                                    <td>
+                                        {% if pos.stop_loss or pos.target %}
+                                        <div class="d-flex flex-column gap-1 small" style="font-size: 0.72rem;">
+                                            {% if pos.target %}
+                                            <span class="text-success"><i class="bi bi-bullseye"></i> Tgt: ₹{{ pos.target|floatformat:2 }}</span>
+                                            {% endif %}
+                                            {% if pos.stop_loss %}
+                                            <span class="text-danger"><i class="bi bi-shield-slash"></i> SL: ₹{{ pos.stop_loss|floatformat:2 }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted small">—</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="text-center pe-4">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.72rem;"
+                                                    title="Square off position at current market price"
+                                                    hx-post="{% url 'paper_trading:position_square_off' pos.id %}"
+                                                    hx-target="#paper-terminal-root" hx-swap="outerHTML"
+                                                    hx-confirm="Are you sure you want to square off {{ pos.quantity }} shares of {{ pos.listing.symbol }}?">
+                                                <i class="bi bi-x-circle me-1"></i> Square Off
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size: 0.72rem;"
+                                                    hx-get="{% url 'paper_trading:order_drawer' pos.listing.symbol %}"
+                                                    hx-target="#paper-order-drawer-container" hx-swap="innerHTML">
+                                                <i class="bi bi-lightning-charge"></i> Trade
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <!-- Empty State: Positions -->
+                    <div class="text-center py-5">
+                        <div class="text-muted mb-2">
+                            <i class="bi bi-briefcase fs-1"></i>
+                        </div>
+                        <h6 class="fw-bold text-body">No Open Paper Positions</h6>
+                        <p class="text-muted small mb-3">You do not currently have any active delivery or intraday open positions.</p>
+                        <a href="{% url 'stocks:stock_list' %}" hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true"
+                           class="btn btn-primary btn-sm px-3">
+                            <i class="bi bi-search me-1"></i> Explore Stocks &amp; Place Paper Trade
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- TAB 2: PENDING ORDERS -->
+                <div class="tab-pane fade p-0" id="orders-pane" role="tabpanel" aria-labelledby="orders-tab" tabindex="0">
+                    {% if pending_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Time</th>
+                                    <th>Instrument</th>
+                                    <th>Side</th>
+                                    <th>Product</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Price / Trigger</th>
+                                    <th>Status</th>
+                                    <th class="text-center pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in pending_orders %}
+                                <tr>
+                                    <td class="ps-4 num-mono small text-muted">{{ order.created_at|date:"H:i:s" }}</td>
+                                    <td>
+                                        <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if order.order_side == 'BUY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                            {{ order.order_side }}
+                                        </span>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-body border">{{ order.product_type }}</span></td>
+                                    <td><span class="small fw-semibold">{{ order.order_type }}</span></td>
+                                    <td class="text-end num-mono fw-bold">{{ order.quantity }}</td>
+                                    <td class="text-end num-mono fw-semibold">
+                                        {% if order.limit_price %}₹{{ order.limit_price|floatformat:2 }}{% elif order.trigger_price %}Trig: ₹{{ order.trigger_price|floatformat:2 }}{% else %}Market{% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                            <i class="bi bi-hourglass-split"></i> PENDING
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.72rem;"
+                                                hx-post="{% url 'paper_trading:order_cancel' order.id %}"
+                                                hx-target="#paper-terminal-root" hx-swap="outerHTML">
+                                            <i class="bi bi-trash"></i> Cancel
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <!-- Empty State: Orders -->
+                    <div class="text-center py-5">
+                        <div class="text-muted mb-2"><i class="bi bi-clock fs-1"></i></div>
+                        <h6 class="fw-bold text-body">No Pending Orders</h6>
+                        <p class="text-muted small mb-0">All limit and stop-loss orders have been filled or executed.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- TAB 3: EXECUTED TRADEBOOK -->
+                <div class="tab-pane fade p-0" id="tradebook-pane" role="tabpanel" aria-labelledby="tradebook-tab" tabindex="0">
+                    {% if trades %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Time</th>
+                                    <th>Instrument</th>
+                                    <th>Side</th>
+                                    <th>Product</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Fill Price</th>
+                                    <th class="text-end">Turnover</th>
+                                    <th class="text-end">Taxes &amp; Fees</th>
+                                    <th class="text-end pe-4">Realized P&amp;L</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trade in trades %}
+                                <tr>
+                                    <td class="ps-4 num-mono small text-muted">{{ trade.executed_at|date:"d M H:i" }}</td>
+                                    <td>
+                                        <span class="fw-bold text-body">{{ trade.listing.symbol }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if trade.trade_side == 'BUY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                            {{ trade.trade_side }}
+                                        </span>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-body border">{{ trade.product_type }}</span></td>
+                                    <td class="text-end num-mono fw-bold">{{ trade.quantity }}</td>
+                                    <td class="text-end num-mono">₹{{ trade.execution_price|floatformat:2 }}</td>
+                                    <td class="text-end num-mono">₹{{ trade.turnover|floatformat:2 }}</td>
+                                    <td class="text-end num-mono text-muted" title="Brokerage: ₹{{ trade.brokerage }} | STT: ₹{{ trade.stt }} | GST: ₹{{ trade.gst }} | Stamp: ₹{{ trade.stamp_duty }}">
+                                        ₹{{ trade.total_charges|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        {% if trade.net_realized_pnl %}
+                                        <span class="num-mono fw-bold {% if trade.net_realized_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if trade.net_realized_pnl >= 0 %}+{% endif %}₹{{ trade.net_realized_pnl|floatformat:2 }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted small">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <!-- Empty State: Tradebook -->
+                    <div class="text-center py-5">
+                        <div class="text-muted mb-2"><i class="bi bi-journal-text fs-1"></i></div>
+                        <h6 class="fw-bold text-body">Tradebook is Empty</h6>
+                        <p class="text-muted small mb-0">Executed paper trade transactions will appear here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- TAB 4: PERFORMANCE ANALYTICS -->
+                <div class="tab-pane fade p-4" id="analytics-pane" role="tabpanel" aria-labelledby="analytics-tab" tabindex="0">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Total Trades Executed</span>
+                                <div class="h3 fw-bold num-mono text-body mt-2 mb-0">{{ analytics.total_trades }}</div>
+                                <div class="small text-muted mt-1">{{ analytics.closed_trades }} round-trips completed</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Profitable Trades</span>
+                                <div class="h3 fw-bold num-mono text-success mt-2 mb-0">{{ analytics.win_count }}</div>
+                                <div class="small text-muted mt-1">Win Rate: {{ analytics.win_rate }}%</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Losing Trades</span>
+                                <div class="h3 fw-bold num-mono text-danger mt-2 mb-0">{{ analytics.loss_count }}</div>
+                                <div class="small text-muted mt-1">Loss Rate: {% if analytics.closed_trades %}{{ 100|add:"-analytics.win_rate" }}{% else %}0{% endif %}%</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Profit Factor</span>
+                                <div class="h3 fw-bold num-mono text-primary mt-2 mb-0">{{ analytics.profit_factor }}</div>
+                                <div class="small text-muted mt-1">Gross Wins / Gross Losses</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <div class="card border border-secondary border-opacity-10 p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-body small text-uppercase">Statutory Friction Audit</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border">Real-world Taxes Paid</span>
+                                </div>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <span class="h4 fw-bold num-mono text-muted mb-0">₹{{ analytics.total_charges_paid|floatformat:2 }}</span>
+                                    <span class="text-muted small">deducted across Brokerage, STT, Exchange fees, SEBI, and GST.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Account Modal -->
+<div class="modal fade" id="resetAccountModal" tabindex="-1" aria-labelledby="resetAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-body" id="resetAccountModalLabel">
+                    <i class="bi bi-arrow-counterclockwise text-primary me-1"></i> Reset Virtual Capital
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form hx-post="{% url 'paper_trading:account_reset' %}" hx-target="#paper-terminal-root" hx-swap="outerHTML"
+                  onsubmit="const m = bootstrap.Modal.getInstance(document.getElementById('resetAccountModal')); if(m) m.hide();">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <strong>Warning:</strong> Resetting will close all active positions, cancel pending orders, and reset your realized P&amp;L to ₹0.00.
+                    </div>
+
+                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Starting Virtual Capital (₹)</label>
+                    <input type="number" class="form-control form-control-sm num-mono fw-bold mb-2" id="resetCapitalInput" name="capital" value="1000000.00" min="10000" step="10000" required>
+
+                    <!-- Presets -->
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.72rem;"
+                                onclick="document.getElementById('resetCapitalInput').value = '500000.00'">₹5 Lakhs</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 active" style="font-size: 0.72rem;"
+                                onclick="document.getElementById('resetCapitalInput').value = '1000000.00'">₹10 Lakhs</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.72rem;"
+                                onclick="document.getElementById('resetCapitalInput').value = '2500000.00'">₹25 Lakhs</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.72rem;"
+                                onclick="document.getElementById('resetCapitalInput').value = '5000000.00'">₹50 Lakhs</button>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-3">
+                        <i class="bi bi-check2 me-1"></i> Confirm &amp; Reset Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

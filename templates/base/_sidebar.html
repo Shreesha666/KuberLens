@@ -115,6 +115,10 @@
 
         <!-- TRADING -->
         <div class="nav-section-title">Trading</div>
+        <a href="{% url 'paper_trading:terminal' %}" class="nav-link {% if active_nav == 'paper_trading' %}active{% endif %}"
+            hx-get="{% url 'paper_trading:terminal' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-cpu"></i> Paper Trading
+        </a>
         <a href="{% url 'trading:scanner' %}" class="nav-link {% if active_nav == 'swing_trading' %}active{% endif %}"
             hx-get="{% url 'trading:scanner' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-lightning-charge"></i> Swing Trading

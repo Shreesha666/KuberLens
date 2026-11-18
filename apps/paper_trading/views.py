@@ -210,10 +210,11 @@ def terminal_view(request):
         latest_price = PaperTradingExecutionEngine.get_latest_price(pos.listing)
         pos.recalculate_pnl(latest_price)
 
-    # Pending orders
-    pending_orders = account.orders.filter(status=OrderStatus.PENDING).select_related(
+    # All orders placed by the user (both filled, pending, cancelled)
+    all_orders = list(account.orders.select_related(
         "listing__instrument", "listing__exchange"
-    ).order_by("-created_at")
+    ).order_by("-created_at"))
+    pending_orders = [o for o in all_orders if o.status == OrderStatus.PENDING]
 
     # Tradebook records
     trades = account.trades.select_related(
@@ -250,6 +251,7 @@ def terminal_view(request):
         "active_nav": "paper_trading",
         "account": account,
         "positions": positions,
+        "orders": all_orders,
         "pending_orders": pending_orders,
         "trades": trades,
         "coach": coach_report,

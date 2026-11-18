@@ -267,8 +267,8 @@
             <button class="pt-tab-btn" id="orders-tab"
                     data-bs-toggle="tab" data-bs-target="#orders-pane" type="button" role="tab" aria-controls="orders-pane" aria-selected="false">
                 <i class="bi bi-clock-history"></i> Orders
-                <span class="badge {% if pending_orders %}bg-warning-subtle text-warning-emphasis{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill" style="font-size: 0.68rem;">
-                    {{ pending_orders|length }}
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill" style="font-size: 0.68rem;">
+                    {{ orders|length }}
                 </span>
             </button>
 
@@ -415,31 +415,51 @@
                 </div>
 
                 <!-- ========================================== -->
-                <!-- TAB 2: PENDING ORDERS -->
+                <!-- TAB 2: ORDERS (ALL / PENDING / EXECUTED) -->
                 <!-- ========================================== -->
                 <div class="tab-pane fade p-0" id="orders-pane" role="tabpanel" aria-labelledby="orders-tab" tabindex="0">
-                    {% if pending_orders %}
+                    {% if orders %}
+                    <!-- Sub-filter Switcher (All / Open / Executed) -->
+                    <div class="p-2.5 px-3 border-bottom d-flex align-items-center justify-content-between bg-body flex-wrap gap-2">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Order Status Filter">
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3 active" id="btnFilterAll" onclick="filterOrderRows('all')">
+                                All Orders ({{ orders|length }})
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3" id="btnFilterOpen" onclick="filterOrderRows('pending')">
+                                Open / Pending ({{ pending_orders|length }})
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-3" id="btnFilterFilled" onclick="filterOrderRows('filled')">
+                                Executed
+                            </button>
+                        </div>
+                        <div class="text-muted small" style="font-size: 0.72rem;">
+                            <i class="bi bi-info-circle me-1"></i> Market orders fill instantly at current price; resting Limit/SL orders remain open until triggered.
+                        </div>
+                    </div>
+
                     <table class="pt-table">
                         <thead>
                             <tr>
-                                <th style="width: 15%;">Time</th>
-                                <th style="width: 25%;">Instrument</th>
-                                <th style="width: 15%;">Side &amp; Product</th>
+                                <th style="width: 14%;">Time</th>
+                                <th style="width: 24%;">Instrument</th>
+                                <th style="width: 16%;">Side &amp; Type</th>
                                 <th class="text-end" style="width: 10%;">Qty</th>
-                                <th class="text-end" style="width: 15%;">Limit Price</th>
-                                <th style="width: 10%;">Status</th>
+                                <th class="text-end" style="width: 14%;">Price / Trigger</th>
+                                <th style="width: 12%;">Status</th>
                                 <th class="text-center" style="width: 10%;">Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% for order in pending_orders %}
-                            <tr>
-                                <td class="num-mono small text-muted">{{ order.created_at|date:"H:i:s" }}</td>
+                        <tbody id="ordersTableBody">
+                            {% for order in orders %}
+                            <tr data-order-status="{{ order.status|lower }}">
+                                <td class="num-mono small text-muted">{{ order.created_at|date:"d M, H:i:s" }}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         {% stock_logo order.listing size=22 css_class="p-0.5 rounded border bg-body" %}
-                                        <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
-                                        <span class="badge bg-light text-secondary border px-1 py-0" style="font-size: 0.65rem;">{{ order.listing.exchange.code }}</span>
+                                        <div>
+                                            <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
+                                            <span class="badge bg-light text-secondary border px-1 py-0" style="font-size: 0.65rem;">{{ order.listing.exchange.code }}</span>
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
@@ -447,34 +467,53 @@
                                         {{ order.order_side }}
                                     </span>
                                     <span class="badge bg-secondary-subtle text-secondary border ms-1">{{ order.product_type }}</span>
-                                    <span class="text-muted small ms-1" style="font-size: 0.72rem;">{{ order.order_type }}</span>
+                                    <span class="text-muted small ms-1" style="font-size: 0.7rem;">{{ order.order_type }}</span>
                                 </td>
                                 <td class="text-end num-mono fw-bold text-body">{{ order.quantity }}</td>
                                 <td class="text-end num-mono fw-semibold text-body">
-                                    {% if order.limit_price %}₹{{ order.limit_price|floatformat:2 }}{% elif order.trigger_price %}Trig: ₹{{ order.trigger_price|floatformat:2 }}{% else %}Market{% endif %}
+                                    {% if order.limit_price %}₹{{ order.limit_price|floatformat:2 }}{% elif order.trigger_price %}Trig: ₹{{ order.trigger_price|floatformat:2 }}{% else %}<span class="text-muted small">Market LTP</span>{% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded">
-                                        PENDING
+                                    {% if order.status == 'FILLED' %}
+                                    <span class="badge px-1.5 py-0.5 rounded pt-badge-buy">
+                                        <i class="bi bi-check2 me-0.5"></i> FILLED
                                     </span>
+                                    {% elif order.status == 'PENDING' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-1.5 py-0.5 rounded">
+                                        <i class="bi bi-hourglass-split me-0.5"></i> PENDING
+                                    </span>
+                                    {% elif order.status == 'CANCELLED' %}
+                                    <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5 rounded">
+                                        CANCELLED
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5 rounded">
+                                        {{ order.status }}
+                                    </span>
+                                    {% endif %}
                                 </td>
                                 <td class="text-center">
+                                    {% if order.status == 'PENDING' %}
                                     <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 rounded-2" style="font-size: 0.72rem;"
+                                            title="Cancel pending resting order"
                                             hx-post="{% url 'paper_trading:order_cancel' order.id %}"
                                             hx-target="#paper-terminal-root" hx-swap="outerHTML">
                                         Cancel
                                     </button>
+                                    {% else %}
+                                    <span class="text-muted small">—</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                     {% else %}
-                    <!-- Empty State: Orders -->
+                    <!-- Empty State: No Orders -->
                     <div class="text-center py-5 px-3">
                         <div class="mb-2 text-muted" style="font-size: 2.2rem;"><i class="bi bi-clock-history"></i></div>
-                        <h6 class="fw-bold text-body mb-1">No Pending Orders</h6>
-                        <p class="text-muted small mb-0">All limit and stop-loss orders have been filled or executed.</p>
+                        <h6 class="fw-bold text-body mb-1">No Orders Placed Yet</h6>
+                        <p class="text-muted small mb-0">You have not placed any paper trading orders. Use 'Place Order' to begin trading!</p>
                     </div>
                     {% endif %}
                 </div>
@@ -817,6 +856,27 @@
 <!-- Terminal Interactive Scripts -->
 <script>
 (function() {
+    window.filterOrderRows = function(type) {
+        const rows = document.querySelectorAll('#ordersTableBody tr');
+        rows.forEach(row => {
+            const status = row.getAttribute('data-order-status');
+            if (type === 'all') {
+                row.style.display = '';
+            } else if (type === 'pending') {
+                row.style.display = (status === 'pending') ? '' : 'none';
+            } else if (type === 'filled') {
+                row.style.display = (status === 'filled' || status === 'partially_filled') ? '' : 'none';
+            }
+        });
+
+        const btnAll = document.getElementById('btnFilterAll');
+        const btnOpen = document.getElementById('btnFilterOpen');
+        const btnFilled = document.getElementById('btnFilterFilled');
+        if (btnAll) btnAll.classList.toggle('active', type === 'all');
+        if (btnOpen) btnOpen.classList.toggle('active', type === 'pending');
+        if (btnFilled) btnFilled.classList.toggle('active', type === 'filled');
+    };
+
     window.launchPaperTradeDrawer = function(symbol) {
         const modalEl = document.getElementById('quickTradeModal');
         if (modalEl) {

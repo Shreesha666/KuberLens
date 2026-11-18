@@ -8,3 +8,4 @@ class PaperTradingConfig(AppConfig):
 
     def ready(self):
         import apps.paper_trading.signals  # noqa: F401
+

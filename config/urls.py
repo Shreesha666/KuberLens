@@ -32,6 +32,7 @@ urlpatterns = [
     path("alerts/", include("apps.alerts.urls", namespace="alerts")),
     path("notifications/", include("apps.notifications.urls", namespace="notifications")),
     path("ipo/", include("apps.ipo.urls", namespace="ipo")),
+    path("papertrading/", include("apps.paper_trading.urls", namespace="paper_trading")),
     path("settings/", include("apps.settings_app.urls", namespace="settings_app")),
     path("", include("apps.dashboard.urls", namespace="dashboard")),
 ]

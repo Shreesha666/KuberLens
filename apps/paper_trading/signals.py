@@ -13,3 +13,4 @@ def create_user_paper_account(sender, instance, created, **kwargs):
     """
     if created:
         PaperAccount.objects.get_or_create(user=instance)
+

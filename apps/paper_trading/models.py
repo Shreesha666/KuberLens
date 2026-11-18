@@ -438,3 +438,4 @@ class PaperTrade(AuditedModel):
 
     def __str__(self):
         return f"Trade: {self.trade_side} {self.quantity}x {self.listing.symbol} @ ₹{self.execution_price:,.2f}"
+

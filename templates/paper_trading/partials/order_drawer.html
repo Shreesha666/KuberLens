@@ -1,0 +1,322 @@
+{% load core_tags %}
+<!-- Kite-Style Offcanvas Slide-out Order Drawer -->
+<div class="offcanvas offcanvas-end shadow-lg border-0 show" tabindex="-1" id="paperOrderOffcanvas" style="width: 440px; visibility: visible;" aria-modal="true" role="dialog">
+    <!-- Drawer Header -->
+    <div class="offcanvas-header border-bottom py-3 px-4 bg-body-tertiary">
+        <div class="d-flex align-items-center gap-2">
+            {% stock_logo listing size=36 css_class="p-1" %}
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-body fs-6">{{ listing.symbol }}</span>
+                    <span class="badge bg-secondary-subtle text-body border" style="font-size: 0.7rem;">{{ listing.exchange.code }}</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem;">PAPER TRADING</span>
+                </div>
+                <div class="small text-muted" style="font-size: 0.78rem;">{{ listing.instrument.display_name }}</div>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <div class="fw-bold num-mono fs-6 text-body">₹{{ current_price|floatformat:2 }}</div>
+                <div class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.65rem;">LIVE LTP</div>
+            </div>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"
+                    onclick="document.getElementById('paperOrderOffcanvas').remove();"></button>
+        </div>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="offcanvas-body p-4" id="orderDrawerContent">
+        <!-- Order Placement Form -->
+        <form id="paperOrderForm" hx-post="{% url 'paper_trading:order_place' %}" hx-target="#orderDrawerContent" hx-swap="innerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="symbol" value="{{ listing.symbol }}">
+
+            <!-- Buy / Sell Segmented Switcher -->
+            <div class="btn-group w-100 mb-3 p-1 bg-body-secondary rounded-3 shadow-none" role="group">
+                <input type="radio" class="btn-check" name="order_side" id="sideBuy" value="BUY" {% if default_side == 'BUY' %}checked{% endif %} onchange="updateDrawerTheme()">
+                <label class="btn btn-sm rounded-2 fw-bold text-uppercase py-2" for="sideBuy" id="labelBuy">
+                    <i class="bi bi-arrow-up-circle-fill me-1"></i> BUY
+                </label>
+
+                <input type="radio" class="btn-check" name="order_side" id="sideSell" value="SELL" {% if default_side == 'SELL' %}checked{% endif %} onchange="updateDrawerTheme()">
+                <label class="btn btn-sm rounded-2 fw-bold text-uppercase py-2" for="sideSell" id="labelSell">
+                    <i class="bi bi-arrow-down-circle-fill me-1"></i> SELL
+                </label>
+            </div>
+
+            <!-- Existing Position Context Badge (if any) -->
+            {% if existing_position %}
+            <div class="alert alert-light border small py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    Current Open Position:
+                    <strong class="{% if existing_position.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ existing_position.quantity }} shares
+                    </strong>
+                    @ ₹{{ existing_position.average_price|floatformat:2 }}
+                </span>
+                <span class="badge {% if existing_position.unrealized_pnl >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} border">
+                    {% if existing_position.unrealized_pnl >= 0 %}+{% endif %}₹{{ existing_position.unrealized_pnl|floatformat:2 }}
+                </span>
+            </div>
+            {% endif %}
+
+            <!-- Product Type: Delivery (CNC) vs Intraday (MIS) -->
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Product Type</label>
+                <div class="d-flex gap-2">
+                    <div class="flex-fill">
+                        <input type="radio" class="btn-check" name="product_type" id="prodCNC" value="CNC" checked onchange="recalculateTotals()">
+                        <label class="btn btn-outline-secondary btn-sm w-100 py-2 text-start px-3" for="prodCNC">
+                            <div class="fw-bold small text-body">Delivery <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">CNC</span></div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Holding &bull; 100% Cash</div>
+                        </label>
+                    </div>
+                    <div class="flex-fill">
+                        <input type="radio" class="btn-check" name="product_type" id="prodMIS" value="MIS" onchange="recalculateTotals()">
+                        <label class="btn btn-outline-secondary btn-sm w-100 py-2 text-start px-3" for="prodMIS">
+                            <div class="fw-bold small text-body">Intraday <span class="badge bg-info-subtle text-info-emphasis" style="font-size: 0.65rem;">MIS</span></div>
+                            <div class="text-muted" style="font-size: 0.7rem;">5× Margin Leverage</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Type: Market vs Limit -->
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Order Execution Type</label>
+                <div class="d-flex gap-2">
+                    <input type="radio" class="btn-check" name="order_type" id="typeMarket" value="MARKET" checked onchange="togglePriceInput()">
+                    <label class="btn btn-outline-secondary btn-sm flex-fill py-1 fw-semibold" for="typeMarket">Market (Instant Fill)</label>
+
+                    <input type="radio" class="btn-check" name="order_type" id="typeLimit" value="LIMIT" onchange="togglePriceInput()">
+                    <label class="btn btn-outline-secondary btn-sm flex-fill py-1 fw-semibold" for="typeLimit">Limit (Specified Price)</label>
+                </div>
+            </div>
+
+            <!-- Quantity & Limit Price Input Row -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Quantity (Shares)</label>
+                    <input type="number" class="form-control form-control-sm num-mono fw-bold" id="orderQty" name="quantity" value="10" min="1" step="1" required oninput="recalculateTotals()">
+                    <!-- Quick Increment Pills -->
+                    <div class="d-flex gap-1 mt-1">
+                        <button type="button" class="btn btn-light border py-0 px-1 text-muted" style="font-size: 0.68rem;" onclick="addQty(10)">+10</button>
+                        <button type="button" class="btn btn-light border py-0 px-1 text-muted" style="font-size: 0.68rem;" onclick="addQty(50)">+50</button>
+                        <button type="button" class="btn btn-light border py-0 px-1 text-muted" style="font-size: 0.68rem;" onclick="addQty(100)">+100</button>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Limit Price (₹)</label>
+                    <input type="number" class="form-control form-control-sm num-mono fw-bold" id="orderLimitPrice" name="limit_price" value="{{ current_price|floatformat:2 }}" step="0.05" disabled oninput="recalculateTotals()">
+                    <div class="text-muted small mt-1" style="font-size: 0.68rem;" id="limitHelpText">Executes at market LTP</div>
+                </div>
+            </div>
+
+            <!-- 1-Click Quantitative Recommendation Presets (Synergy with KuberLens Engine) -->
+            {% if rec %}
+            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-2 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fw-semibold" style="font-size: 0.7rem; text-transform: uppercase;">
+                        <i class="bi bi-magic text-primary me-1"></i> Quant Presets (1-Click Fill)
+                    </span>
+                    <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;">Engine Verified</span>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                    {% if rec.target_1_value %}
+                    <button type="button" class="btn btn-white border btn-sm py-0 px-2 small text-body" style="font-size: 0.72rem;"
+                            onclick="applyPreset('target', '{{ rec.target_1_value }}')">
+                        <span class="text-success fw-bold">T1:</span> ₹{{ rec.target_1_value }} (+{{ rec.target_1_pct }}%)
+                    </button>
+                    {% endif %}
+                    {% if rec.target_2_value %}
+                    <button type="button" class="btn btn-white border btn-sm py-0 px-2 small text-body" style="font-size: 0.72rem;"
+                            onclick="applyPreset('target', '{{ rec.target_2_value }}')">
+                        <span class="text-success fw-bold">T2:</span> ₹{{ rec.target_2_value }} (+{{ rec.target_2_pct }}%)
+                    </button>
+                    {% endif %}
+                    {% if rec.stop_loss_value %}
+                    <button type="button" class="btn btn-white border btn-sm py-0 px-2 small text-body" style="font-size: 0.72rem;"
+                            onclick="applyPreset('stop_loss', '{{ rec.stop_loss_value }}')">
+                        <span class="text-danger fw-bold">SL (ATR):</span> ₹{{ rec.stop_loss_value }}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Bracket Stop Loss & Target Checkbox & Inputs -->
+            <div class="mb-3">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="bracketToggle" onchange="toggleBracketInputs()">
+                    <label class="form-check-label small fw-semibold text-body" for="bracketToggle">
+                        Attach Protective Stop Loss & Target (GTT Bracket)
+                    </label>
+                </div>
+
+                <div id="bracketInputs" class="row g-2 d-none">
+                    <div class="col-6">
+                        <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">Stop Loss (₹)</label>
+                        <input type="number" class="form-control form-control-sm num-mono" id="bracketSL" name="stop_loss_price" step="0.05" placeholder="e.g. {{ rec.stop_loss_value|default:'' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">Target Profit (₹)</label>
+                        <input type="number" class="form-control form-control-sm num-mono" id="bracketTarget" name="target_price" step="0.05" placeholder="e.g. {{ rec.target_1_value|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Field (Optional) -->
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Trade Thesis / Strategy Notes (Optional)</label>
+                <input type="text" class="form-control form-control-sm" name="notes" placeholder="e.g. 50 SMA bounce breakout, trailing stop">
+            </div>
+
+            <!-- Margin & Charges Live Breakdown Card -->
+            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3 mb-4 rounded-3">
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                    <span class="text-muted">Turnover:</span>
+                    <span class="num-mono fw-semibold text-body" id="summaryTurnover">₹0.00</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                    <span class="text-muted">Estimated Statutory Taxes & Fees:</span>
+                    <span class="num-mono text-muted" id="summaryCharges">₹0.00</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-10">
+                    <div>
+                        <div class="small fw-bold text-body">Margin Required</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">
+                            Available Cash: <span class="num-mono fw-semibold text-body">₹{{ account.available_margin|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="h5 fw-bold num-mono mb-0 text-primary" id="summaryRequiredMargin">₹0.00</div>
+                        <div class="small text-danger d-none fw-semibold" id="insufficientMarginWarning" style="font-size: 0.72rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Insufficient Funds
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Big Action Button -->
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-uppercase shadow-sm d-flex justify-content-center align-items-center gap-2" id="submitOrderBtn">
+                <i class="bi bi-lightning-charge-fill"></i> Place BUY Order
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Drawer Client-Side Dynamic Math Script -->
+<script>
+(function() {
+    const currentPrice = parseFloat("{{ current_price }}");
+    const availableMargin = parseFloat("{{ account.available_margin }}");
+
+    window.updateDrawerTheme = function() {
+        const isBuy = document.getElementById("sideBuy").checked;
+        const btn = document.getElementById("submitOrderBtn");
+        const labelBuy = document.getElementById("labelBuy");
+        const labelSell = document.getElementById("labelSell");
+
+        if (isBuy) {
+            btn.className = "btn btn-primary w-100 py-2 fw-bold text-uppercase shadow-sm d-flex justify-content-center align-items-center gap-2";
+            btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Place BUY Order';
+            labelBuy.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 btn-primary text-white";
+            labelSell.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 text-muted";
+        } else {
+            btn.className = "btn btn-warning w-100 py-2 fw-bold text-uppercase text-dark shadow-sm d-flex justify-content-center align-items-center gap-2";
+            btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Place SELL Order';
+            labelSell.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 btn-warning text-dark";
+            labelBuy.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 text-muted";
+        }
+        recalculateTotals();
+    };
+
+    window.togglePriceInput = function() {
+        const isLimit = document.getElementById("typeLimit").checked;
+        const limitInput = document.getElementById("orderLimitPrice");
+        const helpText = document.getElementById("limitHelpText");
+
+        limitInput.disabled = !isLimit;
+        if (isLimit) {
+            helpText.innerText = "Resting order on book until triggered";
+        } else {
+            limitInput.value = currentPrice.toFixed(2);
+            helpText.innerText = "Executes at market LTP";
+        }
+        recalculateTotals();
+    };
+
+    window.addQty = function(increment) {
+        const qtyInput = document.getElementById("orderQty");
+        let val = parseInt(qtyInput.value) || 0;
+        qtyInput.value = val + increment;
+        recalculateTotals();
+    };
+
+    window.applyPreset = function(type, value) {
+        if (type === 'target') {
+            document.getElementById("bracketToggle").checked = true;
+            toggleBracketInputs();
+            document.getElementById("bracketTarget").value = parseFloat(value).toFixed(2);
+        } else if (type === 'stop_loss') {
+            document.getElementById("bracketToggle").checked = true;
+            toggleBracketInputs();
+            document.getElementById("bracketSL").value = parseFloat(value).toFixed(2);
+        }
+    };
+
+    window.toggleBracketInputs = function() {
+        const isChecked = document.getElementById("bracketToggle").checked;
+        const container = document.getElementById("bracketInputs");
+        if (isChecked) {
+            container.classList.remove("d-none");
+        } else {
+            container.classList.add("d-none");
+        }
+    };
+
+    window.recalculateTotals = function() {
+        const qty = parseInt(document.getElementById("orderQty").value) || 0;
+        const isLimit = document.getElementById("typeLimit").checked;
+        const price = isLimit ? (parseFloat(document.getElementById("orderLimitPrice").value) || currentPrice) : currentPrice;
+        const isMIS = document.getElementById("prodMIS").checked;
+        const isBuy = document.getElementById("sideBuy").checked;
+
+        const turnover = qty * price;
+        let requiredMargin = 0;
+
+        if (isMIS) {
+            requiredMargin = turnover / 5.0; // 5x leverage
+        } else if (isBuy) {
+            requiredMargin = turnover;
+        } else {
+            requiredMargin = 0; // CNC Sell
+        }
+
+        // Fast client estimate of statutory charges (approx 0.12% for CNC, 0.03% for MIS)
+        const chargesRate = isMIS ? 0.0003 : 0.0012;
+        const estCharges = Math.max(20.0, turnover * chargesRate);
+
+        document.getElementById("summaryTurnover").innerText = "₹" + turnover.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById("summaryCharges").innerText = "₹" + estCharges.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById("summaryRequiredMargin").innerText = "₹" + requiredMargin.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        const warning = document.getElementById("insufficientMarginWarning");
+        const submitBtn = document.getElementById("submitOrderBtn");
+
+        if (requiredMargin > availableMargin && (isBuy || isMIS)) {
+            warning.classList.remove("d-none");
+            submitBtn.disabled = true;
+        } else {
+            warning.classList.add("d-none");
+            submitBtn.disabled = false;
+        }
+    };
+
+    // Initial setup
+    updateDrawerTheme();
+    recalculateTotals();
+})();
+</script>

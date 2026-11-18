@@ -1,0 +1,114 @@
+<!-- Order Execution Result Partial -->
+<div class="p-2 text-center py-4">
+    {% if success %}
+    <div class="mb-3">
+        {% if order.status == 'FILLED' %}
+        <div class="display-5 text-success mb-2">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <h5 class="fw-bold text-body mb-1">Order Executed Successfully</h5>
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">FILLED</span>
+        {% else %}
+        <div class="display-5 text-primary mb-2">
+            <i class="bi bi-clock-history"></i>
+        </div>
+        <h5 class="fw-bold text-body mb-1">Limit Order Placed</h5>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">PENDING TRIGGER</span>
+        {% endif %}
+    </div>
+
+    <!-- Execution Details Summary Card -->
+    <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3 mb-4 text-start">
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+            <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
+            <span class="badge {% if order.order_side == 'BUY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                {{ order.order_side }} {{ order.product_type }}
+            </span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Quantity:</span>
+            <span class="num-mono fw-semibold text-body">{{ order.quantity }} shares</span>
+        </div>
+
+        {% if trade %}
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Fill Price (w/ Slippage):</span>
+            <span class="num-mono fw-semibold text-body">₹{{ trade.execution_price|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Turnover:</span>
+            <span class="num-mono fw-semibold text-body">₹{{ trade.turnover|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Statutory Taxes & Charges:</span>
+            <span class="num-mono text-muted">₹{{ trade.total_charges|floatformat:2 }}</span>
+        </div>
+        {% if trade.net_realized_pnl %}
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Realized P&L on Exit:</span>
+            <span class="num-mono fw-bold {% if trade.net_realized_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {% if trade.net_realized_pnl >= 0 %}+{% endif %}₹{{ trade.net_realized_pnl|floatformat:2 }}
+            </span>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Limit Price:</span>
+            <span class="num-mono fw-semibold text-body">₹{{ order.limit_price|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        {% if order.stop_loss_price %}
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Bracket Stop Loss:</span>
+            <span class="num-mono text-danger">₹{{ order.stop_loss_price|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        {% if order.target_price %}
+        <div class="d-flex justify-content-between align-items-center mb-1 small">
+            <span class="text-muted">Bracket Target:</span>
+            <span class="num-mono text-success">₹{{ order.target_price|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top border-secondary border-opacity-10 small">
+            <span class="text-muted">Available Cash Balance:</span>
+            <span class="num-mono fw-bold text-primary">₹{{ account.available_margin|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary flex-fill py-2"
+                hx-get="{% url 'paper_trading:order_drawer' order.listing.symbol %}"
+                hx-target="#orderDrawerContent" hx-swap="outerHTML">
+            <i class="bi bi-arrow-repeat me-1"></i> Trade Again
+        </button>
+        <button type="button" class="btn btn-primary flex-fill py-2"
+                onclick="document.getElementById('paperOrderOffcanvas').remove();">
+            <i class="bi bi-check2 me-1"></i> Done
+        </button>
+    </div>
+
+    {% else %}
+    <!-- Error State -->
+    <div class="mb-3">
+        <div class="display-5 text-danger mb-2">
+            <i class="bi bi-x-circle-fill"></i>
+        </div>
+        <h5 class="fw-bold text-body mb-1">Order Rejected</h5>
+        <div class="alert alert-danger small text-start my-3">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            {{ error_message|default:"Order could not be processed by the exchange engine." }}
+        </div>
+    </div>
+
+    <button type="button" class="btn btn-secondary w-100 py-2"
+            hx-get="{% url 'paper_trading:order_drawer' order.listing.symbol %}"
+            hx-target="#orderDrawerContent" hx-swap="outerHTML">
+        <i class="bi bi-arrow-left me-1"></i> Adjust Order & Retry
+    </button>
+    {% endif %}
+</div>

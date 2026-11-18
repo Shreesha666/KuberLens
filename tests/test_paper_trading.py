@@ -544,3 +544,116 @@ class TestPaperTradingExecutionAndTaxes:
         # Position auto-squared off
         assert PaperPosition.objects.filter(account=account, listing=listing).count() == 0
 
+
+@pytest.mark.django_db
+class TestPaperTradingViews:
+    def test_order_drawer_get_anonymous_redirect(self, client, paper_setup):
+        """Anonymous user is redirected to login."""
+        listing = paper_setup["listing"]
+        from django.urls import reverse
+
+        url = reverse("paper_trading:order_drawer", kwargs={"symbol": listing.symbol})
+        response = client.get(url)
+        assert response.status_code == 302
+        assert "/accounts/login/" in response.url
+
+    def test_order_drawer_get_authenticated(self, client, paper_setup):
+        """Authenticated user gets drawer partial with prefilled quote and margin."""
+        user = paper_setup["user"]
+        listing = paper_setup["listing"]
+        from django.urls import reverse
+
+        client.force_login(user)
+        url = reverse("paper_trading:order_drawer", kwargs={"symbol": listing.symbol})
+        response = client.get(url)
+
+        assert response.status_code == 200
+        assert listing.symbol.encode() in response.content
+        assert b"Available Cash:" in response.content
+        assert b"paperOrderOffcanvas" in response.content
+
+    def test_estimate_charges_api(self, client, paper_setup):
+        """Verify the estimate charges JSON API returns accurate calculations."""
+        user = paper_setup["user"]
+        from django.urls import reverse
+
+        client.force_login(user)
+        url = reverse("paper_trading:estimate_charges")
+        response = client.get(url, {
+            "quantity": 100,
+            "price": "1000.00",
+            "side": "BUY",
+            "product_type": "CNC",
+        })
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["turnover"] == 100000.00
+        assert data["brokerage"] == 20.00
+        assert data["stt"] == 100.00
+        assert data["total_charges"] > 140.00
+
+    def test_place_order_post_success(self, client, paper_setup):
+        """Placing a valid market buy order executes and returns confirmation."""
+        user = paper_setup["user"]
+        listing = paper_setup["listing"]
+        from apps.market.models import MarketQuote
+        from django.utils import timezone
+        from django.urls import reverse
+
+        MarketQuote.objects.create(
+            listing=listing,
+            price=Decimal("1500.00"),
+            change=Decimal("0.00"),
+            change_percent=Decimal("0.00"),
+            open=Decimal("1500.00"),
+            high=Decimal("1500.00"),
+            low=Decimal("1500.00"),
+            close=Decimal("1500.00"),
+            previous_close=Decimal("1500.00"),
+            volume=20000,
+            source_provider="JUGAAD",
+            source_timestamp=timezone.now(),
+            retrieved_at=timezone.now(),
+        )
+
+        client.force_login(user)
+        url = reverse("paper_trading:order_place")
+        response = client.post(url, {
+            "symbol": listing.symbol,
+            "order_side": "BUY",
+            "product_type": "CNC",
+            "order_type": "MARKET",
+            "quantity": 10,
+        })
+
+        assert response.status_code == 200
+        assert b"Order Executed Successfully" in response.content
+        assert b"FILLED" in response.content
+
+        # Verify database record
+        order = PaperOrder.objects.filter(account__user=user, listing=listing).first()
+        assert order is not None
+        assert order.status == OrderStatus.FILLED
+
+    def test_place_order_post_rejection_no_holdings(self, client, paper_setup):
+        """Attempting to sell CNC without holdings returns Order Rejected partial."""
+        user = paper_setup["user"]
+        listing = paper_setup["listing"]
+        from django.urls import reverse
+
+        client.force_login(user)
+        url = reverse("paper_trading:order_place")
+        response = client.post(url, {
+            "symbol": listing.symbol,
+            "order_side": "SELL",
+            "product_type": "CNC",
+            "order_type": "MARKET",
+            "quantity": 50,
+        })
+
+        assert response.status_code == 200
+        assert b"Order Rejected" in response.content
+        assert b"Insufficient CNC holdings" in response.content
+

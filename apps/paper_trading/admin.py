@@ -29,3 +29,4 @@ class PaperTradeAdmin(admin.ModelAdmin):
     list_display = ["account", "listing", "trade_side", "product_type", "quantity", "execution_price", "total_charges", "executed_at"]
     search_fields = ["listing__symbol", "account__user__username"]
     list_filter = ["trade_side", "product_type"]
+

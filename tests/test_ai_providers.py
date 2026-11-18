@@ -36,6 +36,7 @@ def test_structured_rule_fallback_provider_investor():
     assert dto.overall_view == "BUY_CANDIDATE"
     assert dto.confidence_level == "HIGH"
     assert dto.analysis_horizon == "LONG_TERM"
+    assert dto.model_name == "structured-rules-v2"
     assert len(dto.positive_factors) >= 1
     assert any("200-day SMA" in f for f in dto.positive_factors)
     assert any("ROE" in f for f in dto.positive_factors)
@@ -93,6 +94,61 @@ def test_structured_rule_fallback_provider_risk_manager_high_concentration():
     assert dto.analysis_horizon == "PORTFOLIO_RISK"
     assert dto.overall_view == "REDUCE"
     assert "concentration alert" in dto.summary.lower()
+
+
+def test_structured_rule_fallback_value_trap_prevention():
+    provider = StructuredRuleFallbackProvider()
+    context = {
+        "symbol": "TRAPCO",
+        "company_name": "Trap Corp Limited",
+        "quote": {"current_price": 100.0},
+        "technicals": {"sma_200": 90.0},
+        "fundamentals": {
+            "overall_score": 75,
+            "piotroski_f_score": 2,  # Severe value trap!
+            "altman_z_score": 1.4,   # Distress zone!
+        },
+        "holdings": {},
+        "missing_information": [],
+    }
+
+    dto = provider.generate_analysis(prompt="Value trap check", structured_context=context, role="INVESTOR")
+
+    assert dto.overall_view in ["AVOID", "WATCH"]
+    assert any("Value Trap" in f for f in dto.negative_factors)
+    assert any("Altman Z-Score" in f for f in dto.negative_factors)
+    assert "Distress Zone" in dto.summary or "Value Trap" in dto.summary
+
+
+def test_structured_rule_fallback_swing_trader_supertrend_adx():
+    provider = StructuredRuleFallbackProvider()
+    context = {
+        "symbol": "TITAN",
+        "company_name": "Titan Company Limited",
+        "quote": {"current_price": 3500.0},
+        "technicals": {
+            "trend_signal": "BULLISH",
+            "supertrend_direction": "BULLISH",
+            "supertrend_value": 3420.0,
+            "adx_14": 28.5,
+            "rsi_14": 56.0,
+            "atr_14": 45.0,
+            "vwap": 3490.0,
+        },
+        "fundamentals": {"overall_score": 80},
+        "holdings": {},
+        "missing_information": [],
+    }
+
+    dto = provider.generate_analysis(prompt="Swing check", structured_context=context, role="SWING_TRADER")
+
+    assert dto.overall_view == "BUY_CANDIDATE"
+    assert any("SuperTrend" in f for f in dto.positive_factors)
+    assert any("ADX" in f for f in dto.positive_factors)
+    assert any("VWAP" in f for f in dto.positive_factors)
+    assert "SuperTrend" in dto.summary
+    assert dto.technical_analysis["adx_14"] == 28.5
+    assert dto.technical_analysis["supertrend_direction"] == "BULLISH"
 
 
 def test_gemini_provider_fallback_without_api_key():

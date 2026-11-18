@@ -59,13 +59,19 @@ class FundamentalSnapshot(AuditedModel):
     financial_health_score = models.IntegerField(default=50)
     ownership_score = models.IntegerField(default=50)
 
+    # 7. Institutional Quantitative Metrics (v2.0)
+    piotroski_f_score = models.IntegerField(null=True, blank=True, help_text="Piotroski 9-Criteria F-Score (0-9)")
+    altman_z_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Altman Z-Score Solvency Metric")
+    dupont_asset_turnover = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    dupont_equity_multiplier = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+
     # Contextual Qualitative Factors
     positive_factors = models.JSONField(default=list, blank=True)
     negative_factors = models.JSONField(default=list, blank=True)
     missing_fields = models.JSONField(default=list, blank=True)
 
     # Calculation Provenance
-    calculation_version = models.CharField(max_length=30, default="fund-v1.0.0")
+    calculation_version = models.CharField(max_length=30, default="fund-v2.0.0")
     calculated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

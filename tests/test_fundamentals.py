@@ -47,6 +47,8 @@ class TestFundamentalAnalyzer:
         assert snapshot.profitability_score >= 80
         assert snapshot.financial_health_score >= 80
         assert snapshot.valuation_score >= 70
+        assert snapshot.piotroski_f_score >= 6
+        assert snapshot.altman_z_score is not None and snapshot.altman_z_score > 2.5
 
         # Positive drivers compiled
         assert len(snapshot.positive_factors) >= 3
@@ -69,6 +71,7 @@ class TestFundamentalAnalyzer:
         assert snapshot.overall_score <= 40
         assert snapshot.financial_health_score <= 30
         assert snapshot.growth_score <= 30
+        assert snapshot.piotroski_f_score <= 3
 
         # Risk factors compiled
         assert len(snapshot.negative_factors) >= 2
@@ -81,4 +84,4 @@ class TestFundamentalAnalyzer:
         snapshot = FundamentalAnalyzer.evaluate_instrument(sample_instrument, data)
         assert "roe" in snapshot.missing_fields
         assert "debt_to_equity" in snapshot.missing_fields
-        assert snapshot.calculation_version == "fund-v1.0.0"
+        assert snapshot.calculation_version == "fund-v2.0.0"

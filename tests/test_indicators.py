@@ -205,12 +205,16 @@ class TestTechnicalSnapshotRecalculation:
         assert TechnicalIndicatorSnapshot.objects.filter(listing=sample_listing).count() == 35
 
         latest = TechnicalIndicatorSnapshot.objects.filter(listing=sample_listing).order_by("-timestamp").first()
-        assert latest.calculation_version == "tech-v1.0.0"
+        assert latest.calculation_version == "tech-v2.0.0"
         assert latest.sma_20 is not None
+        assert latest.adx_14 is not None
+        assert latest.supertrend_value is not None
+        assert latest.supertrend_direction in (1, -1)
+        assert latest.vwap is not None
 
         # Recalculation idempotency test: second run updates without duplicate creation
         snapshots_v2 = TechnicalIndicatorCalculator.compute_and_store_snapshots(
-            sample_listing, candles, calculation_version="tech-v1.0.0"
+            sample_listing, candles, calculation_version="tech-v2.0.0"
         )
         assert len(snapshots_v2) == 35
         assert TechnicalIndicatorSnapshot.objects.filter(listing=sample_listing).count() == 35

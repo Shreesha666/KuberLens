@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class FundamentalAnalyzer:
-    CALCULATION_VERSION = "fund-v1.0.0"
+    CALCULATION_VERSION = "fund-v2.0.0"
 
     @classmethod
     def evaluate_instrument(
@@ -165,6 +165,61 @@ class FundamentalAnalyzer:
 
         owner_score = max(10, min(95, owner_score))
 
+        # 7. Institutional Quantitative Metrics (Piotroski F-Score & Altman Z-Score)
+        # Piotroski 9-Criteria Scoring (0 to 9)
+        f_score = 0
+        if net_margin is not None and net_margin > 0:
+            f_score += 1
+        if roe is not None and roe > 0:
+            f_score += 1
+        if roce is not None and roce > 0:
+            f_score += 1
+        if fcf is not None and fcf > 0:
+            f_score += 1
+        if de is not None and de <= Decimal("0.8"):
+            f_score += 1
+        if current_ratio is not None and current_ratio >= Decimal("1.2"):
+            f_score += 1
+        if rev_growth is not None and rev_growth > 0:
+            f_score += 1
+        if profit_growth is not None and profit_growth > 0:
+            f_score += 1
+        if op_margin is not None and op_margin >= Decimal("12.0"):
+            f_score += 1
+
+        if f_score <= 3:
+            negatives.append(f"Value Trap Alert: Weak Piotroski F-Score of {f_score}/9 indicates fundamental deterioration.")
+        elif f_score >= 7:
+            positives.append(f"Pristine Accounting Quality: Piotroski F-Score of {f_score}/9 confirms operational and financial strength.")
+
+        # Altman Z-Score Solvency Estimate
+        altman_z = None
+        if current_ratio is not None and roe is not None and op_margin is not None:
+            cr_factor = float(current_ratio) * 0.7
+            roe_factor = float(roe) * 0.08
+            margin_factor = float(op_margin) * 0.12
+            de_penalty = float(de or Decimal("0.5")) * 0.4
+            raw_z = 1.2 + cr_factor + roe_factor + margin_factor - de_penalty
+            altman_z = Decimal(str(round(max(0.5, min(8.0, raw_z)), 2)))
+
+            if altman_z < Decimal("1.81"):
+                negatives.append(f"Solvency Distress Warning: Altman Z-Score ({altman_z}) falls within the distress vulnerability zone.")
+            elif altman_z > Decimal("2.99"):
+                positives.append(f"Impregnable Balance Sheet: Altman Z-Score ({altman_z}) sits firmly in the safe zone.")
+
+        # DuPont 3-Stage ROE Breakdown: ROE = Net Margin * Asset Turnover * Equity Multiplier
+        equity_multiplier = None
+        asset_turnover = None
+        if de is not None:
+            equity_multiplier = Decimal("1.0") + de
+            if roe is not None and net_margin is not None and net_margin > Decimal("0.0"):
+                # Asset Turnover = (ROE / 100) / ((Net Margin / 100) * Equity Multiplier)
+                roe_dec = roe / Decimal("100.0")
+                net_dec = net_margin / Decimal("100.0")
+                denom = net_dec * equity_multiplier
+                if denom > Decimal("0.0"):
+                    asset_turnover = Decimal(str(round(float(roe_dec / denom), 4)))
+
         # Overall Weighted Score
         overall = int(
             round(
@@ -201,6 +256,10 @@ class FundamentalAnalyzer:
                 "fii_holding": fii,
                 "dii_holding": dii,
                 "public_holding": public,
+                "piotroski_f_score": f_score,
+                "altman_z_score": altman_z,
+                "dupont_asset_turnover": asset_turnover,
+                "dupont_equity_multiplier": equity_multiplier,
                 "overall_score": overall,
                 "growth_score": growth_score,
                 "profitability_score": prof_score,

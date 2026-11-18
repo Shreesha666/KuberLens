@@ -76,11 +76,25 @@ class MarketRegimeClassifier:
         if np.isnan(rsi):
             rsi = 50.0
 
+        # Garman-Klass Extreme-Value Volatility Estimator (annualized %)
+        if "high" in candles_df.columns and "low" in candles_df.columns:
+            highs = candles_df["high"].astype(float)
+            lows = candles_df["low"].astype(float)
+            opens = candles_df["open"].astype(float) if "open" in candles_df.columns else closes
+            log_hl = np.log(np.maximum(highs / np.maximum(lows, 1e-6), 1.0)) ** 2
+            log_co = np.log(np.maximum(closes / np.maximum(opens, 1e-6), 1.0)) ** 2
+            gk_var = 0.5 * log_hl - (2 * np.log(2) - 1) * log_co
+            gk_vol = float(np.sqrt(np.maximum(0, gk_var.rolling(window=20).mean().iloc[-1] * 252.0)) * 100.0)
+            if np.isnan(gk_vol):
+                gk_vol = float(cur_bandwidth)
+        else:
+            gk_vol = float(cur_bandwidth)
+
         # Classification Logic
-        if cur_bandwidth > 12.0:
+        if cur_bandwidth > 12.0 or gk_vol > 45.0:
             regime = MarketRegimeType.HIGH_VOLATILITY
             conf = 0.82
-            summary = "High volatility expansion regime. Wide Bollinger Bandwidth indicates turbulent price swings."
+            summary = "High volatility expansion regime. Garman-Klass & Bollinger Bandwidth indicate turbulent price swings."
         elif cur_close > cur_sma20 and cur_sma20 > cur_sma50 and 50.0 <= rsi <= 68.0:
             regime = MarketRegimeType.TRENDING_UP
             conf = 0.85
@@ -98,6 +112,7 @@ class MarketRegimeClassifier:
             "regime": regime,
             "confidence": conf,
             "volatility_score": round(float(cur_bandwidth), 1),
+            "garman_klass_volatility": round(float(gk_vol), 1),
             "rsi": round(float(rsi), 1),
             "summary": summary,
         }
@@ -219,6 +234,7 @@ class StockMLRanker:
             "rsi_14": rsi,
             "volume_ratio": round(vol_ratio, 2),
             "volatility_score": regime_info["volatility_score"],
+            "garman_klass_volatility": regime_info.get("garman_klass_volatility", 0.0),
             "regime_summary": regime_info["summary"],
         }
 

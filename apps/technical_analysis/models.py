@@ -40,6 +40,9 @@ class TechnicalIndicatorSnapshot(AuditedModel):
     stoch_rsi_d = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
     adx_14 = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
     roc_10 = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    supertrend_value = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    supertrend_direction = models.IntegerField(null=True, blank=True, help_text="1 for Bullish, -1 for Bearish")
+    vwap = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
 
     # 3. Volatility Indicators
     bollinger_upper = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
@@ -87,7 +90,7 @@ class TechnicalIndicatorSnapshot(AuditedModel):
     )
 
     # Calculation Provenance
-    calculation_version = models.CharField(max_length=30, default="tech-v1.0.0")
+    calculation_version = models.CharField(max_length=30, default="tech-v2.0.0")
     calculated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

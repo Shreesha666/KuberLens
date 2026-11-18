@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class TechnicalIndicatorCalculator:
-    CALCULATION_VERSION = "tech-v1.0.0"
+    CALCULATION_VERSION = "tech-v2.0.0"
 
     @classmethod
     def calculate_dataframe(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -85,7 +85,7 @@ class TechnicalIndicatorCalculator:
             bb_sma > 0, ((df["bollinger_upper"] - df["bollinger_lower"]) / bb_sma) * 100, 0.0
         )
 
-        # 5. Average True Range (ATR 14)
+        # 5. Average True Range (ATR 14) & ADX 14
         prev_close = df["close"].shift(1)
         tr1 = df["high"] - df["low"]
         tr2 = (df["high"] - prev_close).abs()
@@ -93,14 +93,33 @@ class TechnicalIndicatorCalculator:
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         df["atr_14"] = tr.ewm(alpha=1 / 14, min_periods=1, adjust=False).mean()
 
+        # Directional Movement Index (ADX 14 - Wilder's Smoothing)
+        high_diff = df["high"].diff()
+        low_diff = -df["low"].diff()
+        pos_dm = np.where((high_diff > low_diff) & (high_diff > 0), high_diff, 0.0)
+        neg_dm = np.where((low_diff > high_diff) & (low_diff > 0), low_diff, 0.0)
+
+        tr_smooth = tr.ewm(alpha=1 / 14, min_periods=1, adjust=False).mean()
+        pos_di = 100 * (pd.Series(pos_dm, index=df.index).ewm(alpha=1 / 14, min_periods=1, adjust=False).mean() / tr_smooth.replace(0, np.nan))
+        neg_di = 100 * (pd.Series(neg_dm, index=df.index).ewm(alpha=1 / 14, min_periods=1, adjust=False).mean() / tr_smooth.replace(0, np.nan))
+        di_sum = (pos_di + neg_di).replace(0, np.nan)
+        dx = (100 * (pos_di - neg_di).abs() / di_sum).fillna(0)
+        df["adx_14"] = dx.ewm(alpha=1 / 14, min_periods=1, adjust=False).mean().fillna(20.0)
+
         # 6. Rate of Change (ROC 10)
         df["roc_10"] = df["close"].pct_change(periods=10).fillna(0) * 100
 
-        # 7. Volume Indicators
+        # 7. Volume Indicators & VWAP
         df["volume_sma_20"] = df["volume"].rolling(window=20, min_periods=1).mean().fillna(0)
         df["relative_volume"] = np.where(
             df["volume_sma_20"] > 0, df["volume"] / df["volume_sma_20"], 1.0
         )
+
+        # Cumulative Volume Weighted Average Price (VWAP)
+        typical_price = (df["high"] + df["low"] + df["close"]) / 3.0
+        cum_tp_vol = (typical_price * df["volume"]).cumsum()
+        cum_vol = df["volume"].cumsum()
+        df["vwap"] = np.where(cum_vol > 0, cum_tp_vol / cum_vol, df["close"])
 
         # On-Balance Volume (OBV)
         direction = np.sign(df["close"].diff()).fillna(0)
@@ -112,8 +131,24 @@ class TechnicalIndicatorCalculator:
         df["swing_low"] = df["support_level"]
         df["swing_high"] = df["resistance_level"]
 
+        # SuperTrend (10, 3) Vectorized Integration
+        try:
+            st_vals, st_dirs = cls.calculate_supertrend(
+                highs=df["high"].tolist(),
+                lows=df["low"].tolist(),
+                closes=df["close"].tolist(),
+                period=10,
+                multiplier=3.0,
+            )
+            df["supertrend_value"] = pd.Series(st_vals, index=df.index)
+            df["supertrend_direction"] = pd.Series(st_dirs, index=df.index)
+        except Exception as e:
+            logger.warning("Supertrend calculation skipped: %s", e)
+            df["supertrend_value"] = df["close"]
+            df["supertrend_direction"] = 1
+
         # 9. Signal Generation
-        # Trend Signal
+        # Trend Signal (Combining Moving Averages & Supertrend)
         df["trend_signal"] = "NEUTRAL"
         bull_mask = (df["close"] > df["sma_50"]) & (df["sma_50"] >= df["sma_200"])
         bear_mask = (df["close"] < df["sma_50"]) & (df["sma_50"] <= df["sma_200"])
@@ -139,12 +174,15 @@ class TechnicalIndicatorCalculator:
         df.loc[(ma_diff_prev <= 0) & (ma_diff_curr > 0), "ma_cross_signal"] = "GOLDEN_CROSS"
         df.loc[(ma_diff_prev >= 0) & (ma_diff_curr < 0), "ma_cross_signal"] = "DEATH_CROSS"
 
-        # Breakout Signal
+        # Breakout Signal (with ADX 14 Trend Quality Filter)
         df["breakout_signal"] = "NEUTRAL"
         prev_res = df["resistance_level"].shift(1)
         prev_sup = df["support_level"].shift(1)
-        df.loc[(prev_res.notna()) & (df["close"] > prev_res), "breakout_signal"] = "RESISTANCE_BREAKOUT"
-        df.loc[(prev_sup.notna()) & (df["close"] < prev_sup), "breakout_signal"] = "SUPPORT_BREAKDOWN"
+        is_res_break = (prev_res.notna()) & (df["close"] > prev_res)
+        is_sup_break = (prev_sup.notna()) & (df["close"] < prev_sup)
+        df.loc[is_res_break & (df["adx_14"] >= 25), "breakout_signal"] = "RESISTANCE_BREAKOUT"
+        df.loc[is_res_break & (df["adx_14"] < 25), "breakout_signal"] = "WEAK_BREAKOUT"
+        df.loc[is_sup_break, "breakout_signal"] = "SUPPORT_BREAKDOWN"
 
         return df
 
@@ -212,6 +250,9 @@ class TechnicalIndicatorCalculator:
                 stoch_rsi_d=to_dec(row.get("stoch_rsi_d")),
                 adx_14=to_dec(row.get("adx_14")),
                 roc_10=to_dec(row.get("roc_10")),
+                supertrend_value=to_dec(row.get("supertrend_value")),
+                supertrend_direction=to_int(row.get("supertrend_direction")),
+                vwap=to_dec(row.get("vwap")),
                 bollinger_upper=to_dec(row.get("bollinger_upper")),
                 bollinger_middle=to_dec(row.get("bollinger_middle")),
                 bollinger_lower=to_dec(row.get("bollinger_lower")),

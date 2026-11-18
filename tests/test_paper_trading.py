@@ -767,3 +767,161 @@ class TestPaperTradingViews:
         assert account.realized_pnl == Decimal("0.00")
         assert account.positions.count() == 0
 
+
+@pytest.mark.django_db
+class TestPaperTradingBehavioralCoachAndJournalBridge:
+    def test_behavioral_coach_clean_slate(self, paper_setup):
+        """Account with zero trades has a 100 discipline score and clean slate rating."""
+        from services.paper_trading.coach import PaperTradingBehavioralCoach
+
+        account = paper_setup["account"]
+        report = PaperTradingBehavioralCoach.audit_account(account)
+
+        assert report.discipline_score == 100
+        assert report.rating_label == "Clean Slate"
+        assert len(report.insights) > 0
+
+    def test_behavioral_coach_naked_exposure_warning(self, paper_setup):
+        """Trades placed without stop losses trigger naked exposure warning."""
+        from services.paper_trading.coach import PaperTradingBehavioralCoach
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        # Place 3 trades without stop loss
+        for _ in range(3):
+            order = PaperOrder.objects.create(
+                account=account,
+                listing=listing,
+                order_side=OrderSide.BUY,
+                product_type=ProductType.CNC,
+                order_type=OrderType.MARKET,
+                quantity=10,
+                stop_loss_price=None,  # Naked
+                status=OrderStatus.FILLED,
+            )
+            PaperTrade.objects.create(
+                account=account,
+                order=order,
+                listing=listing,
+                trade_side=OrderSide.BUY,
+                product_type=ProductType.CNC,
+                execution_price=Decimal("100.00"),
+                quantity=10,
+                turnover=Decimal("1000.00"),
+            )
+
+        report = PaperTradingBehavioralCoach.audit_account(account)
+        assert report.stop_loss_coverage_pct == 0.0
+        assert report.discipline_score < 80
+        assert any("Naked Exposure" in i.title for i in report.insights)
+
+    def test_behavioral_coach_revenge_trading_detector(self, paper_setup):
+        """Re-entry within 15 minutes of a losing trade triggers revenge trading warning."""
+        from datetime import timedelta
+        from django.utils import timezone
+        from services.paper_trading.coach import PaperTradingBehavioralCoach
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+        now = timezone.now()
+
+        # Trade 1: Closed with loss
+        order1 = PaperOrder.objects.create(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.SELL,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=10,
+            status=OrderStatus.FILLED,
+        )
+        t1 = PaperTrade.objects.create(
+            account=account,
+            order=order1,
+            listing=listing,
+            trade_side=OrderSide.SELL,
+            product_type=ProductType.CNC,
+            execution_price=Decimal("90.00"),
+            quantity=10,
+            turnover=Decimal("900.00"),
+            net_realized_pnl=Decimal("-150.00"),  # Loss
+        )
+        PaperTrade.objects.filter(id=t1.id).update(executed_at=now - timedelta(minutes=5))
+
+        # Trade 2: Immediate re-entry 5 mins later
+        order2 = PaperOrder.objects.create(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=20,
+            status=OrderStatus.FILLED,
+        )
+        t2 = PaperTrade.objects.create(
+            account=account,
+            order=order2,
+            listing=listing,
+            trade_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            execution_price=Decimal("91.00"),
+            quantity=20,
+            turnover=Decimal("1820.00"),
+        )
+        PaperTrade.objects.filter(id=t2.id).update(executed_at=now)
+
+        report = PaperTradingBehavioralCoach.audit_account(account)
+        assert report.revenge_trading_detected is True
+        assert any("Revenge Trading" in i.title for i in report.insights)
+
+    def test_export_to_journal_endpoint(self, client, paper_setup):
+        """Exporting a closed paper trade creates an immutable TradeJournal entry."""
+        user = paper_setup["user"]
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+        from apps.trading.models import TradeJournal
+        from django.urls import reverse
+
+        order = PaperOrder.objects.create(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.SELL,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=50,
+            status=OrderStatus.FILLED,
+            target_price=Decimal("1200.00"),
+            stop_loss_price=Decimal("950.00"),
+            notes="Quant swing breakout test",
+        )
+        trade = PaperTrade.objects.create(
+            account=account,
+            order=order,
+            listing=listing,
+            trade_side=OrderSide.SELL,
+            product_type=ProductType.CNC,
+            execution_price=Decimal("1100.00"),
+            quantity=50,
+            turnover=Decimal("55000.00"),
+            total_charges=Decimal("65.00"),
+            net_realized_pnl=Decimal("4935.00"),
+        )
+
+        client.force_login(user)
+        url = reverse("paper_trading:export_to_journal", kwargs={"trade_id": trade.id})
+        response = client.post(url, HTTP_HX_REQUEST="true")
+
+        assert response.status_code == 200
+        assert b"Logged" in response.content
+
+        # Verify TradeJournal entry created
+        trade.refresh_from_db()
+        assert trade.journal_entry is not None
+        journal = trade.journal_entry
+        assert journal.user == user
+        assert journal.listing == listing
+        assert journal.quantity == 50
+        assert journal.realised_pnl == Decimal("4935.00")
+        assert journal.checklist_completed is True
+

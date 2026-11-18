@@ -427,6 +427,14 @@ class PaperTrade(AuditedModel):
         null=True,
         blank=True,
     )
+    journal_entry = models.ForeignKey(
+        "trading.TradeJournal",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="paper_trades",
+        help_text="Optional link to Trade Journal entry exported from this paper trade.",
+    )
     executed_at = models.DateTimeField(
         auto_now_add=True,
         db_index=True,

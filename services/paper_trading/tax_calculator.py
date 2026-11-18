@@ -121,3 +121,4 @@ class IndianTaxCalculator:
             stamp_duty=stamp_duty,
             total_charges=total_charges,
         )
+

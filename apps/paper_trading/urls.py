@@ -22,5 +22,8 @@ urlpatterns = [
 
     # Account Actions
     path("account/reset/", views.reset_account_view, name="account_reset"),
+
+    # Phase 5: Trade Journal Bridge
+    path("trade/journal/<uuid:trade_id>/", views.export_to_journal_view, name="export_to_journal"),
 ]
 

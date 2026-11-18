@@ -19,8 +19,11 @@ from apps.paper_trading.models import (
     PaperAccount,
     PaperOrder,
     PaperPosition,
+    PaperTrade,
     ProductType,
 )
+from apps.trading.models import TradeJournal, TradeJournalStatus
+from services.paper_trading.coach import PaperTradingBehavioralCoach
 from services.paper_trading.engine import PaperTradingExecutionEngine
 from services.paper_trading.tax_calculator import IndianTaxCalculator
 from services.recommendations.evaluator import RecommendationEvaluator
@@ -238,6 +241,9 @@ def terminal_view(request):
 
     total_charges_paid = sum((t.total_charges for t in trades), Decimal("0.00"))
 
+    # AI Behavioral Coaching & Discipline Audit (Open-Papertrade inspired)
+    coach_report = PaperTradingBehavioralCoach.audit_account(account)
+
     context = {
         "page_title": "Paper Trading Terminal",
         "active_nav": "paper_trading",
@@ -245,6 +251,7 @@ def terminal_view(request):
         "positions": positions,
         "pending_orders": pending_orders,
         "trades": trades,
+        "coach": coach_report,
         "analytics": {
             "total_trades": total_trades_count,
             "closed_trades": closed_count,
@@ -294,5 +301,83 @@ def reset_account_view(request):
         new_capital = Decimal("1000000.00")
 
     account.reset_account(new_capital)
+    return terminal_view(request)
+
+
+@login_required
+@require_POST
+def export_to_journal_view(request, trade_id):
+    """
+    1-Click Bridge: Exports a closed paper trade into the immutable TradeJournal.
+    Pre-populates execution prices, dates, R:R targets, and checklist verification.
+    """
+    account, _ = PaperAccount.objects.get_or_create(user=request.user)
+    trade = get_object_or_404(PaperTrade, id=trade_id, account=account)
+
+    if trade.net_realized_pnl is None:
+        return render(
+            request,
+            "paper_trading/partials/terminal_partial.html",
+            {"error_message": "Only closed trades with realized P&L can be exported to Trade Journal."},
+        )
+
+    if trade.journal_entry:
+        return terminal_view(request)
+
+    qty_dec = Decimal(str(trade.quantity))
+    # Approximate entry price based on realized pnl and execution price
+    if trade.trade_side == OrderSide.SELL:
+        # Long closed: Net PnL = qty * (exec_price - entry_price) - charges
+        entry_price = trade.execution_price - ((trade.net_realized_pnl + trade.total_charges) / qty_dec)
+    else:
+        # Short closed: Net PnL = qty * (entry_price - exec_price) - charges
+        entry_price = trade.execution_price + ((trade.net_realized_pnl + trade.total_charges) / qty_dec)
+
+    entry_price = max(Decimal("1.00"), round(entry_price, 2))
+    entry_date = trade.order.created_at.date()
+    exit_date = trade.executed_at.date()
+
+    stop_loss = trade.order.stop_loss_price or round(entry_price * Decimal("0.95"), 2)
+    target_price = trade.order.target_price or round(entry_price * Decimal("1.10"), 2)
+
+    if trade.order.target_price and trade.execution_price >= trade.order.target_price:
+        status = TradeJournalStatus.TARGET_HIT
+    elif trade.order.stop_loss_price and trade.execution_price <= trade.order.stop_loss_price:
+        status = TradeJournalStatus.STOPPED_OUT
+    else:
+        status = TradeJournalStatus.CLOSED
+
+    ret_pct = round(((trade.execution_price - entry_price) / entry_price * Decimal("100.0")), 2)
+
+    strategy_name = (
+        trade.order.setup.get_strategy_display()
+        if trade.order.setup
+        else ("Delivery Swing" if trade.product_type == ProductType.CNC else "Intraday Momentum")
+    )
+
+    journal = TradeJournal.objects.create(
+        user=request.user,
+        listing=trade.listing,
+        setup=trade.order.setup,
+        strategy=strategy_name[:50],
+        entry_date=entry_date,
+        entry_price=entry_price,
+        quantity=trade.quantity,
+        stop_loss=stop_loss,
+        target_price=target_price,
+        exit_date=exit_date,
+        exit_price=trade.execution_price,
+        realised_pnl=trade.net_realized_pnl,
+        realised_pnl_percent=ret_pct,
+        status=status,
+        entry_reason=trade.order.notes or "Simulated paper trade execution via KuberLens Terminal.",
+        exit_reason="Position closed in paper trading terminal.",
+        lessons_learned="Automated paper trade retrospective.",
+        checklist_completed=True,
+    )
+
+    trade.journal_entry = journal
+    trade.save(update_fields=["journal_entry"])
+
     return terminal_view(request)
 

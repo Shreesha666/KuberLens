@@ -1,223 +1,482 @@
 {% load core_tags %}
 <div class="container-fluid px-4 py-3" id="paper-terminal-root" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <style>
+        /* Scoped Paper Trading Terminal Styles */
+        #paper-terminal-root {
+            --pt-emerald: #10b981;
+            --pt-emerald-hover: #059669;
+            --pt-emerald-subtle: #ecfdf5;
+            --pt-emerald-border: #a7f3d0;
+            --pt-emerald-text: #065f46;
+
+            --pt-rose: #f43f5e;
+            --pt-rose-hover: #e11d48;
+            --pt-rose-subtle: #fff1f2;
+            --pt-rose-border: #fecdd3;
+            --pt-rose-text: #9f1239;
+
+            --pt-slate-bg: var(--bs-tertiary-bg, #f8fafc);
+            --pt-card-border: var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+        }
+
+        [data-bs-theme="dark"] #paper-terminal-root {
+            --pt-emerald-subtle: rgba(16, 185, 129, 0.15);
+            --pt-emerald-border: rgba(16, 185, 129, 0.3);
+            --pt-emerald-text: #34d399;
+
+            --pt-rose-subtle: rgba(244, 63, 94, 0.15);
+            --pt-rose-border: rgba(244, 63, 94, 0.3);
+            --pt-rose-text: #fb7185;
+
+            --pt-slate-bg: #1e293b;
+            --pt-card-border: rgba(255, 255, 255, 0.08);
+        }
+
+        .cursor-pointer { cursor: pointer; }
+
+        /* Metric Cards */
+        .terminal-metric-card {
+            border: 1px solid var(--pt-card-border);
+            border-radius: 12px;
+            background: var(--bs-body-bg);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .terminal-metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-icon-bubble {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        /* Modern Segmented Navigation Tabs */
+        .terminal-nav-track {
+            background-color: var(--bs-tertiary-bg, #f1f5f9);
+            border: 1px solid var(--pt-card-border);
+            padding: 4px;
+            border-radius: 12px;
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .terminal-tab-btn {
+            border: none;
+            background: transparent;
+            color: var(--bs-secondary-color, #64748b);
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 8px 18px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .terminal-tab-btn:hover {
+            color: var(--bs-body-color);
+        }
+        .terminal-tab-btn.active {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Sleek Tables */
+        .terminal-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.85rem;
+        }
+        .terminal-table thead th {
+            background-color: var(--pt-slate-bg);
+            color: var(--bs-secondary-color);
+            font-weight: 600;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 11px 16px;
+            border-bottom: 1px solid var(--pt-card-border);
+            white-space: nowrap;
+        }
+        .terminal-table tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--pt-card-border);
+            vertical-align: middle;
+        }
+        .terminal-table tbody tr:hover td {
+            background-color: var(--bs-tertiary-bg);
+        }
+
+        /* Soft Badges */
+        .badge-soft-buy {
+            background-color: var(--pt-emerald-subtle);
+            color: var(--pt-emerald-text);
+            border: 1px solid var(--pt-emerald-border);
+            font-weight: 600;
+        }
+        .badge-soft-sell {
+            background-color: var(--pt-rose-subtle);
+            color: var(--pt-rose-text);
+            border: 1px solid var(--pt-rose-border);
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .btn-action-trade {
+            background-color: var(--pt-emerald-subtle);
+            color: var(--pt-emerald-text);
+            border: 1px solid var(--pt-emerald-border);
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 4px 10px;
+            transition: all 0.15s ease;
+        }
+        .btn-action-trade:hover {
+            background-color: var(--pt-emerald);
+            color: #ffffff;
+            border-color: var(--pt-emerald);
+        }
+
+        .btn-action-squareoff {
+            background-color: var(--pt-rose-subtle);
+            color: var(--pt-rose-text);
+            border: 1px solid var(--pt-rose-border);
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 4px 10px;
+            transition: all 0.15s ease;
+        }
+        .btn-action-squareoff:hover {
+            background-color: var(--pt-rose);
+            color: #ffffff;
+            border-color: var(--pt-rose);
+        }
+
+        /* Quick Trade Search Dropdown */
+        .search-results-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            background: var(--bs-body-bg);
+            border: 1px solid var(--pt-card-border);
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .search-result-item {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--pt-card-border);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .search-result-item:hover {
+            background: var(--bs-tertiary-bg);
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+
     <!-- Header & Virtual Capital Status -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
+            <!-- Breadcrumb Navigation -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted">Home</a></li>
+                    <li class="breadcrumb-item text-muted">Trading</li>
+                    <li class="breadcrumb-item active text-body fw-semibold" aria-current="page">Paper Trading Terminal</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h1 class="h3 fw-bold mb-0 text-body">Paper Trading Terminal</h1>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold">Virtual Account (NSE/BSE)</span>
-                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                    <i class="bi bi-shield-check"></i> 100% Zero Capital Risk
+                <span class="badge px-2 py-1 rounded-pill" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 0.72rem;">
+                    <span class="spinner-grow spinner-grow-sm me-1" style="width: 6px; height: 6px; vertical-align: middle;" role="status"></span>SIMULATION LIVE
+                </span>
+                <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 rounded-pill" style="font-size: 0.72rem;">
+                    <i class="bi bi-shield-check me-1"></i> ZERO CAPITAL RISK
                 </span>
             </div>
-            <p class="text-muted small mb-0">
-                Real-time simulated execution with dynamic slippage, margin management, and statutory fees.
+            <p class="text-muted small mb-0 mt-1">
+                Virtual NSE/BSE brokerage sandbox featuring realistic slippage, statutory levies (STT/GST), and 5× MIS leverage.
             </p>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm"
-                    data-bs-toggle="modal" data-bs-target="#resetAccountModal">
-                <i class="bi bi-arrow-counterclockwise"></i> Reset Virtual Capital
+        <!-- Terminal Quick Action Bar -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Quick New Trade Button (Opens Stock Selector Modal) -->
+            <button type="button" class="btn btn-sm text-white fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 shadow-sm"
+                    style="background: #10b981; border: none;"
+                    data-bs-toggle="modal" data-bs-target="#quickTradeModal">
+                <i class="bi bi-lightning-charge-fill"></i> New Paper Trade
             </button>
-            <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm"
+
+            <!-- Reset Virtual Capital Button -->
+            <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 px-3 py-1.5 rounded-3"
+                    data-bs-toggle="modal" data-bs-target="#resetAccountModal">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Capital
+            </button>
+
+            <!-- Refresh MTM Button -->
+            <button type="button" class="btn btn-light border btn-sm d-inline-flex align-items-center gap-1 px-3 py-1.5 rounded-3 text-secondary"
                     hx-get="{% url 'paper_trading:terminal' %}" hx-target="#paper-terminal-root" hx-swap="outerHTML">
                 <i class="bi bi-arrow-repeat"></i> Refresh MTM
             </button>
         </div>
     </div>
 
-    <!-- Account Capital Summary Cards -->
+    <!-- Top Financial Metrics Summary Grid (4 Modern Fintech Cards) -->
     <div class="row g-3 mb-4">
         <!-- 1. Total Account Value -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm p-3 h-100">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Total Account Value</span>
-                    <span class="badge {% if account.total_return_pct >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} border small">
+        <div class="col-sm-6 col-xl-3">
+            <div class="terminal-metric-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Account Value</span>
+                    <div class="metric-icon-bubble" style="background: rgba(2, 132, 199, 0.1); color: #0284c7;">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+                <div class="h3 fw-bold num-mono text-body mb-1">{{ account.total_portfolio_value|format_inr }}</div>
+                <div class="d-flex justify-content-between align-items-center pt-1 border-top" style="border-color: var(--pt-card-border) !important;">
+                    <span class="text-muted small" style="font-size: 0.72rem;">
+                        Initial: <span class="num-mono fw-medium">{{ account.initial_capital|format_inr }}</span>
+                    </span>
+                    <span class="badge px-1.5 py-0.5 rounded-pill {% if account.total_return_pct >= 0 %}badge-soft-buy{% else %}badge-soft-sell{% endif %}" style="font-size: 0.68rem;">
                         {% if account.total_return_pct >= 0 %}+{% endif %}{{ account.total_return_pct }}%
                     </span>
                 </div>
-                <div class="h4 fw-bold num-mono text-body mb-1">₹{{ account.total_portfolio_value|floatformat:2 }}</div>
-                <div class="text-muted small" style="font-size: 0.75rem;">
-                    Initial: <span class="num-mono">₹{{ account.initial_capital|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <!-- 2. Available Cash & Margin Utilization -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="terminal-metric-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Available Cash</span>
+                    <div class="metric-icon-bubble" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+                <div class="h3 fw-bold num-mono mb-1" style="color: #10b981;">{{ account.available_margin|format_inr }}</div>
+                <!-- Margin Utilization Bar -->
+                <div class="pt-1 border-top" style="border-color: var(--pt-card-border) !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-1 small" style="font-size: 0.72rem;">
+                        <span class="text-muted">Margin Used:</span>
+                        <span class="num-mono fw-semibold text-body">{{ account.margin_utilized|format_inr }} ({{ account.margin_utilization_pct }}%)</span>
+                    </div>
+                    <div class="progress" style="height: 4px; background-color: var(--bs-tertiary-bg);">
+                        <div class="progress-bar {% if account.margin_utilization_pct > 80 %}bg-danger{% elif account.margin_utilization_pct > 50 %}bg-warning{% else %}bg-success{% endif %}"
+                             role="progressbar" style="width: {{ account.margin_utilization_pct }}%;"
+                             aria-valuenow="{{ account.margin_utilization_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 2. Available Cash Balance -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm p-3 h-100">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Available Cash</span>
-                    <i class="bi bi-wallet2 text-primary fs-5"></i>
+        <!-- 3. Open Floating P&L (MTM) -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="terminal-metric-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Open Floating P&amp;L</span>
+                    <div class="metric-icon-bubble" style="{% if account.unrealized_pnl >= 0 %}background: rgba(16, 185, 129, 0.1); color: #10b981;{% else %}background: rgba(244, 63, 94, 0.1); color: #f43f5e;{% endif %}">
+                        <i class="bi bi-activity"></i>
+                    </div>
                 </div>
-                <div class="h4 fw-bold num-mono text-primary mb-1">₹{{ account.available_margin|floatformat:2 }}</div>
-                <div class="text-muted small" style="font-size: 0.75rem;">
-                    Margin Used: <span class="num-mono">₹{{ account.margin_utilized|floatformat:2 }} ({{ account.margin_utilization_pct }}%)</span>
+                <div class="h3 fw-bold num-mono mb-1 {% if account.unrealized_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if account.unrealized_pnl >= 0 %}+{% endif %}{{ account.unrealized_pnl|format_inr }}
                 </div>
-            </div>
-        </div>
-
-        <!-- 3. Floating Unrealized P&L -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm p-3 h-100">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Open Floating P&L</span>
-                    <i class="bi bi-activity text-info fs-5"></i>
-                </div>
-                <div class="h4 fw-bold num-mono {% if account.unrealized_pnl >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
-                    {% if account.unrealized_pnl >= 0 %}+{% endif %}₹{{ account.unrealized_pnl|floatformat:2 }}
-                </div>
-                <div class="text-muted small" style="font-size: 0.75rem;">
-                    Real-time Mark-to-Market
+                <div class="d-flex justify-content-between align-items-center pt-1 border-top" style="border-color: var(--pt-card-border) !important;">
+                    <span class="text-muted small" style="font-size: 0.72rem;">Real-time Mark-to-Market</span>
+                    <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5 rounded-pill" style="font-size: 0.68rem;">
+                        {{ positions|length }} Position{{ positions|length|pluralize }}
+                    </span>
                 </div>
             </div>
         </div>
 
-        <!-- 4. Lifetime Realized P&L & Win Rate -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm p-3 h-100">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Realized Net P&L</span>
-                    <span class="badge bg-light text-secondary border small">Win Rate: {{ analytics.win_rate }}%</span>
+        <!-- 4. Realized Net P&L & Win Rate -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="terminal-metric-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Realized Net P&amp;L</span>
+                    <div class="metric-icon-bubble" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <i class="bi bi-trophy"></i>
+                    </div>
                 </div>
-                <div class="h4 fw-bold num-mono {% if account.realized_pnl >= 0 %}text-success{% else %}text-danger{% endif %} mb-1">
-                    {% if account.realized_pnl >= 0 %}+{% endif %}₹{{ account.realized_pnl|floatformat:2 }}
+                <div class="h3 fw-bold num-mono mb-1 {% if account.realized_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if account.realized_pnl >= 0 %}+{% endif %}{{ account.realized_pnl|format_inr }}
                 </div>
-                <div class="text-muted small" style="font-size: 0.75rem;">
-                    Across <span class="fw-semibold">{{ analytics.closed_trades }}</span> completed trades
+                <div class="d-flex justify-content-between align-items-center pt-1 border-top" style="border-color: var(--pt-card-border) !important;">
+                    <span class="text-muted small" style="font-size: 0.72rem;">
+                        Win Rate: <strong class="text-body">{{ analytics.win_rate }}%</strong>
+                    </span>
+                    <span class="badge bg-light text-secondary border px-1.5 py-0.5 rounded-pill" style="font-size: 0.68rem;">
+                        {{ analytics.win_count }}W - {{ analytics.loss_count }}L
+                    </span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Terminal Tabs Navigation -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-body border-bottom pt-3 pb-0 px-4">
-            <ul class="nav nav-tabs card-header-tabs" id="terminalTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-semibold d-flex align-items-center gap-2" id="positions-tab"
-                            data-bs-toggle="tab" data-bs-target="#positions-pane" type="button" role="tab" aria-controls="positions-pane" aria-selected="true">
-                        <i class="bi bi-collection"></i> Open Positions
-                        <span class="badge {% if positions %}bg-primary text-white{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill small">
-                            {{ positions|length }}
-                        </span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="orders-tab"
-                            data-bs-toggle="tab" data-bs-target="#orders-pane" type="button" role="tab" aria-controls="orders-pane" aria-selected="false">
-                        <i class="bi bi-clock-history"></i> Pending Orders
-                        <span class="badge {% if pending_orders %}bg-warning text-dark{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill small">
-                            {{ pending_orders|length }}
-                        </span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="tradebook-tab"
-                            data-bs-toggle="tab" data-bs-target="#tradebook-pane" type="button" role="tab" aria-controls="tradebook-pane" aria-selected="false">
-                        <i class="bi bi-journal-text"></i> Executed Tradebook
-                        <span class="badge bg-secondary-subtle text-secondary rounded-pill small">
-                            {{ trades|length }}
-                        </span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-semibold d-flex align-items-center gap-2" id="analytics-tab"
-                            data-bs-toggle="tab" data-bs-target="#analytics-pane" type="button" role="tab" aria-controls="analytics-pane" aria-selected="false">
-                        <i class="bi bi-pie-chart"></i> Performance Analytics
-                    </button>
-                </li>
-            </ul>
+    <!-- Terminal Main Content Card with Modern Segmented Navigation -->
+    <div class="card border rounded-3 shadow-sm overflow-hidden mb-4" style="border-color: var(--pt-card-border) !important;">
+        <!-- Card Header: Segmented Tabs -->
+        <div class="card-header bg-body border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="terminal-nav-track" id="terminalTabs" role="tablist">
+                <button class="terminal-tab-btn active" id="positions-tab"
+                        data-bs-toggle="tab" data-bs-target="#positions-pane" type="button" role="tab" aria-controls="positions-pane" aria-selected="true">
+                    <i class="bi bi-collection"></i> Open Positions
+                    <span class="badge {% if positions %}badge-soft-buy{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill ms-1" style="font-size: 0.7rem;">
+                        {{ positions|length }}
+                    </span>
+                </button>
+
+                <button class="terminal-tab-btn" id="orders-tab"
+                        data-bs-toggle="tab" data-bs-target="#orders-pane" type="button" role="tab" aria-controls="orders-pane" aria-selected="false">
+                    <i class="bi bi-clock-history"></i> Pending Orders
+                    <span class="badge {% if pending_orders %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill ms-1" style="font-size: 0.7rem;">
+                        {{ pending_orders|length }}
+                    </span>
+                </button>
+
+                <button class="terminal-tab-btn" id="tradebook-tab"
+                        data-bs-toggle="tab" data-bs-target="#tradebook-pane" type="button" role="tab" aria-controls="tradebook-pane" aria-selected="false">
+                    <i class="bi bi-journal-text"></i> Executed Tradebook
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1" style="font-size: 0.7rem;">
+                        {{ trades|length }}
+                    </span>
+                </button>
+
+                <button class="terminal-tab-btn" id="analytics-tab"
+                        data-bs-toggle="tab" data-bs-target="#analytics-pane" type="button" role="tab" aria-controls="analytics-pane" aria-selected="false">
+                    <i class="bi bi-robot"></i> AI Coach &amp; Analytics
+                    <span class="badge rounded-pill ms-1" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #047857; border: 1px solid #a7f3d0;">
+                        {{ coach.discipline_score }}/100
+                    </span>
+                </button>
+            </div>
+
+            <!-- Quick Filter / Action helper -->
+            <div class="d-none d-md-flex align-items-center gap-2">
+                <span class="text-muted small" style="font-size: 0.75rem;">
+                    <i class="bi bi-info-circle text-primary me-1"></i> Orders execute atomically against live simulated order book
+                </span>
+            </div>
         </div>
 
+        <!-- Card Body: Tab Panels -->
         <div class="card-body p-0">
             <div class="tab-content" id="terminalTabContent">
 
+                <!-- ========================================== -->
                 <!-- TAB 1: POSITIONS -->
+                <!-- ========================================== -->
                 <div class="tab-pane fade show active p-0" id="positions-pane" role="tabpanel" aria-labelledby="positions-tab" tabindex="0">
                     {% if positions %}
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                            <thead class="table-light text-muted small text-uppercase">
+                        <table class="table terminal-table align-middle mb-0">
+                            <thead>
                                 <tr>
                                     <th class="ps-4">Instrument</th>
                                     <th>Product</th>
                                     <th class="text-end">Qty / Side</th>
-                                    <th class="text-end">Avg Price</th>
-                                    <th class="text-end">LTP (₹)</th>
-                                    <th class="text-end">Current Value</th>
-                                    <th class="text-end">Unrealized P&L</th>
-                                    <th>Protective Bracket</th>
+                                    <th class="text-end">Avg Buy Price</th>
+                                    <th class="text-end">Live LTP</th>
+                                    <th class="text-end">Market Value</th>
+                                    <th class="text-end">Unrealized P&amp;L</th>
+                                    <th>Bracket Orders</th>
                                     <th class="text-center pe-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for pos in positions %}
                                 <tr>
-                                    <!-- Instrument -->
+                                    <!-- Instrument Symbol & Logo -->
                                     <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-2">
-                                            {% stock_logo pos.listing size=28 css_class="p-0.5" %}
+                                        <div class="d-flex align-items-center gap-2.5">
+                                            {% stock_logo pos.listing size=32 css_class="p-1 rounded-2 border bg-body" %}
                                             <div>
-                                                <a href="{% url 'stocks:stock_detail' pos.listing.symbol %}"
-                                                   hx-get="{% url 'stocks:stock_detail' pos.listing.symbol %}"
-                                                   hx-target="#main-content" hx-push-url="true"
-                                                   class="fw-bold text-decoration-none text-body">
-                                                    {{ pos.listing.symbol }}
-                                                </a>
-                                                <span class="badge bg-secondary-subtle text-body border ms-1" style="font-size: 0.65rem;">{{ pos.listing.exchange.code }}</span>
-                                                <div class="text-muted" style="font-size: 0.72rem;">{{ pos.listing.instrument.display_name }}</div>
+                                                <div class="d-flex align-items-center gap-1.5">
+                                                    <a href="{% url 'stocks:stock_detail' pos.listing.symbol %}"
+                                                       hx-get="{% url 'stocks:stock_detail' pos.listing.symbol %}"
+                                                       hx-target="#main-content" hx-push-url="true"
+                                                       class="fw-bold text-decoration-none text-body fs-6">
+                                                        {{ pos.listing.symbol }}
+                                                    </a>
+                                                    <span class="badge bg-light text-secondary border px-1.5 py-0" style="font-size: 0.65rem;">{{ pos.listing.exchange.code }}</span>
+                                                </div>
+                                                <div class="text-muted text-truncate" style="font-size: 0.73rem; max-width: 170px;">{{ pos.listing.instrument.display_name }}</div>
                                             </div>
                                         </div>
                                     </td>
 
-                                    <!-- Product -->
+                                    <!-- Product Type (CNC vs MIS) -->
                                     <td>
-                                        <span class="badge {% if pos.product_type == 'CNC' %}bg-secondary-subtle text-body border{% else %}bg-info-subtle text-info-emphasis border border-info-subtle{% endif %}">
+                                        <span class="badge px-2 py-1 rounded-2 {% if pos.product_type == 'CNC' %}bg-secondary-subtle text-secondary border{% else %}bg-info-subtle text-info-emphasis border border-info-subtle{% endif %}" style="font-size: 0.7rem;">
                                             {{ pos.product_type }}
+                                            <span class="fw-normal opacity-75">{% if pos.product_type == 'CNC' %}(Delivery){% else %}(5× MIS){% endif %}</span>
                                         </span>
                                     </td>
 
                                     <!-- Quantity / Side -->
                                     <td class="text-end">
-                                        <span class="fw-bold num-mono {% if pos.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
-                                            {{ pos.quantity }}
-                                        </span>
-                                        <span class="badge {% if pos.quantity > 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} border ms-1" style="font-size: 0.65rem;">
-                                            {{ pos.side }}
-                                        </span>
+                                        <div class="d-flex align-items-center justify-content-end gap-1.5">
+                                            <span class="fw-bold num-mono {% if pos.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ pos.quantity }}
+                                            </span>
+                                            <span class="badge px-1.5 py-0.5 rounded {% if pos.quantity > 0 %}badge-soft-buy{% else %}badge-soft-sell{% endif %}" style="font-size: 0.65rem;">
+                                                {{ pos.side }}
+                                            </span>
+                                        </div>
                                     </td>
 
                                     <!-- Avg Price -->
-                                    <td class="text-end num-mono">₹{{ pos.average_price|floatformat:2 }}</td>
+                                    <td class="text-end num-mono text-body">₹{{ pos.average_price|floatformat:2 }}</td>
 
-                                    <!-- LTP -->
-                                    <td class="text-end num-mono fw-semibold">₹{{ pos.current_price|floatformat:2 }}</td>
+                                    <!-- LTP with Live Dot -->
+                                    <td class="text-end">
+                                        <div class="num-mono fw-bold text-body">₹{{ pos.current_price|floatformat:2 }}</div>
+                                        <div class="small text-muted" style="font-size: 0.68rem;">Live</div>
+                                    </td>
 
                                     <!-- Current Market Value -->
-                                    <td class="text-end num-mono">₹{{ pos.current_market_value|floatformat:2 }}</td>
+                                    <td class="text-end num-mono text-body">₹{{ pos.current_market_value|floatformat:2 }}</td>
 
-                                    <!-- Unrealized PnL -->
+                                    <!-- Unrealized P&L -->
                                     <td class="text-end">
                                         <div class="fw-bold num-mono {% if pos.unrealized_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
                                             {% if pos.unrealized_pnl >= 0 %}+{% endif %}₹{{ pos.unrealized_pnl|floatformat:2 }}
                                         </div>
-                                        <div class="small num-mono {% if pos.unrealized_pnl_percent >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.72rem;">
+                                        <span class="badge px-1.5 py-0 rounded-pill {% if pos.unrealized_pnl_percent >= 0 %}badge-soft-buy{% else %}badge-soft-sell{% endif %}" style="font-size: 0.68rem;">
                                             {% if pos.unrealized_pnl_percent >= 0 %}+{% endif %}{{ pos.unrealized_pnl_percent }}%
-                                        </div>
+                                        </span>
                                     </td>
 
-                                    <!-- Bracket Target & Stop-loss -->
+                                    <!-- Bracket Orders -->
                                     <td>
                                         {% if pos.stop_loss or pos.target %}
-                                        <div class="d-flex flex-column gap-1 small" style="font-size: 0.72rem;">
+                                        <div class="d-flex flex-column gap-1" style="font-size: 0.72rem;">
                                             {% if pos.target %}
-                                            <span class="text-success"><i class="bi bi-bullseye"></i> Tgt: ₹{{ pos.target|floatformat:2 }}</span>
+                                            <span class="badge px-2 py-0.5 rounded text-start" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                                <i class="bi bi-bullseye me-1"></i> Tgt: ₹{{ pos.target|floatformat:2 }}
+                                            </span>
                                             {% endif %}
                                             {% if pos.stop_loss %}
-                                            <span class="text-danger"><i class="bi bi-shield-slash"></i> SL: ₹{{ pos.stop_loss|floatformat:2 }}</span>
+                                            <span class="badge px-2 py-0.5 rounded text-start" style="background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;">
+                                                <i class="bi bi-shield-slash me-1"></i> SL: ₹{{ pos.stop_loss|floatformat:2 }}
+                                            </span>
                                             {% endif %}
                                         </div>
                                         {% else %}
@@ -225,20 +484,21 @@
                                         {% endif %}
                                     </td>
 
-                                    <!-- Actions -->
+                                    <!-- Action Buttons -->
                                     <td class="text-center pe-4">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.72rem;"
+                                        <div class="d-flex justify-content-center gap-1.5">
+                                            <button type="button" class="btn-action-squareoff"
                                                     title="Square off position at current market price"
                                                     hx-post="{% url 'paper_trading:position_square_off' pos.id %}"
                                                     hx-target="#paper-terminal-root" hx-swap="outerHTML"
                                                     hx-confirm="Are you sure you want to square off {{ pos.quantity }} shares of {{ pos.listing.symbol }}?">
-                                                <i class="bi bi-x-circle me-1"></i> Square Off
+                                                <i class="bi bi-x-circle me-1"></i> Exit
                                             </button>
-                                            <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size: 0.72rem;"
+                                            <button type="button" class="btn-action-trade"
+                                                    title="Open order drawer to add or reduce position"
                                                     hx-get="{% url 'paper_trading:order_drawer' pos.listing.symbol %}"
                                                     hx-target="#paper-order-drawer-container" hx-swap="innerHTML">
-                                                <i class="bi bi-lightning-charge"></i> Trade
+                                                <i class="bi bi-lightning-charge me-1"></i> Trade
                                             </button>
                                         </div>
                                     </td>
@@ -248,35 +508,46 @@
                         </table>
                     </div>
                     {% else %}
-                    <!-- Empty State: Positions -->
-                    <div class="text-center py-5">
-                        <div class="text-muted mb-2">
-                            <i class="bi bi-briefcase fs-1"></i>
+                    <!-- Modern Illustrated Empty State: Positions -->
+                    <div class="text-center py-5 px-3">
+                        <div class="mb-3 mx-auto" style="width: 68px; height: 68px; border-radius: 50%; background: var(--bs-tertiary-bg); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-briefcase text-muted" style="font-size: 2rem;"></i>
                         </div>
-                        <h6 class="fw-bold text-body">No Open Paper Positions</h6>
-                        <p class="text-muted small mb-3">You do not currently have any active delivery or intraday open positions.</p>
-                        <a href="{% url 'stocks:stock_list' %}" hx-get="{% url 'stocks:stock_list' %}" hx-target="#main-content" hx-push-url="true"
-                           class="btn btn-primary btn-sm px-3">
-                            <i class="bi bi-search me-1"></i> Explore Stocks &amp; Place Paper Trade
-                        </a>
+                        <h5 class="fw-bold text-body mb-1">No Open Paper Positions</h5>
+                        <p class="text-muted small mb-4" style="max-width: 420px; margin: 0 auto;">
+                            Your portfolio currently holds 0 active delivery or intraday positions. Test your trading strategy with virtual capital!
+                        </p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <button type="button" class="btn btn-sm text-white px-3 py-2 rounded-3 shadow-sm fw-semibold"
+                                    style="background: #10b981; border: none;"
+                                    data-bs-toggle="modal" data-bs-target="#quickTradeModal">
+                                <i class="bi bi-lightning-charge-fill me-1"></i> Place First Paper Trade
+                            </button>
+                            <a href="{% url 'trading:scanner' %}" hx-get="{% url 'trading:scanner' %}" hx-target="#main-content" hx-push-url="true"
+                               class="btn btn-sm btn-outline-secondary px-3 py-2 rounded-3">
+                                <i class="bi bi-binoculars me-1"></i> Explore Swing Scanner
+                            </a>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
 
+                <!-- ========================================== -->
                 <!-- TAB 2: PENDING ORDERS -->
+                <!-- ========================================== -->
                 <div class="tab-pane fade p-0" id="orders-pane" role="tabpanel" aria-labelledby="orders-tab" tabindex="0">
                     {% if pending_orders %}
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                            <thead class="table-light text-muted small text-uppercase">
+                        <table class="table terminal-table align-middle mb-0">
+                            <thead>
                                 <tr>
                                     <th class="ps-4">Time</th>
                                     <th>Instrument</th>
                                     <th>Side</th>
                                     <th>Product</th>
-                                    <th>Type</th>
-                                    <th class="text-end">Qty</th>
-                                    <th class="text-end">Price / Trigger</th>
+                                    <th>Order Type</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">Limit / Trigger Price</th>
                                     <th>Status</th>
                                     <th class="text-center pe-4">Action</th>
                                 </tr>
@@ -286,30 +557,33 @@
                                 <tr>
                                     <td class="ps-4 num-mono small text-muted">{{ order.created_at|date:"H:i:s" }}</td>
                                     <td>
-                                        <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% stock_logo order.listing size=26 css_class="p-0.5 rounded border bg-body" %}
+                                            <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="badge px-2 py-1 rounded-2"
-                                              style="{% if order.order_side == 'BUY' %}background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;{% else %}background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;{% endif %}">
+                                        <span class="badge px-2 py-1 rounded-2 {% if order.order_side == 'BUY' %}badge-soft-buy{% else %}badge-soft-sell{% endif %}">
                                             {{ order.order_side }}
                                         </span>
                                     </td>
-                                    <td><span class="badge bg-secondary-subtle text-body border">{{ order.product_type }}</span></td>
-                                    <td><span class="small fw-semibold">{{ order.order_type }}</span></td>
-                                    <td class="text-end num-mono fw-bold">{{ order.quantity }}</td>
-                                    <td class="text-end num-mono fw-semibold">
+                                    <td><span class="badge bg-secondary-subtle text-secondary border">{{ order.product_type }}</span></td>
+                                    <td><span class="small fw-semibold text-body">{{ order.order_type }}</span></td>
+                                    <td class="text-end num-mono fw-bold text-body">{{ order.quantity }}</td>
+                                    <td class="text-end num-mono fw-semibold text-body">
                                         {% if order.limit_price %}₹{{ order.limit_price|floatformat:2 }}{% elif order.trigger_price %}Trig: ₹{{ order.trigger_price|floatformat:2 }}{% else %}Market{% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                                            <i class="bi bi-hourglass-split"></i> PENDING
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-2">
+                                            <i class="bi bi-hourglass-split me-1"></i> Resting On Book
                                         </span>
                                     </td>
                                     <td class="text-center pe-4">
-                                        <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.72rem;"
+                                        <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2.5 rounded-2" style="font-size: 0.72rem;"
+                                                title="Cancel pending order"
                                                 hx-post="{% url 'paper_trading:order_cancel' order.id %}"
                                                 hx-target="#paper-terminal-root" hx-swap="outerHTML">
-                                            <i class="bi bi-trash"></i> Cancel
+                                            <i class="bi bi-trash me-1"></i> Cancel
                                         </button>
                                     </td>
                                 </tr>
@@ -319,50 +593,56 @@
                     </div>
                     {% else %}
                     <!-- Empty State: Orders -->
-                    <div class="text-center py-5">
-                        <div class="text-muted mb-2"><i class="bi bi-clock fs-1"></i></div>
-                        <h6 class="fw-bold text-body">No Pending Orders</h6>
-                        <p class="text-muted small mb-0">All limit and stop-loss orders have been filled or executed.</p>
+                    <div class="text-center py-5 px-3">
+                        <div class="mb-3 mx-auto" style="width: 68px; height: 68px; border-radius: 50%; background: var(--bs-tertiary-bg); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-clock-history text-muted" style="font-size: 2rem;"></i>
+                        </div>
+                        <h5 class="fw-bold text-body mb-1">No Pending Limit Orders</h5>
+                        <p class="text-muted small mb-0">All limit orders have either been triggered and filled or executed at market.</p>
                     </div>
                     {% endif %}
                 </div>
 
+                <!-- ========================================== -->
                 <!-- TAB 3: EXECUTED TRADEBOOK -->
+                <!-- ========================================== -->
                 <div class="tab-pane fade p-0" id="tradebook-pane" role="tabpanel" aria-labelledby="tradebook-tab" tabindex="0">
                     {% if trades %}
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                            <thead class="table-light text-muted small text-uppercase">
+                        <table class="table terminal-table align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <th class="ps-4">Time</th>
+                                    <th class="ps-4">Execution Time</th>
                                     <th>Instrument</th>
                                     <th>Side</th>
                                     <th>Product</th>
                                     <th class="text-end">Qty</th>
-                                    <th class="text-end">Fill Price</th>
+                                    <th class="text-end">Fill Price (w/ Slippage)</th>
                                     <th class="text-end">Turnover</th>
-                                    <th class="text-end">Taxes &amp; Fees</th>
+                                    <th class="text-end">Taxes &amp; Levies</th>
                                     <th class="text-end pe-4">Realized P&amp;L / Journal</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for trade in trades %}
                                 <tr>
-                                    <td class="ps-4 num-mono small text-muted">{{ trade.executed_at|date:"d M H:i" }}</td>
+                                    <td class="ps-4 num-mono small text-muted">{{ trade.executed_at|date:"d M Y, H:i" }}</td>
                                     <td>
-                                        <span class="fw-bold text-body">{{ trade.listing.symbol }}</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% stock_logo trade.listing size=26 css_class="p-0.5 rounded border bg-body" %}
+                                            <span class="fw-bold text-body">{{ trade.listing.symbol }}</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="badge px-2 py-1 rounded-2"
-                                              style="{% if trade.trade_side == 'BUY' %}background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;{% else %}background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;{% endif %}">
+                                        <span class="badge px-2 py-1 rounded-2 {% if trade.trade_side == 'BUY' %}badge-soft-buy{% else %}badge-soft-sell{% endif %}">
                                             {{ trade.trade_side }}
                                         </span>
                                     </td>
-                                    <td><span class="badge bg-secondary-subtle text-body border">{{ trade.product_type }}</span></td>
-                                    <td class="text-end num-mono fw-bold">{{ trade.quantity }}</td>
-                                    <td class="text-end num-mono">₹{{ trade.execution_price|floatformat:2 }}</td>
-                                    <td class="text-end num-mono">₹{{ trade.turnover|floatformat:2 }}</td>
-                                    <td class="text-end num-mono text-muted" title="Brokerage: ₹{{ trade.brokerage }} | STT: ₹{{ trade.stt }} | GST: ₹{{ trade.gst }} | Stamp: ₹{{ trade.stamp_duty }}">
+                                    <td><span class="badge bg-secondary-subtle text-secondary border">{{ trade.product_type }}</span></td>
+                                    <td class="text-end num-mono fw-bold text-body">{{ trade.quantity }}</td>
+                                    <td class="text-end num-mono text-body">₹{{ trade.execution_price|floatformat:2 }}</td>
+                                    <td class="text-end num-mono text-body">₹{{ trade.turnover|floatformat:2 }}</td>
+                                    <td class="text-end num-mono text-muted" title="Brokerage: ₹{{ trade.brokerage }} | STT: ₹{{ trade.stt }} | GST: ₹{{ trade.gst }} | Stamp: ₹{{ trade.stamp_duty }} | Exchange: ₹{{ trade.exchange_turnover_fee }}">
                                         ₹{{ trade.total_charges|floatformat:2 }}
                                     </td>
                                     <td class="text-end pe-4">
@@ -372,11 +652,11 @@
                                                 {% if trade.net_realized_pnl >= 0 %}+{% endif %}₹{{ trade.net_realized_pnl|floatformat:2 }}
                                             </span>
                                             {% if trade.journal_entry %}
-                                            <a href="{% url 'trading:journal' %}" class="badge bg-success-subtle text-success border border-success-subtle text-decoration-none py-1 px-2" title="View in Trade Journal">
-                                                <i class="bi bi-journal-check"></i> Logged
+                                            <a href="{% url 'trading:journal' %}" class="badge bg-success-subtle text-success border border-success-subtle text-decoration-none py-1 px-2 rounded-2" title="View in Trade Journal">
+                                                <i class="bi bi-journal-check me-1"></i> Logged
                                             </a>
                                             {% else %}
-                                            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.7rem;"
+                                            <button type="button" class="btn btn-outline-primary btn-sm py-0.5 px-2 rounded-2" style="font-size: 0.72rem;"
                                                     title="Log this completed trade into your Trade Journal"
                                                     hx-post="{% url 'paper_trading:export_to_journal' trade.id %}"
                                                     hx-target="#paper-terminal-root" hx-swap="outerHTML">
@@ -395,37 +675,41 @@
                     </div>
                     {% else %}
                     <!-- Empty State: Tradebook -->
-                    <div class="text-center py-5">
-                        <div class="text-muted mb-2"><i class="bi bi-journal-text fs-1"></i></div>
-                        <h6 class="fw-bold text-body">Tradebook is Empty</h6>
-                        <p class="text-muted small mb-0">Executed paper trade transactions will appear here.</p>
+                    <div class="text-center py-5 px-3">
+                        <div class="mb-3 mx-auto" style="width: 68px; height: 68px; border-radius: 50%; background: var(--bs-tertiary-bg); display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-journal-text text-muted" style="font-size: 2rem;"></i>
+                        </div>
+                        <h5 class="fw-bold text-body mb-1">Tradebook is Empty</h5>
+                        <p class="text-muted small mb-0">Every buy and sell fill with itemized taxes will be permanently recorded here.</p>
                     </div>
                     {% endif %}
                 </div>
 
+                <!-- ========================================== -->
                 <!-- TAB 4: PERFORMANCE & AI BEHAVIORAL COACH -->
+                <!-- ========================================== -->
                 <div class="tab-pane fade p-4" id="analytics-pane" role="tabpanel" aria-labelledby="analytics-tab" tabindex="0">
-                    <!-- AI Behavioral Coach Section Header -->
-                    <div class="card border-0 bg-primary-subtle border-start border-primary border-4 p-3 mb-4 rounded-3">
+                    <!-- AI Behavioral Coach Section Header Banner -->
+                    <div class="card border rounded-3 p-4 mb-4" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(2, 132, 199, 0.05) 100%); border-color: var(--pt-card-border) !important;">
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="display-6 text-primary">
+                                <div style="width: 52px; height: 52px; border-radius: 14px; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
                                     <i class="bi bi-robot"></i>
                                 </div>
                                 <div>
-                                    <div class="d-flex align-items-center gap-2">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
                                         <h5 class="fw-bold text-body mb-0">AI Behavioral Coach &amp; Discipline Audit</h5>
-                                        <span class="badge bg-primary text-white small">Open-Papertrade Standard</span>
+                                        <span class="badge bg-light text-secondary border px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;">Open-Papertrade Standard</span>
                                     </div>
                                     <p class="text-muted small mb-0 mt-1">
-                                        Automated psychological coaching auditing risk management, stop-loss adherence, and capital preservation.
+                                        Continuous algorithmic analysis auditing risk parameters, stop-loss adherence, and post-loss psychology.
                                     </p>
                                 </div>
                             </div>
 
                             <div class="text-end">
-                                <div class="h2 fw-bold num-mono text-primary mb-0">{{ coach.discipline_score }}/100</div>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small fw-bold">
+                                <div class="h1 fw-bold num-mono mb-0" style="color: #10b981;">{{ coach.discipline_score }}<span class="fs-4 text-muted fw-normal">/100</span></div>
+                                <span class="badge px-2 py-1 rounded-pill" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 0.75rem;">
                                     {{ coach.rating_label }}
                                 </span>
                             </div>
@@ -435,47 +719,47 @@
                     <!-- 4 Behavioral Pillars -->
                     <div class="row g-3 mb-4">
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border border-secondary border-opacity-10 p-3 h-100">
+                            <div class="card border rounded-3 p-3 h-100" style="background: var(--bs-body-bg); border-color: var(--pt-card-border) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Stop-Loss Coverage</span>
                                     <i class="bi bi-shield-check text-primary"></i>
                                 </div>
-                                <div class="h4 fw-bold num-mono text-body mb-0">{{ coach.stop_loss_coverage_pct }}%</div>
-                                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Orders with preset SL</div>
+                                <div class="h3 fw-bold num-mono text-body mb-0">{{ coach.stop_loss_coverage_pct }}%</div>
+                                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Orders placed with protective SL</div>
                             </div>
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border border-secondary border-opacity-10 p-3 h-100">
+                            <div class="card border rounded-3 p-3 h-100" style="background: var(--bs-body-bg); border-color: var(--pt-card-border) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Sizing Discipline</span>
                                     <i class="bi bi-pie-chart text-success"></i>
                                 </div>
-                                <div class="h4 fw-bold num-mono text-body mb-0">{{ coach.sizing_discipline_pct }}%</div>
-                                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Trades &le; 20% equity cap</div>
+                                <div class="h3 fw-bold num-mono text-body mb-0">{{ coach.sizing_discipline_pct }}%</div>
+                                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Trades &le; 20% total equity cap</div>
                             </div>
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border border-secondary border-opacity-10 p-3 h-100">
+                            <div class="card border rounded-3 p-3 h-100" style="background: var(--bs-body-bg); border-color: var(--pt-card-border) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Overtrading Shield</span>
                                     <i class="bi bi-speedometer text-info"></i>
                                 </div>
-                                <div class="h5 fw-bold mb-0 {% if coach.overtrading_flag %}text-danger{% else %}text-success{% endif %}">
-                                    {% if coach.overtrading_flag %}Overtrading Alert{% else %}Normal Velocity{% endif %}
+                                <div class="h4 fw-bold mb-0 {% if coach.overtrading_flag %}text-danger{% else %}text-success{% endif %}">
+                                    {% if coach.overtrading_flag %}High Velocity Alert{% else %}Normal Rhythm{% endif %}
                                 </div>
-                                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Daily execution rhythm</div>
+                                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Daily execution count audit</div>
                             </div>
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border border-secondary border-opacity-10 p-3 h-100">
+                            <div class="card border rounded-3 p-3 h-100" style="background: var(--bs-body-bg); border-color: var(--pt-card-border) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Emotional Impulse</span>
                                     <i class="bi bi-heart-pulse text-warning"></i>
                                 </div>
-                                <div class="h5 fw-bold mb-0 {% if coach.revenge_trading_detected %}text-danger{% else %}text-success{% endif %}">
+                                <div class="h4 fw-bold mb-0 {% if coach.revenge_trading_detected %}text-danger{% else %}text-success{% endif %}">
                                     {% if coach.revenge_trading_detected %}Revenge Flagged{% else %}Disciplined Cooldown{% endif %}
                                 </div>
                                 <div class="text-muted small mt-1" style="font-size: 0.75rem;">Post-loss behavioral filter</div>
@@ -484,69 +768,69 @@
                     </div>
 
                     <!-- Coaching Insights Feed -->
-                    <div class="card border border-secondary border-opacity-10 mb-4 p-3">
-                        <h6 class="fw-bold text-body small text-uppercase mb-3">
+                    <div class="card border rounded-3 mb-4 p-3.5" style="border-color: var(--pt-card-border) !important;">
+                        <h6 class="fw-bold text-body small text-uppercase mb-3" style="letter-spacing: 0.5px;">
                             <i class="bi bi-lightbulb text-warning me-1"></i> Behavioral Feedback &amp; Actionable Guidance
                         </h6>
                         <div class="d-flex flex-column gap-2">
                             {% for insight in coach.insights %}
-                            <div class="p-2 px-3 rounded-2 border small d-flex align-items-start gap-2 {% if insight.impact == 'POSITIVE' %}bg-success-subtle border-success-subtle text-success-emphasis{% elif insight.impact == 'NEGATIVE' %}bg-danger-subtle border-danger-subtle text-danger-emphasis{% else %}bg-body-tertiary border-secondary border-opacity-10 text-body{% endif %}">
+                            <div class="p-2.5 px-3 rounded-3 border small d-flex align-items-start gap-2.5 {% if insight.impact == 'POSITIVE' %}badge-soft-buy{% elif insight.impact == 'NEGATIVE' %}badge-soft-sell{% else %}bg-body-tertiary border-secondary border-opacity-10 text-body{% endif %}">
                                 <i class="bi {% if insight.impact == 'POSITIVE' %}bi-check-circle-fill text-success{% elif insight.impact == 'NEGATIVE' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} mt-0.5"></i>
                                 <div>
-                                    <span class="fw-bold">{{ insight.title }}:</span>
+                                    <strong class="me-1">{{ insight.title }}:</strong>
                                     <span>{{ insight.description }}</span>
                                 </div>
                             </div>
                             {% empty %}
-                            <div class="text-muted small">No behavioral warnings detected. Trade history shows pristine execution discipline.</div>
+                            <div class="text-muted small py-2">No behavioral anomalies detected. Trade history shows pristine execution discipline.</div>
                             {% endfor %}
                         </div>
                     </div>
 
                     <!-- Numerical Performance Stats Grid -->
-                    <h6 class="fw-bold text-body small text-uppercase mb-3">Quantitative Performance Metrics</h6>
+                    <h6 class="fw-bold text-body small text-uppercase mb-3" style="letter-spacing: 0.5px;">Quantitative Execution Metrics</h6>
                     <div class="row g-3">
-                        <div class="col-md-3">
-                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border rounded-3 p-3" style="background: var(--pt-slate-bg); border-color: var(--pt-card-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Total Trades Executed</span>
                                 <div class="h3 fw-bold num-mono text-body mt-2 mb-0">{{ analytics.total_trades }}</div>
                                 <div class="small text-muted mt-1">{{ analytics.closed_trades }} round-trips completed</div>
                             </div>
                         </div>
 
-                        <div class="col-md-3">
-                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border rounded-3 p-3" style="background: var(--pt-slate-bg); border-color: var(--pt-card-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Profitable Trades</span>
                                 <div class="h3 fw-bold num-mono text-success mt-2 mb-0">{{ analytics.win_count }}</div>
                                 <div class="small text-muted mt-1">Win Rate: {{ analytics.win_rate }}%</div>
                             </div>
                         </div>
 
-                        <div class="col-md-3">
-                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border rounded-3 p-3" style="background: var(--pt-slate-bg); border-color: var(--pt-card-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Losing Trades</span>
                                 <div class="h3 fw-bold num-mono text-danger mt-2 mb-0">{{ analytics.loss_count }}</div>
                                 <div class="small text-muted mt-1">Loss Rate: {% if analytics.closed_trades %}{{ 100|add:"-analytics.win_rate" }}{% else %}0{% endif %}%</div>
                             </div>
                         </div>
 
-                        <div class="col-md-3">
-                            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card border rounded-3 p-3" style="background: var(--pt-slate-bg); border-color: var(--pt-card-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Profit Factor</span>
                                 <div class="h3 fw-bold num-mono text-primary mt-2 mb-0">{{ analytics.profit_factor }}</div>
                                 <div class="small text-muted mt-1">Gross Wins / Gross Losses</div>
                             </div>
                         </div>
 
-                        <div class="col-12 mt-3">
-                            <div class="card border border-secondary border-opacity-10 p-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold text-body small text-uppercase">Statutory Friction Audit</span>
-                                    <span class="badge bg-secondary-subtle text-secondary border">Real-world Taxes Paid</span>
+                        <div class="col-12">
+                            <div class="card border rounded-3 p-3" style="border-color: var(--pt-card-border) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-body small text-uppercase" style="font-size: 0.72rem;">Statutory Friction Audit</span>
+                                    <span class="badge bg-secondary-subtle text-secondary border">Real-world Taxes Simulated</span>
                                 </div>
                                 <div class="d-flex align-items-baseline gap-2">
                                     <span class="h4 fw-bold num-mono text-muted mb-0">₹{{ analytics.total_charges_paid|floatformat:2 }}</span>
-                                    <span class="text-muted small">deducted across Brokerage, STT, Exchange fees, SEBI, and GST.</span>
+                                    <span class="text-muted small">deducted across Brokerage (max ₹20/order), STT, Exchange fees, SEBI turnover fees, and 18% GST.</span>
                                 </div>
                             </div>
                         </div>
@@ -558,44 +842,113 @@
     </div>
 </div>
 
-<!-- Reset Account Modal -->
+<!-- Quick New Paper Trade Modal (Instant Stock Search & Drawer Launcher) -->
+<div class="modal fade" id="quickTradeModal" tabindex="-1" aria-labelledby="quickTradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-header border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); color: #10b981; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-body mb-0" id="quickTradeModalLabel">New Paper Order</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Search any NSE/BSE stock to launch the paper order drawer</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Search Input -->
+                <div class="position-relative mb-3">
+                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Search Stock Symbol or Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-body border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="terminalStockSearch"
+                               placeholder="e.g. RELIANCE, INFY, HDFCBANK, TATASTEEL..." autocomplete="off">
+                    </div>
+                    <!-- Autocomplete Results Container -->
+                    <div id="terminalSearchResults" class="search-results-dropdown d-none"></div>
+                </div>
+
+                <!-- Popular Nifty 50 Quick Picks -->
+                <div>
+                    <label class="text-muted small fw-semibold text-uppercase mb-2 d-block" style="font-size: 0.7rem;">Popular Instruments</label>
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('RELIANCE')">
+                            RELIANCE
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('TCS')">
+                            TCS
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('INFY')">
+                            INFY
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('HDFCBANK')">
+                            HDFCBANK
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('ICICIBANK')">
+                            ICICIBANK
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('BAJFINANCE')">
+                            BAJFINANCE
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill py-1 px-2.5 text-body small fw-semibold" onclick="launchPaperTradeDrawer('AARTIIND')">
+                            AARTIIND
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Virtual Account Capital Modal -->
 <div class="modal fade" id="resetAccountModal" tabindex="-1" aria-labelledby="resetAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom py-3">
-                <h5 class="modal-title fw-bold text-body" id="resetAccountModalLabel">
-                    <i class="bi bi-arrow-counterclockwise text-primary me-1"></i> Reset Virtual Capital
-                </h5>
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-header border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-body mb-0" id="resetAccountModalLabel">Reset Virtual Capital</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Start fresh with a customized virtual balance</span>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form hx-post="{% url 'paper_trading:account_reset' %}" hx-target="#paper-terminal-root" hx-swap="outerHTML"
                   onsubmit="const m = bootstrap.Modal.getInstance(document.getElementById('resetAccountModal')); if(m) m.hide();">
                 {% csrf_token %}
                 <div class="modal-body p-4">
-                    <div class="alert alert-warning small mb-3">
+                    <div class="alert alert-warning small rounded-2 mb-3">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                        <strong>Warning:</strong> Resetting will close all active positions, cancel pending orders, and reset your realized P&amp;L to ₹0.00.
+                        <strong>Notice:</strong> Resetting will square off open positions, cancel all resting orders, and restore your initial cash balance.
                     </div>
 
                     <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Starting Virtual Capital (₹)</label>
-                    <input type="number" class="form-control form-control-sm num-mono fw-bold mb-2" id="resetCapitalInput" name="capital" value="1000000.00" min="10000" step="10000" required>
+                    <input type="number" class="form-control form-control-sm num-mono fw-bold mb-2.5" id="resetCapitalInput" name="capital" value="1000000.00" min="10000" step="10000" required>
 
-                    <!-- Presets -->
-                    <div class="d-flex gap-1">
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.72rem;"
+                    <!-- Capital Presets -->
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <button type="button" class="btn btn-sm btn-light border rounded-2 py-1 px-2.5 small"
                                 onclick="document.getElementById('resetCapitalInput').value = '500000.00'">₹5 Lakhs</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 active" style="font-size: 0.72rem;"
+                        <button type="button" class="btn btn-sm btn-light border rounded-2 py-1 px-2.5 small"
                                 onclick="document.getElementById('resetCapitalInput').value = '1000000.00'">₹10 Lakhs</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.72rem;"
+                        <button type="button" class="btn btn-sm btn-light border rounded-2 py-1 px-2.5 small"
                                 onclick="document.getElementById('resetCapitalInput').value = '2500000.00'">₹25 Lakhs</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.72rem;"
+                        <button type="button" class="btn btn-sm btn-light border rounded-2 py-1 px-2.5 small"
                                 onclick="document.getElementById('resetCapitalInput').value = '5000000.00'">₹50 Lakhs</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-2 py-1 px-2.5 small"
+                                onclick="document.getElementById('resetCapitalInput').value = '10000000.00'">₹1 Crore</button>
                     </div>
                 </div>
-                <div class="modal-footer border-top py-2">
-                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger btn-sm px-3">
-                        <i class="bi bi-check2 me-1"></i> Confirm &amp; Reset Account
+                <div class="modal-footer border-top py-2.5 px-4">
+                    <button type="button" class="btn btn-light btn-sm rounded-2 px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm rounded-2 px-3 fw-semibold">
+                        <i class="bi bi-check2 me-1"></i> Confirm &amp; Reset
                     </button>
                 </div>
             </form>
@@ -603,3 +956,85 @@
     </div>
 </div>
 
+<!-- Terminal Interactive Scripts -->
+<script>
+(function() {
+    // Helper to open the paper trade drawer for any stock
+    window.launchPaperTradeDrawer = function(symbol) {
+        // Hide quick trade modal if open
+        const modalEl = document.getElementById('quickTradeModal');
+        if (modalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+        }
+
+        // Fetch drawer via HTMX into the container
+        const container = document.getElementById('paper-order-drawer-container');
+        if (container) {
+            htmx.ajax('GET', `/papertrading/order/drawer/${symbol}/`, {
+                target: '#paper-order-drawer-container',
+                swap: 'innerHTML'
+            });
+        }
+    };
+
+    // Fast Autocomplete in Quick Trade Modal
+    const searchInput = document.getElementById('terminalStockSearch');
+    const resultsContainer = document.getElementById('terminalSearchResults');
+    let debounceTimer = null;
+
+    if (searchInput && resultsContainer) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (query.length < 1) {
+                resultsContainer.classList.add('d-none');
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                fetch(`/stocks/search/?q=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const items = data.results || [];
+                        if (items.length === 0) {
+                            resultsContainer.innerHTML = '<div class="p-3 text-muted small text-center">No stocks found</div>';
+                            resultsContainer.classList.remove('d-none');
+                            return;
+                        }
+
+                        let html = '';
+                        items.forEach(stock => {
+                            html += `
+                                <div class="search-result-item d-flex justify-content-between align-items-center" onclick="launchPaperTradeDrawer('${stock.symbol}')">
+                                    <div>
+                                        <span class="fw-bold text-body">${stock.symbol}</span>
+                                        <span class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size: 0.65rem;">${stock.exchange || 'NSE'}</span>
+                                        <div class="text-muted small" style="font-size: 0.72rem;">${stock.name || ''}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 small" style="font-size: 0.72rem;">
+                                        Trade
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        resultsContainer.innerHTML = html;
+                        resultsContainer.classList.remove('d-none');
+                    })
+                    .catch(() => {
+                        resultsContainer.classList.add('d-none');
+                    });
+            }, 250);
+        });
+
+        // Hide results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.classList.add('d-none');
+            }
+        });
+    }
+})();
+</script>

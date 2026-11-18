@@ -54,10 +54,7 @@
 | **Phase 3: Interactive Order Drawer** | Kite-style slide-out order placement component with 1-click recommendations | 🟢 **COMPLETED** | Offcanvas drawer (`order_drawer.html`), 1-click quant presets, `/stocks/<symbol>/` integration, order placement endpoint, 20 tests passing |
 | **Phase 4: Paper Trading Terminal** | Full dedicated dashboard with positions, active orders, tradebook, and MTM updates | 🟢 **COMPLETED** | `/papertrading/` terminal, equity metrics cards, position square-off, pending orders cancellation, tradebook, account reset modal, 26 tests passing |
 | **Phase 5: Intelligence & Journal Sync** | Trade Journal export bridge and AI Behavioral Coach | 🟢 **COMPLETED** | 1-click `TradeJournal` sync, `PaperTradingBehavioralCoach`, discipline scoring (0-100), overtrading & revenge trade detection, 30 tests passing |
-| **Phase 3: Interactive Order Drawer** | Kite-style slide-out order placement component with 1-click recommendations | ⚪ **NOT STARTED** | Alpine.js + HTMX drawer, integrated into `/stocks/<symbol>/` and Swing Scanner |
-| **Phase 4: Paper Trading Terminal** | Full dedicated dashboard with positions, active orders, tradebook, and MTM updates | ⚪ **NOT STARTED** | `/papertrading/` terminal, equity curve chart, statistics cards, account reset modal |
-| **Phase 5: Intelligence & Journal Sync** | Trade Journal export bridge and AI Behavioral Coach | ⚪ **NOT STARTED** | 1-click `TradeJournal` sync, discipline score, R:R violation alerts |
-| **Phase 6: Testing & Performance** | Comprehensive regression tests and execution benchmarks | ⚪ **NOT STARTED** | `tests/test_paper_trading.py`, margin stress tests, multi-order execution verification |
+| **Phase 6: UI & Theme Polish** | Soft green (Buy) and soft rose (Sell) palette, clean segmented cards, Indian Rupee formatting | 🟢 **COMPLETED** | Refined `order_drawer.html` and `order_result.html`, resolved header collisions, eliminated dark charcoal buttons, 259 total tests passing |
 
 ---
 

@@ -130,30 +130,49 @@ class RecommendationEvaluator:
         # 2. New Investor Guidance (Institutional Multi-Factor Engine)
         # ------------------------------------------------------------------
         tech_trend = technical.trend_signal if technical else "NEUTRAL"
+
+        # Sanity Guardrails: verify technical levels belong to the current price scale
+        # (guards against pre-split historical data or stale out-of-bounds indicators)
+        is_support_sane = (
+            technical is not None
+            and technical.support_level is not None
+            and current_price * Decimal("0.50") <= technical.support_level < current_price
+        )
         support = (
             technical.support_level
-            if technical and technical.support_level and Decimal("0.0") < technical.support_level < current_price
+            if is_support_sane
             else round(current_price * Decimal("0.95"), 2)
+        )
+
+        is_resistance_sane = (
+            technical is not None
+            and technical.resistance_level is not None
+            and current_price < technical.resistance_level <= current_price * Decimal("1.40")
         )
         resistance = (
             technical.resistance_level
-            if technical and technical.resistance_level and technical.resistance_level > current_price
+            if is_resistance_sane
             else round(current_price * Decimal("1.10"), 2)
         )
 
         # 1. Volatility-Adjusted Stop Loss (ATR Chandelier Exit Logic)
+        is_atr_sane = (
+            technical is not None
+            and technical.atr_14 is not None
+            and Decimal("0.0") < technical.atr_14 <= current_price * Decimal("0.15")
+        )
         atr_val = (
             technical.atr_14
-            if technical and technical.atr_14 and technical.atr_14 > Decimal("0.0")
+            if is_atr_sane
             else (current_price * Decimal("0.025"))
         )
         atr_buffer = round(atr_val * Decimal("1.5"), 2)
 
         # Moving average dynamic support floor
         effective_support = support
-        if technical and technical.ema_20 and Decimal("0.0") < technical.ema_20 < current_price:
+        if technical and technical.ema_20 and current_price * Decimal("0.70") <= technical.ema_20 < current_price:
             effective_support = max(effective_support, technical.ema_20)
-        elif technical and technical.sma_20 and Decimal("0.0") < technical.sma_20 < current_price:
+        elif technical and technical.sma_20 and current_price * Decimal("0.70") <= technical.sma_20 < current_price:
             effective_support = max(effective_support, technical.sma_20)
 
         if effective_support < current_price * Decimal("0.85") or effective_support >= current_price:
@@ -168,17 +187,42 @@ class RecommendationEvaluator:
         stop_loss_rationale = f"Structural Support (₹{effective_support:,.2f}) − 1.5× ATR Buffer (₹{atr_buffer:,.2f})"
 
         # 2. Multi-Stage Structural & Measured Targets
-        if technical and technical.bollinger_upper and technical.bollinger_upper > current_price:
+        bollinger_upper_sane = (
+            technical is not None
+            and technical.bollinger_upper is not None
+            and current_price < technical.bollinger_upper <= current_price * Decimal("1.35")
+        )
+        if bollinger_upper_sane:
             target_1 = round(max(resistance, technical.bollinger_upper), 2)
         else:
             target_1 = round(max(resistance, current_price * Decimal("1.08")), 2)
 
-        swing_high = technical.swing_high if technical and technical.swing_high else resistance
-        swing_low = technical.swing_low if technical and technical.swing_low else effective_support
+        # Guard target_1 ceiling
+        if target_1 > current_price * Decimal("1.35"):
+            target_1 = round(current_price * Decimal("1.12"), 2)
+
+        is_swing_high_sane = (
+            technical is not None
+            and technical.swing_high is not None
+            and current_price <= technical.swing_high <= current_price * Decimal("1.40")
+        )
+        swing_high = technical.swing_high if is_swing_high_sane else target_1
+
+        is_swing_low_sane = (
+            technical is not None
+            and technical.swing_low is not None
+            and current_price * Decimal("0.60") <= technical.swing_low <= current_price
+        )
+        swing_low = technical.swing_low if is_swing_low_sane else effective_support
+
         measured_swing = max(Decimal("1.0"), swing_high - swing_low)
+        measured_swing = min(measured_swing, current_price * Decimal("0.25"))
+
         target_2 = round(target_1 + (measured_swing * Decimal("0.618")), 2)
         if target_2 <= target_1:
             target_2 = round(target_1 * Decimal("1.08"), 2)
+        if target_2 > current_price * Decimal("1.50"):
+            target_2 = round(target_1 * Decimal("1.12"), 2)
 
         # Fundamental Quality Floor & Multiple Expansion Buffer
         fund_score = fundamental.overall_score if fundamental else 50

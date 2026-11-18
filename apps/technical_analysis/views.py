@@ -15,6 +15,7 @@ class TechnicalOverviewView(HTMXResponseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["page_title"] = "Technical Analysis Intelligence"
+        context["calculation_version"] = "tech-v2.0.0"
 
         latest_snapshots = (
             TechnicalIndicatorSnapshot.objects.select_related("listing__instrument", "listing__exchange")

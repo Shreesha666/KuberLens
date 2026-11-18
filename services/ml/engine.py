@@ -131,13 +131,14 @@ class StockMLRanker:
         today = timezone.now().date()
         record, _ = MLModelRecord.objects.get_or_create(
             model_name="time_series_regime_ranker",
-            version="v1.0",
+            version="v2.0",
             defaults={
                 "target_variable": "forward_10d_directional_probability",
                 "features_used": [
                     "rsi_14",
                     "sma_20_50_ratio",
                     "bollinger_bandwidth",
+                    "garman_klass_volatility",
                     "volume_surge_ratio",
                     "drawdown_resilience",
                 ],

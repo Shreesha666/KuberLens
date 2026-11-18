@@ -117,7 +117,7 @@ def seeded_stocks(db):
         sma_50=Decimal("2490.0"),
         rsi_14=Decimal("62.5"),
         trend_signal="BULLISH",
-        calculation_version="tech-v1.0.0",
+        calculation_version="tech-v2.0.0",
     )
 
     # Fundamental Snapshot
@@ -128,7 +128,7 @@ def seeded_stocks(db):
         roe=Decimal("14.5"),
         debt_to_equity=Decimal("0.40"),
         overall_score=78,
-        calculation_version="fund-v1.0.0",
+        calculation_version="fund-v2.0.0",
     )
 
     return {"rel": rel_listing, "tcs": tcs_listing}
@@ -228,8 +228,8 @@ class TestStockViews:
         assert resp_full.status_code == 200
         content = resp_full.content.decode()
         assert "Reliance Industries Limited" in content
-        assert "tech-v1.0.0" in content
-        assert "fund-v1.0.0" in content
+        assert "tech-v2.0.0" in content
+        assert "fund-v2.0.0" in content
         assert "stock-chart-canvas" in content
         assert "Existing Holder Strategy" in content
         assert "New Prospective Investor" in content

@@ -65,7 +65,7 @@ def sample_research_data(db):
         rsi_14=Decimal("62.5"),
         trend_signal="BULLISH",
         breakout_signal="RESISTANCE_BREAKOUT",
-        calculation_version="tech-v1.0.0",
+        calculation_version="tech-v2.0.0",
     )
 
     FundamentalSnapshot.objects.create(
@@ -79,7 +79,7 @@ def sample_research_data(db):
         profitability_score=85,
         valuation_score=72,
         financial_health_score=80,
-        calculation_version="fund-v1.0.0",
+        calculation_version="fund-v2.0.0",
     )
 
     return {"listing": listing, "instrument": inst}

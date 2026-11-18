@@ -15,6 +15,7 @@ class FundamentalOverviewView(HTMXResponseMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["page_title"] = "Fundamental Analysis & Valuation"
+        context["calculation_version"] = "fund-v2.0.0"
 
         snapshots = (
             FundamentalSnapshot.objects.select_related("instrument")

@@ -102,13 +102,17 @@ class PaperAccount(AuditedModel):
         )
 
     @property
-    def total_portfolio_value(self) -> Decimal:
-        """Total equity = Cash Balance + Current Market Value of Open Positions."""
-        positions_value = sum(
+    def holdings_value(self) -> Decimal:
+        """Total current market value of all active open positions."""
+        return sum(
             (pos.current_market_value for pos in self.positions.exclude(quantity=0)),
             Decimal("0.00"),
         )
-        return self.cash_balance + positions_value
+
+    @property
+    def total_portfolio_value(self) -> Decimal:
+        """Total equity = Cash Balance + Current Market Value of Open Positions."""
+        return self.cash_balance + self.holdings_value
 
     @property
     def total_pnl(self) -> Decimal:

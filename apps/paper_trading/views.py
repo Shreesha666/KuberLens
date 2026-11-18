@@ -230,6 +230,7 @@ def terminal_view(request):
     win_count = len(winning_trades)
     loss_count = len(losing_trades)
     win_rate = round(Decimal(str(win_count / closed_count * 100)), 1) if closed_count > 0 else Decimal("0.0")
+    loss_rate = round(Decimal("100.0") - win_rate, 1) if closed_count > 0 else Decimal("0.0")
 
     total_gross_gain = sum((t.net_realized_pnl for t in winning_trades), Decimal("0.00"))
     total_gross_loss = abs(sum((t.net_realized_pnl for t in losing_trades), Decimal("0.00")))
@@ -258,6 +259,7 @@ def terminal_view(request):
             "win_count": win_count,
             "loss_count": loss_count,
             "win_rate": win_rate,
+            "loss_rate": loss_rate,
             "profit_factor": profit_factor,
             "total_charges_paid": total_charges_paid,
         },

@@ -40,6 +40,66 @@ def format_inr(value):
 
 
 @register.filter
+def indian_inr(value):
+    """Format monetary amount in authentic Indian numbering e.g. ₹4,99,170.84 or ₹10,00,000.00."""
+    if value is None or value == "":
+        return "₹0.00"
+    try:
+        val = Decimal(str(value))
+        is_neg = val < 0
+        val = abs(val)
+        parts = f"{val:.2f}".split(".")
+        int_p, dec_p = parts[0], parts[1]
+        if len(int_p) <= 3:
+            res = int_p
+        else:
+            last3 = int_p[-3:]
+            rem = int_p[:-3]
+            groups = []
+            while len(rem) > 2:
+                groups.insert(0, rem[-2:])
+                rem = rem[:-2]
+            if rem:
+                groups.insert(0, rem)
+            res = ",".join(groups) + "," + last3
+        sign = "-₹" if is_neg else "₹"
+        return f"{sign}{res}.{dec_p}"
+    except Exception:
+        return f"₹{value}"
+
+
+@register.filter
+def indian_inr_signed(value):
+    """Format monetary amount in authentic Indian numbering with explicit + / - sign."""
+    if value is None or value == "":
+        return "₹0.00"
+    try:
+        val = Decimal(str(value))
+        if val == Decimal("0.00") or val == 0:
+            return "₹0.00"
+        is_pos = val > 0
+        prefix = "+₹" if is_pos else "-₹"
+        val = abs(val)
+        parts = f"{val:.2f}".split(".")
+        int_p, dec_p = parts[0], parts[1]
+        if len(int_p) <= 3:
+            res = int_p
+        else:
+            last3 = int_p[-3:]
+            rem = int_p[:-3]
+            groups = []
+            while len(rem) > 2:
+                groups.insert(0, rem[-2:])
+                rem = rem[:-2]
+            if rem:
+                groups.insert(0, rem)
+            res = ",".join(groups) + "," + last3
+        return f"{prefix}{res}.{dec_p}"
+    except Exception:
+        return f"₹{value}"
+
+
+@register.filter
 def format_inr_signed(value):
     """Format monetary amount with explicit + / - sign e.g. +₹1,013.54 or -₹1,011.50."""
     if value is None or value == "":

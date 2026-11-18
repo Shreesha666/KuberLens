@@ -6,7 +6,7 @@
 - [Open-Papertrade (GitHub)](https://github.com/Open-Papertrade/Open-Papertrade) — Quantitative engine, portfolio state management, behavioral coaching.
 - [TradePaper (GitHub)](https://github.com/adityas27/TradePaper) — Streamlined Indian market trading interface, order modal paradigms.  
 **Last Updated:** 2026-11-18  
-**Current State:** 🟡 **PHASE 1 COMPLETED (MODELS & FOUNDATION) &bull; READY FOR PHASE 2 (EXECUTION ENGINE)**
+**Current State:** 🟡 **PHASE 2 COMPLETED (EXECUTION & TAX ENGINE) &bull; READY FOR PHASE 3 (ORDER DRAWER UI)**
 
 ---
 
@@ -50,7 +50,8 @@
 | Phase | Description | Status | Deliverables / Components |
 |---|---|:---:|---|
 | **Phase 1: Foundation & Models** | Dedicated Django app, relational schema, migrations, and account signals | 🟢 **COMPLETED** | `apps/paper_trading/`, `PaperAccount`, `PaperOrder`, `PaperPosition`, `PaperTrade`, auto-provisioning signal, 6 tests passing |
-| **Phase 2: Execution & Tax Engine** | Order validation, margin calculator, slippage simulation, and Indian tax math | ⚪ **NOT STARTED** | `services/paper_trading/engine.py`, `tax_calculator.py`, limit order evaluation runner |
+| **Phase 2: Execution & Tax Engine** | Order validation, margin calculator, slippage simulation, and Indian tax math | 🟢 **COMPLETED** | `services/paper_trading/engine.py`, `tax_calculator.py`, limit order evaluation runner, 15 tests passing |
+| **Phase 3: Interactive Order Drawer** | Kite-style slide-out order placement component with 1-click recommendations | ⚪ **NOT STARTED** | Alpine.js + HTMX drawer, integrated into `/stocks/<symbol>/` and Swing Scanner |
 | **Phase 3: Interactive Order Drawer** | Kite-style slide-out order placement component with 1-click recommendations | ⚪ **NOT STARTED** | Alpine.js + HTMX drawer, integrated into `/stocks/<symbol>/` and Swing Scanner |
 | **Phase 4: Paper Trading Terminal** | Full dedicated dashboard with positions, active orders, tradebook, and MTM updates | ⚪ **NOT STARTED** | `/papertrading/` terminal, equity curve chart, statistics cards, account reset modal |
 | **Phase 5: Intelligence & Journal Sync** | Trade Journal export bridge and AI Behavioral Coach | ⚪ **NOT STARTED** | 1-click `TradeJournal` sync, discipline score, R:R violation alerts |

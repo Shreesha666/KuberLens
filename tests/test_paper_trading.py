@@ -226,3 +226,321 @@ class TestPaperTradingModels:
         pending_order.refresh_from_db()
         assert pending_order.status == OrderStatus.CANCELLED
         assert "Account reset" in pending_order.rejection_reason
+
+
+@pytest.mark.django_db
+class TestPaperTradingExecutionAndTaxes:
+    def test_tax_calculator_cnc_delivery_buy(self):
+        """Verify Indian statutory charges on a ₹1,00,000 CNC Buy."""
+        from services.paper_trading.tax_calculator import IndianTaxCalculator
+
+        tax = IndianTaxCalculator.calculate(
+            quantity=100,
+            price=Decimal("1000.00"),  # Turnover = ₹1,00,000
+            side="BUY",
+            product_type="CNC",
+        )
+        assert tax.turnover == Decimal("100000.00")
+        assert tax.brokerage == Decimal("20.00")       # Capped at ₹20
+        assert tax.stt == Decimal("100.00")            # 0.1% on delivery
+        assert tax.exchange_charges == Decimal("2.97") # 0.00297%
+        assert tax.stamp_duty == Decimal("15.00")      # 0.015% on buy
+        assert tax.gst == Decimal("4.13")              # 18% of (20 + 2.97) = 4.1346 -> 4.13
+        assert tax.sebi_charges == Decimal("0.10")     # 0.0001%
+        assert tax.total_charges > Decimal("140.00")
+
+    def test_tax_calculator_mis_intraday_sell(self):
+        """Verify STT and stamp duty exemption on MIS intraday sell."""
+        from services.paper_trading.tax_calculator import IndianTaxCalculator
+
+        tax = IndianTaxCalculator.calculate(
+            quantity=100,
+            price=Decimal("1000.00"),  # Turnover = ₹1,00,000
+            side="SELL",
+            product_type="MIS",
+        )
+        assert tax.turnover == Decimal("100000.00")
+        assert tax.stt == Decimal("25.00")             # 0.025% on MIS sell
+        assert tax.stamp_duty == Decimal("0.00")       # Stamp duty is ₹0 on sell
+
+    def test_market_buy_execution_and_slippage(self, paper_setup):
+        """Verify market order placement immediately executes with realistic slippage."""
+        from apps.market.models import MarketQuote
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+        from django.utils import timezone
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        # Mock current quote at ₹2,500
+        MarketQuote.objects.create(
+            listing=listing,
+            price=Decimal("2500.00"),
+            change=Decimal("10.00"),
+            change_percent=Decimal("0.40"),
+            open=Decimal("2490.00"),
+            high=Decimal("2510.00"),
+            low=Decimal("2485.00"),
+            close=Decimal("2500.00"),
+            previous_close=Decimal("2490.00"),
+            volume=100000,
+            source_provider="JUGAAD",
+            source_timestamp=timezone.now(),
+            retrieved_at=timezone.now(),
+        )
+
+        initial_cash = account.cash_balance
+        order = PaperTradingExecutionEngine.place_order(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=10,
+        )
+
+        assert order.status == OrderStatus.FILLED
+        assert order.filled_quantity == 10
+        # Ask price includes +0.05% slippage: 2500 * 1.0005 = 2501.25
+        trade = order.trades.first()
+        assert trade is not None
+        assert trade.execution_price == Decimal("2501.25")
+        assert trade.turnover == Decimal("25012.50")
+
+        # Position is created
+        pos = PaperPosition.objects.get(account=account, listing=listing, product_type=ProductType.CNC)
+        assert pos.quantity == 10
+        assert pos.average_price == Decimal("2501.25")
+
+        # Cash balance deducted by turnover + charges
+        account.refresh_from_db()
+        assert account.cash_balance < initial_cash - Decimal("25012.50")
+
+    def test_insufficient_margin_rejection(self, paper_setup):
+        """Verify orders exceeding available cash are cleanly rejected."""
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+        account.cash_balance = Decimal("5000.00")
+        account.save()
+
+        order = PaperTradingExecutionEngine.place_order(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            limit_price=Decimal("2500.00"),  # Requires ₹2,50,000 > ₹5,000 available
+        )
+
+        assert order.status == OrderStatus.REJECTED
+        assert "Insufficient funds" in order.rejection_reason
+
+    def test_cnc_sell_without_holdings_rejected(self, paper_setup):
+        """Verify delivery sell is rejected when user has no underlying holdings."""
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        order = PaperTradingExecutionEngine.place_order(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.SELL,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=50,
+        )
+
+        assert order.status == OrderStatus.REJECTED
+        assert "Insufficient CNC holdings" in order.rejection_reason
+
+    def test_limit_order_pending_and_cancellation(self, paper_setup):
+        """Verify limit order locking margin and unlocking upon cancellation."""
+        from apps.market.models import MarketQuote
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+        from django.utils import timezone
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        # Market is currently ₹2,500
+        MarketQuote.objects.create(
+            listing=listing,
+            price=Decimal("2500.00"),
+            change=Decimal("0.00"),
+            change_percent=Decimal("0.00"),
+            open=Decimal("2500.00"),
+            high=Decimal("2500.00"),
+            low=Decimal("2500.00"),
+            close=Decimal("2500.00"),
+            previous_close=Decimal("2500.00"),
+            volume=50000,
+            source_provider="JUGAAD",
+            source_timestamp=timezone.now(),
+            retrieved_at=timezone.now(),
+        )
+
+        # Place BUY limit below market: 100 shares @ ₹2,000 = ₹2,00,000 margin
+        order = PaperTradingExecutionEngine.place_order(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            limit_price=Decimal("2000.00"),
+        )
+
+        assert order.status == OrderStatus.PENDING
+        account.refresh_from_db()
+        assert account.margin_utilized == Decimal("200000.00")
+
+        # Cancel order
+        success = PaperTradingExecutionEngine.cancel_order(order)
+        assert success is True
+        order.refresh_from_db()
+        assert order.status == OrderStatus.CANCELLED
+
+        # Margin is unlocked
+        account.refresh_from_db()
+        assert account.margin_utilized == Decimal("0.00")
+
+    def test_roundtrip_buy_and_sell_realized_pnl(self, paper_setup):
+        """Verify full round-trip trade: Buy 100 @ 1,000, Sell 100 @ 1,100."""
+        from apps.market.models import MarketQuote
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+        from django.utils import timezone
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        q = MarketQuote.objects.create(
+            listing=listing,
+            price=Decimal("1000.00"),
+            change=Decimal("0.00"),
+            change_percent=Decimal("0.00"),
+            open=Decimal("1000.00"),
+            high=Decimal("1000.00"),
+            low=Decimal("1000.00"),
+            close=Decimal("1000.00"),
+            previous_close=Decimal("1000.00"),
+            volume=50000,
+            source_provider="JUGAAD",
+            source_timestamp=timezone.now(),
+            retrieved_at=timezone.now(),
+        )
+
+        # 1. Buy 100 shares
+        buy_order = PaperTradingExecutionEngine.place_order(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.BUY,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=100,
+        )
+        assert buy_order.status == OrderStatus.FILLED
+
+        pos = PaperPosition.objects.get(account=account, listing=listing, product_type=ProductType.CNC)
+        assert pos.quantity == 100
+
+        # 2. Market rallies to ₹1,100
+        q.price = Decimal("1100.00")
+        q.save()
+
+        # 3. Sell 100 shares
+        sell_order = PaperTradingExecutionEngine.place_order(
+            account=account,
+            listing=listing,
+            order_side=OrderSide.SELL,
+            product_type=ProductType.CNC,
+            order_type=OrderType.MARKET,
+            quantity=100,
+        )
+        assert sell_order.status == OrderStatus.FILLED
+
+        # Position should be closed and deleted
+        assert PaperPosition.objects.filter(account=account, listing=listing).count() == 0
+
+        # Account should register net positive realized P&L (~₹9,500 after taxes)
+        account.refresh_from_db()
+        assert account.realized_pnl > Decimal("9000.00")
+        sell_trade = sell_order.trades.first()
+        assert sell_trade.net_realized_pnl is not None
+        assert sell_trade.net_realized_pnl > Decimal("9000.00")
+
+    def test_square_off_position_helper(self, paper_setup):
+        """Verify square_off_position closes out an active position."""
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        # User has Long position of 50 shares
+        pos = PaperPosition.objects.create(
+            account=account,
+            listing=listing,
+            product_type=ProductType.CNC,
+            quantity=50,
+            average_price=Decimal("100.00"),
+            current_price=Decimal("100.00"),
+        )
+
+        exit_order = PaperTradingExecutionEngine.square_off_position(pos)
+        assert exit_order is not None
+        assert exit_order.status == OrderStatus.FILLED
+        assert exit_order.order_side == OrderSide.SELL
+        assert exit_order.quantity == 50
+
+        # Position should now be deleted
+        assert PaperPosition.objects.filter(account=account, listing=listing).count() == 0
+
+    def test_bracket_target_and_stop_loss_trigger(self, paper_setup):
+        """Verify pending bracket orders auto-squareoff when market touches target."""
+        from apps.market.models import MarketQuote
+        from services.paper_trading.engine import PaperTradingExecutionEngine
+        from django.utils import timezone
+
+        account = paper_setup["account"]
+        listing = paper_setup["listing"]
+
+        quote = MarketQuote.objects.create(
+            listing=listing,
+            price=Decimal("1000.00"),
+            change=Decimal("0.00"),
+            change_percent=Decimal("0.00"),
+            open=Decimal("1000.00"),
+            high=Decimal("1000.00"),
+            low=Decimal("1000.00"),
+            close=Decimal("1000.00"),
+            previous_close=Decimal("1000.00"),
+            volume=50000,
+            source_provider="JUGAAD",
+            source_timestamp=timezone.now(),
+            retrieved_at=timezone.now(),
+        )
+
+        # Position with Target = ₹1,100, Stop Loss = ₹950
+        PaperPosition.objects.create(
+            account=account,
+            listing=listing,
+            product_type=ProductType.CNC,
+            quantity=10,
+            average_price=Decimal("1000.00"),
+            current_price=Decimal("1000.00"),
+            target=Decimal("1100.00"),
+            stop_loss=Decimal("950.00"),
+        )
+
+        # Market rallies to ₹1,120 (Target triggered)
+        quote.price = Decimal("1120.00")
+        quote.save()
+
+        PaperTradingExecutionEngine.evaluate_pending_orders_and_brackets(account=account)
+
+        # Position auto-squared off
+        assert PaperPosition.objects.filter(account=account, listing=listing).count() == 0
+

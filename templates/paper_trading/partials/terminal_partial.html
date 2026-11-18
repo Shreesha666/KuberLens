@@ -289,7 +289,8 @@
                                         <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge {% if order.order_side == 'BUY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                        <span class="badge px-2 py-1 rounded-2"
+                                              style="{% if order.order_side == 'BUY' %}background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;{% else %}background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;{% endif %}">
                                             {{ order.order_side }}
                                         </span>
                                     </td>
@@ -352,7 +353,8 @@
                                         <span class="fw-bold text-body">{{ trade.listing.symbol }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge {% if trade.trade_side == 'BUY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                        <span class="badge px-2 py-1 rounded-2"
+                                              style="{% if trade.trade_side == 'BUY' %}background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;{% else %}background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;{% endif %}">
                                             {{ trade.trade_side }}
                                         </span>
                                     </td>

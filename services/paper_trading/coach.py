@@ -191,3 +191,4 @@ class PaperTradingBehavioralCoach:
             revenge_trading_detected=revenge_detected,
             insights=insights,
         )
+

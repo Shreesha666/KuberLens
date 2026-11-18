@@ -1,25 +1,164 @@
 {% load core_tags %}
 <!-- Kite-Style Offcanvas Slide-out Order Drawer -->
-<div class="offcanvas offcanvas-end shadow-lg border-0 show" tabindex="-1" id="paperOrderOffcanvas" style="width: 440px; visibility: visible;" aria-modal="true" role="dialog">
+<div class="offcanvas offcanvas-end shadow-lg border-0 show theme-buy" tabindex="-1" id="paperOrderOffcanvas" style="width: 440px; visibility: visible;" aria-modal="true" role="dialog">
+    <style>
+        /* Scoped Order Drawer Styles */
+        #paperOrderOffcanvas {
+            --paper-buy: #10b981;
+            --paper-buy-hover: #059669;
+            --paper-buy-subtle: #ecfdf5;
+            --paper-buy-border: #a7f3d0;
+            --paper-buy-text: #065f46;
+
+            --paper-sell: #f43f5e;
+            --paper-sell-hover: #e11d48;
+            --paper-sell-subtle: #fff1f2;
+            --paper-sell-border: #fecdd3;
+            --paper-sell-text: #9f1239;
+        }
+
+        .cursor-pointer { cursor: pointer; }
+
+        /* Modern Segmented Controls */
+        .segmented-track {
+            background-color: var(--bs-tertiary-bg, #f1f5f9);
+            border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
+            padding: 3px;
+            border-radius: 10px;
+        }
+
+        .side-tab {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Product Type Cards (CNC vs MIS) */
+        .order-choice-card {
+            border: 1.5px solid var(--bs-border-color, #e2e8f0);
+            border-radius: 10px;
+            padding: 9px 12px;
+            background-color: var(--bs-body-bg);
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+        .order-choice-card:hover {
+            border-color: #cbd5e1;
+            background-color: var(--bs-tertiary-bg);
+        }
+        .theme-buy .btn-check:checked + .order-choice-card {
+            border-color: var(--paper-buy) !important;
+            background-color: var(--paper-buy-subtle) !important;
+        }
+        .theme-buy .btn-check:checked + .order-choice-card .choice-title {
+            color: var(--paper-buy-text) !important;
+        }
+        .theme-sell .btn-check:checked + .order-choice-card {
+            border-color: var(--paper-sell) !important;
+            background-color: var(--paper-sell-subtle) !important;
+        }
+        .theme-sell .btn-check:checked + .order-choice-card .choice-title {
+            color: var(--paper-sell-text) !important;
+        }
+
+        /* Order Type Segmented Buttons (Market vs Limit) */
+        .order-type-btn {
+            background-color: transparent;
+            color: var(--bs-secondary-color, #64748b);
+            border: 1px solid transparent;
+            font-size: 0.78rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+        .btn-check:checked + .order-type-btn {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            border-color: var(--bs-border-color, #cbd5e1);
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Micro Quantity Pills */
+        .qty-pill {
+            font-size: 0.7rem;
+            background: var(--bs-body-bg);
+            color: var(--bs-secondary-color);
+            border: 1px solid var(--bs-border-color) !important;
+            transition: all 0.15s ease;
+        }
+        .qty-pill:hover {
+            background: var(--bs-tertiary-bg);
+            color: var(--bs-body-color);
+            border-color: #94a3b8 !important;
+        }
+
+        /* Quant Presets */
+        .preset-pill {
+            font-size: 0.72rem;
+            padding: 3px 9px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .preset-target {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+        .preset-target:hover {
+            background: #d1fae5;
+            color: #065f46;
+            border-color: #6ee7b7;
+        }
+        .preset-sl {
+            background: #fff1f2;
+            color: #be123c;
+            border: 1px solid #fecdd3;
+        }
+        .preset-sl:hover {
+            background: #ffe4e6;
+            color: #9f1239;
+            border-color: #fda4af;
+        }
+
+        /* Big Submit CTA */
+        .paper-submit-btn {
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+        .paper-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+    </style>
+
     <!-- Drawer Header -->
     <div class="offcanvas-header border-bottom py-3 px-4 bg-body-tertiary">
-        <div class="d-flex align-items-center gap-2">
-            {% stock_logo listing size=36 css_class="p-1" %}
-            <div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold text-body fs-6">{{ listing.symbol }}</span>
-                    <span class="badge bg-secondary-subtle text-body border" style="font-size: 0.7rem;">{{ listing.exchange.code }}</span>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem;">PAPER TRADING</span>
+        <div class="d-flex align-items-center gap-2 min-w-0">
+            {% stock_logo listing size=36 css_class="p-1 rounded-2 border bg-body" %}
+            <div class="min-w-0">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="fw-bold text-body fs-6 text-truncate">{{ listing.symbol }}</span>
+                    <span class="badge bg-light text-secondary border px-1.5 py-0" style="font-size: 0.65rem;">{{ listing.exchange.code }}</span>
+                    <span class="badge border fw-medium px-1.5 py-0" style="font-size: 0.62rem; background: #e0f2fe; color: #0369a1; border-color: #bae6fd !important;">PAPER</span>
                 </div>
-                <div class="small text-muted" style="font-size: 0.78rem;">{{ listing.instrument.display_name }}</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem; max-width: 175px;">{{ listing.instrument.display_name }}</div>
             </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3 flex-shrink-0">
             <div class="text-end">
                 <div class="fw-bold num-mono fs-6 text-body">₹{{ current_price|floatformat:2 }}</div>
-                <div class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.65rem;">LIVE LTP</div>
+                <div class="badge px-1.5 py-0" style="font-size: 0.62rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                    <span class="spinner-grow spinner-grow-sm me-1" style="width: 5px; height: 5px; vertical-align: middle;" role="status"></span>LIVE LTP
+                </div>
             </div>
-            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"
+            <button type="button" class="btn-close text-reset ms-1" data-bs-dismiss="offcanvas" aria-label="Close"
                     onclick="document.getElementById('paperOrderOffcanvas').remove();"></button>
         </div>
     </div>
@@ -31,22 +170,22 @@
             {% csrf_token %}
             <input type="hidden" name="symbol" value="{{ listing.symbol }}">
 
-            <!-- Buy / Sell Segmented Switcher -->
-            <div class="btn-group w-100 mb-3 p-1 bg-body-secondary rounded-3 shadow-none" role="group">
+            <!-- Buy / Sell Segmented Switcher (Soft Green / Soft Red) -->
+            <div class="segmented-track d-flex mb-3" role="group">
                 <input type="radio" class="btn-check" name="order_side" id="sideBuy" value="BUY" {% if default_side == 'BUY' %}checked{% endif %} onchange="updateDrawerTheme()">
-                <label class="btn btn-sm rounded-2 fw-bold text-uppercase py-2" for="sideBuy" id="labelBuy">
+                <label class="side-tab flex-fill text-center py-2 rounded-2 fw-bold text-uppercase user-select-none cursor-pointer" for="sideBuy" id="labelBuy">
                     <i class="bi bi-arrow-up-circle-fill me-1"></i> BUY
                 </label>
 
                 <input type="radio" class="btn-check" name="order_side" id="sideSell" value="SELL" {% if default_side == 'SELL' %}checked{% endif %} onchange="updateDrawerTheme()">
-                <label class="btn btn-sm rounded-2 fw-bold text-uppercase py-2" for="sideSell" id="labelSell">
+                <label class="side-tab flex-fill text-center py-2 rounded-2 fw-bold text-uppercase user-select-none cursor-pointer" for="sideSell" id="labelSell">
                     <i class="bi bi-arrow-down-circle-fill me-1"></i> SELL
                 </label>
             </div>
 
             <!-- Existing Position Context Badge (if any) -->
             {% if existing_position %}
-            <div class="alert alert-light border small py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
+            <div class="alert alert-light border small py-2 px-3 mb-3 d-flex justify-content-between align-items-center rounded-3">
                 <span>
                     <i class="bi bi-info-circle text-primary me-1"></i>
                     Current Open Position:
@@ -55,7 +194,7 @@
                     </strong>
                     @ ₹{{ existing_position.average_price|floatformat:2 }}
                 </span>
-                <span class="badge {% if existing_position.unrealized_pnl >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} border">
+                <span class="badge {% if existing_position.unrealized_pnl >= 0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
                     {% if existing_position.unrealized_pnl >= 0 %}+{% endif %}₹{{ existing_position.unrealized_pnl|floatformat:2 }}
                 </span>
             </div>
@@ -63,52 +202,56 @@
 
             <!-- Product Type: Delivery (CNC) vs Intraday (MIS) -->
             <div class="mb-3">
-                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Product Type</label>
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Product Type</label>
                 <div class="d-flex gap-2">
                     <div class="flex-fill">
                         <input type="radio" class="btn-check" name="product_type" id="prodCNC" value="CNC" checked onchange="recalculateTotals()">
-                        <label class="btn btn-outline-secondary btn-sm w-100 py-2 text-start px-3" for="prodCNC">
-                            <div class="fw-bold small text-body">Delivery <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">CNC</span></div>
+                        <label class="order-choice-card w-100 d-block text-start" for="prodCNC">
+                            <div class="fw-bold small choice-title text-body">
+                                Delivery <span class="badge bg-secondary-subtle text-secondary px-1 py-0 ms-1" style="font-size: 0.65rem;">CNC</span>
+                            </div>
                             <div class="text-muted" style="font-size: 0.7rem;">Holding &bull; 100% Cash</div>
                         </label>
                     </div>
                     <div class="flex-fill">
                         <input type="radio" class="btn-check" name="product_type" id="prodMIS" value="MIS" onchange="recalculateTotals()">
-                        <label class="btn btn-outline-secondary btn-sm w-100 py-2 text-start px-3" for="prodMIS">
-                            <div class="fw-bold small text-body">Intraday <span class="badge bg-info-subtle text-info-emphasis" style="font-size: 0.65rem;">MIS</span></div>
+                        <label class="order-choice-card w-100 d-block text-start" for="prodMIS">
+                            <div class="fw-bold small choice-title text-body">
+                                Intraday <span class="badge bg-info-subtle text-info-emphasis px-1 py-0 ms-1" style="font-size: 0.65rem;">MIS</span>
+                            </div>
                             <div class="text-muted" style="font-size: 0.7rem;">5× Margin Leverage</div>
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- Order Type: Market vs Limit -->
+            <!-- Order Execution Type: Market vs Limit -->
             <div class="mb-3">
-                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Order Execution Type</label>
-                <div class="d-flex gap-2">
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Order Execution Type</label>
+                <div class="segmented-track d-flex gap-1">
                     <input type="radio" class="btn-check" name="order_type" id="typeMarket" value="MARKET" checked onchange="togglePriceInput()">
-                    <label class="btn btn-outline-secondary btn-sm flex-fill py-1 fw-semibold" for="typeMarket">Market (Instant Fill)</label>
+                    <label class="order-type-btn flex-fill text-center cursor-pointer" for="typeMarket">Market (Instant Fill)</label>
 
                     <input type="radio" class="btn-check" name="order_type" id="typeLimit" value="LIMIT" onchange="togglePriceInput()">
-                    <label class="btn btn-outline-secondary btn-sm flex-fill py-1 fw-semibold" for="typeLimit">Limit (Specified Price)</label>
+                    <label class="order-type-btn flex-fill text-center cursor-pointer" for="typeLimit">Limit (Specified Price)</label>
                 </div>
             </div>
 
             <!-- Quantity & Limit Price Input Row -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Quantity (Shares)</label>
+                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Quantity (Shares)</label>
                     <input type="number" class="form-control form-control-sm num-mono fw-bold" id="orderQty" name="quantity" value="10" min="1" step="1" required oninput="recalculateTotals()">
                     <!-- Quick Increment Pills -->
-                    <div class="d-flex gap-1 mt-1">
-                        <button type="button" class="btn btn-light border py-0 px-1 text-muted" style="font-size: 0.68rem;" onclick="addQty(10)">+10</button>
-                        <button type="button" class="btn btn-light border py-0 px-1 text-muted" style="font-size: 0.68rem;" onclick="addQty(50)">+50</button>
-                        <button type="button" class="btn btn-light border py-0 px-1 text-muted" style="font-size: 0.68rem;" onclick="addQty(100)">+100</button>
+                    <div class="d-flex gap-1 mt-1.5">
+                        <button type="button" class="btn btn-sm py-0 px-2 rounded-pill qty-pill" onclick="addQty(10)">+10</button>
+                        <button type="button" class="btn btn-sm py-0 px-2 rounded-pill qty-pill" onclick="addQty(50)">+50</button>
+                        <button type="button" class="btn btn-sm py-0 px-2 rounded-pill qty-pill" onclick="addQty(100)">+100</button>
                     </div>
                 </div>
 
                 <div class="col-6">
-                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Limit Price (₹)</label>
+                    <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Limit Price (₹)</label>
                     <input type="number" class="form-control form-control-sm num-mono fw-bold" id="orderLimitPrice" name="limit_price" value="{{ current_price|floatformat:2 }}" step="0.05" disabled oninput="recalculateTotals()">
                     <div class="text-muted small mt-1" style="font-size: 0.68rem;" id="limitHelpText">Executes at market LTP</div>
                 </div>
@@ -116,30 +259,30 @@
 
             <!-- 1-Click Quantitative Recommendation Presets (Synergy with KuberLens Engine) -->
             {% if rec %}
-            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-2 mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="text-muted fw-semibold" style="font-size: 0.7rem; text-transform: uppercase;">
+            <div class="card border rounded-3 p-2.5 mb-3" style="background-color: var(--bs-tertiary-bg, #f8fafc);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-semibold small" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">
                         <i class="bi bi-magic text-primary me-1"></i> Quant Presets (1-Click Fill)
                     </span>
-                    <span class="badge bg-light text-secondary border" style="font-size: 0.65rem;">Engine Verified</span>
+                    <span class="badge bg-light text-secondary border px-1.5 py-0" style="font-size: 0.65rem;">Engine Verified</span>
                 </div>
-                <div class="d-flex flex-wrap gap-1">
+                <div class="d-flex flex-wrap gap-1.5">
                     {% if rec.target_1_value %}
-                    <button type="button" class="btn btn-white border btn-sm py-0 px-2 small text-body" style="font-size: 0.72rem;"
+                    <button type="button" class="btn btn-sm preset-pill preset-target"
                             onclick="applyPreset('target', '{{ rec.target_1_value }}')">
-                        <span class="text-success fw-bold">T1:</span> ₹{{ rec.target_1_value }} (+{{ rec.target_1_pct }}%)
+                        <span class="fw-bold">T1:</span> ₹{{ rec.target_1_value }} <span class="opacity-75">(+{{ rec.target_1_pct }}%)</span>
                     </button>
                     {% endif %}
                     {% if rec.target_2_value %}
-                    <button type="button" class="btn btn-white border btn-sm py-0 px-2 small text-body" style="font-size: 0.72rem;"
+                    <button type="button" class="btn btn-sm preset-pill preset-target"
                             onclick="applyPreset('target', '{{ rec.target_2_value }}')">
-                        <span class="text-success fw-bold">T2:</span> ₹{{ rec.target_2_value }} (+{{ rec.target_2_pct }}%)
+                        <span class="fw-bold">T2:</span> ₹{{ rec.target_2_value }} <span class="opacity-75">(+{{ rec.target_2_pct }}%)</span>
                     </button>
                     {% endif %}
                     {% if rec.stop_loss_value %}
-                    <button type="button" class="btn btn-white border btn-sm py-0 px-2 small text-body" style="font-size: 0.72rem;"
+                    <button type="button" class="btn btn-sm preset-pill preset-sl"
                             onclick="applyPreset('stop_loss', '{{ rec.stop_loss_value }}')">
-                        <span class="text-danger fw-bold">SL (ATR):</span> ₹{{ rec.stop_loss_value }}
+                        <span class="fw-bold">SL (ATR):</span> ₹{{ rec.stop_loss_value }}
                     </button>
                     {% endif %}
                 </div>
@@ -150,7 +293,7 @@
             <div class="mb-3">
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" id="bracketToggle" onchange="toggleBracketInputs()">
-                    <label class="form-check-label small fw-semibold text-body" for="bracketToggle">
+                    <label class="form-check-label small fw-semibold text-body cursor-pointer" for="bracketToggle">
                         Attach Protective Stop Loss & Target (GTT Bracket)
                     </label>
                 </div>
@@ -169,29 +312,29 @@
 
             <!-- Notes Field (Optional) -->
             <div class="mb-3">
-                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem;">Trade Thesis / Strategy Notes (Optional)</label>
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Trade Thesis / Strategy Notes (Optional)</label>
                 <input type="text" class="form-control form-control-sm" name="notes" placeholder="e.g. 50 SMA bounce breakout, trailing stop">
             </div>
 
             <!-- Margin & Charges Live Breakdown Card -->
-            <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3 mb-4 rounded-3">
-                <div class="d-flex justify-content-between align-items-center mb-1 small">
-                    <span class="text-muted">Turnover:</span>
+            <div class="card border rounded-3 p-3 mb-4" style="background-color: var(--bs-tertiary-bg, #f8fafc);">
+                <div class="d-flex justify-content-between align-items-center mb-1.5 small">
+                    <span class="text-muted">Turnover</span>
                     <span class="num-mono fw-semibold text-body" id="summaryTurnover">₹0.00</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mb-1 small">
-                    <span class="text-muted">Estimated Statutory Taxes & Fees:</span>
+                <div class="d-flex justify-content-between align-items-center mb-2 small">
+                    <span class="text-muted">Est. Taxes & Levies</span>
                     <span class="num-mono text-muted" id="summaryCharges">₹0.00</span>
                 </div>
-                <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-10">
+                <div class="d-flex justify-content-between align-items-center pt-2.5 border-top">
                     <div>
                         <div class="small fw-bold text-body">Margin Required</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">
-                            Available Cash: <span class="num-mono fw-semibold text-body">₹{{ account.available_margin|floatformat:2 }}</span>
+                        <div class="text-muted" style="font-size: 0.72rem;">
+                            Available Cash: <span class="num-mono fw-semibold text-body" id="summaryAvailableMargin">{{ account.available_margin|format_inr }}</span>
                         </div>
                     </div>
                     <div class="text-end">
-                        <div class="h5 fw-bold num-mono mb-0 text-primary" id="summaryRequiredMargin">₹0.00</div>
+                        <div class="h5 fw-bold num-mono mb-0" id="summaryRequiredMargin" style="color: #10b981;">₹0.00</div>
                         <div class="small text-danger d-none fw-semibold" id="insufficientMarginWarning" style="font-size: 0.72rem;">
                             <i class="bi bi-exclamation-triangle-fill"></i> Insufficient Funds
                         </div>
@@ -199,9 +342,9 @@
                 </div>
             </div>
 
-            <!-- Big Action Button -->
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold text-uppercase shadow-sm d-flex justify-content-center align-items-center gap-2" id="submitOrderBtn">
-                <i class="bi bi-lightning-charge-fill"></i> Place BUY Order
+            <!-- Big Action Button (Soft Green for BUY, Soft Red for SELL) -->
+            <button type="submit" class="btn w-100 py-2.5 fw-bold text-uppercase paper-submit-btn d-flex justify-content-center align-items-center gap-2" id="submitOrderBtn">
+                <i class="bi bi-lightning-charge-fill"></i> PLACE BUY ORDER
             </button>
         </form>
     </div>
@@ -214,21 +357,53 @@
     const availableMargin = parseFloat("{{ account.available_margin }}");
 
     window.updateDrawerTheme = function() {
+        const drawer = document.getElementById("paperOrderOffcanvas");
         const isBuy = document.getElementById("sideBuy").checked;
         const btn = document.getElementById("submitOrderBtn");
         const labelBuy = document.getElementById("labelBuy");
         const labelSell = document.getElementById("labelSell");
+        const reqMarginEl = document.getElementById("summaryRequiredMargin");
 
         if (isBuy) {
-            btn.className = "btn btn-primary w-100 py-2 fw-bold text-uppercase shadow-sm d-flex justify-content-center align-items-center gap-2";
-            btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Place BUY Order';
-            labelBuy.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 btn-primary text-white";
-            labelSell.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 text-muted";
+            drawer.classList.remove("theme-sell");
+            drawer.classList.add("theme-buy");
+
+            // Soft Emerald Green styling
+            labelBuy.style.backgroundColor = "#10b981";
+            labelBuy.style.color = "#ffffff";
+            labelBuy.style.boxShadow = "0 2px 8px rgba(16, 185, 129, 0.28)";
+
+            labelSell.style.backgroundColor = "transparent";
+            labelSell.style.color = "var(--bs-secondary-color, #64748b)";
+            labelSell.style.boxShadow = "none";
+
+            btn.style.backgroundColor = "#10b981";
+            btn.style.boxShadow = "0 4px 14px rgba(16, 185, 129, 0.25)";
+            btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> PLACE BUY ORDER';
+
+            if (reqMarginEl) {
+                reqMarginEl.style.color = "#10b981";
+            }
         } else {
-            btn.className = "btn btn-warning w-100 py-2 fw-bold text-uppercase text-dark shadow-sm d-flex justify-content-center align-items-center gap-2";
-            btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Place SELL Order';
-            labelSell.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 btn-warning text-dark";
-            labelBuy.className = "btn btn-sm rounded-2 fw-bold text-uppercase py-2 text-muted";
+            drawer.classList.remove("theme-buy");
+            drawer.classList.add("theme-sell");
+
+            // Soft Rose / Crimson Red styling
+            labelSell.style.backgroundColor = "#f43f5e";
+            labelSell.style.color = "#ffffff";
+            labelSell.style.boxShadow = "0 2px 8px rgba(244, 63, 94, 0.28)";
+
+            labelBuy.style.backgroundColor = "transparent";
+            labelBuy.style.color = "var(--bs-secondary-color, #64748b)";
+            labelBuy.style.boxShadow = "none";
+
+            btn.style.backgroundColor = "#f43f5e";
+            btn.style.boxShadow = "0 4px 14px rgba(244, 63, 94, 0.25)";
+            btn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> PLACE SELL ORDER';
+
+            if (reqMarginEl) {
+                reqMarginEl.style.color = "#f43f5e";
+            }
         }
         recalculateTotals();
     };
@@ -320,4 +495,3 @@
     recalculateTotals();
 })();
 </script>
-

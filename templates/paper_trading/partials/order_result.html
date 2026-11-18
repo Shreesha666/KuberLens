@@ -1,27 +1,29 @@
+{% load core_tags %}
 <!-- Order Execution Result Partial -->
 <div class="p-2 text-center py-4">
     {% if success %}
     <div class="mb-3">
         {% if order.status == 'FILLED' %}
-        <div class="display-5 text-success mb-2">
+        <div class="display-5 mb-2" style="color: #10b981;">
             <i class="bi bi-check-circle-fill"></i>
         </div>
         <h5 class="fw-bold text-body mb-1">Order Executed Successfully</h5>
-        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">FILLED</span>
+        <span class="badge px-3 py-1" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">FILLED</span>
         {% else %}
-        <div class="display-5 text-primary mb-2">
+        <div class="display-5 mb-2" style="color: #0284c7;">
             <i class="bi bi-clock-history"></i>
         </div>
         <h5 class="fw-bold text-body mb-1">Limit Order Placed</h5>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">PENDING TRIGGER</span>
+        <span class="badge px-3 py-1" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">PENDING TRIGGER</span>
         {% endif %}
     </div>
 
     <!-- Execution Details Summary Card -->
-    <div class="card border border-secondary border-opacity-10 bg-body-tertiary p-3 mb-4 text-start">
-        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+    <div class="card border rounded-3 p-3 mb-4 text-start" style="background-color: var(--bs-tertiary-bg, #f8fafc);">
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
             <span class="fw-bold text-body">{{ order.listing.symbol }}</span>
-            <span class="badge {% if order.order_side == 'BUY' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+            <span class="badge px-2 py-1 rounded-2"
+                  style="{% if order.order_side == 'BUY' %}background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;{% else %}background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;{% endif %}">
                 {{ order.order_side }} {{ order.product_type }}
             </span>
         </div>
@@ -62,31 +64,32 @@
         {% if order.stop_loss_price %}
         <div class="d-flex justify-content-between align-items-center mb-1 small">
             <span class="text-muted">Bracket Stop Loss:</span>
-            <span class="num-mono text-danger">₹{{ order.stop_loss_price|floatformat:2 }}</span>
+            <span class="num-mono" style="color: #f43f5e;">₹{{ order.stop_loss_price|floatformat:2 }}</span>
         </div>
         {% endif %}
 
         {% if order.target_price %}
         <div class="d-flex justify-content-between align-items-center mb-1 small">
             <span class="text-muted">Bracket Target:</span>
-            <span class="num-mono text-success">₹{{ order.target_price|floatformat:2 }}</span>
+            <span class="num-mono" style="color: #10b981;">₹{{ order.target_price|floatformat:2 }}</span>
         </div>
         {% endif %}
 
-        <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top border-secondary border-opacity-10 small">
+        <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top small">
             <span class="text-muted">Available Cash Balance:</span>
-            <span class="num-mono fw-bold text-primary">₹{{ account.available_margin|floatformat:2 }}</span>
+            <span class="num-mono fw-bold text-body">{{ account.available_margin|format_inr }}</span>
         </div>
     </div>
 
     <!-- Actions -->
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-outline-secondary flex-fill py-2"
+        <button type="button" class="btn btn-outline-secondary flex-fill py-2 rounded-2"
                 hx-get="{% url 'paper_trading:order_drawer' order.listing.symbol %}"
                 hx-target="#orderDrawerContent" hx-swap="outerHTML">
             <i class="bi bi-arrow-repeat me-1"></i> Trade Again
         </button>
-        <button type="button" class="btn btn-primary flex-fill py-2"
+        <button type="button" class="btn text-white flex-fill py-2 rounded-2"
+                style="background-color: #10b981; border: none;"
                 onclick="document.getElementById('paperOrderOffcanvas').remove();">
             <i class="bi bi-check2 me-1"></i> Done
         </button>
@@ -99,17 +102,16 @@
             <i class="bi bi-x-circle-fill"></i>
         </div>
         <h5 class="fw-bold text-body mb-1">Order Rejected</h5>
-        <div class="alert alert-danger small text-start my-3">
+        <div class="alert alert-danger small text-start my-3 rounded-2">
             <i class="bi bi-exclamation-triangle-fill me-1"></i>
             {{ error_message|default:"Order could not be processed by the exchange engine." }}
         </div>
     </div>
 
-    <button type="button" class="btn btn-secondary w-100 py-2"
+    <button type="button" class="btn btn-secondary w-100 py-2 rounded-2"
             hx-get="{% url 'paper_trading:order_drawer' order.listing.symbol %}"
             hx-target="#orderDrawerContent" hx-swap="outerHTML">
         <i class="bi bi-arrow-left me-1"></i> Adjust Order & Retry
     </button>
     {% endif %}
 </div>
-

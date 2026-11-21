@@ -949,47 +949,54 @@ Display data freshness.
 
 # 10. TECHNICAL ANALYSIS MODULE
 
-Implement the following indicators.
+Implement institutional-grade indicators (`tech-v2.0.0`) with vectorized computation in `services/indicators/calculator.py` and persistent snapshots in `apps/technical_analysis/models.py`.
 
 ## Trend
 
-- SMA 20.
-- SMA 50.
-- SMA 100.
-- SMA 200.
-- EMA 9.
-- EMA 20.
-- EMA 50.
-- MACD.
+- SMA 20, SMA 50, SMA 100, SMA 200.
+- EMA 9, EMA 20, EMA 50.
+- MACD (12, 26, 9) with histogram and centerline signal.
+- **SuperTrend (10, 3)** (`tech-v2.0.0`):
+  - Upper Band $= \frac{\text{High} + \text{Low}}{2} + 3.0 \times \text{ATR}_{10}$.
+  - Lower Band $= \frac{\text{High} + \text{Low}}{2} - 3.0 \times \text{ATR}_{10}$.
+  - Direction indicator ($+1$ Bullish green trailing support / $-1$ Bearish red overhead resistance).
 
 ## Momentum
 
-- RSI 14.
-- Stochastic RSI.
-- ADX.
-- Rate of Change.
+- RSI 14 (Wilder's smoothing).
+- Stochastic RSI (14, 3, 3).
+- **Wilder's Directional Movement Index & ADX (14)** (`tech-v2.0.0`):
+  - True Range: $\text{TR}_t = \max(H_t - L_t, |H_t - C_{t-1}|, |L_t - C_{t-1}|)$.
+  - Directional Movements: $+\text{DM} = \max(H_t - H_{t-1}, 0)$ if $(H_t - H_{t-1}) > (L_{t-1} - L_t)$ else $0$; $-\text{DM} = \max(L_{t-1} - L_t, 0)$ if $(L_{t-1} - L_t) > (H_t - H_{t-1})$ else $0$.
+  - 14-period Wilder RMA smoothing for $+\text{DI}_{14}$ and $-\text{DI}_{14}$.
+  - Directional Index: $\text{DX} = 100 \times \frac{|+\text{DI} - -\text{DI}|}{+\text{DI} + -\text{DI}}$.
+  - Trend Confirmation: $\text{ADX}_{14} = \text{WilderEMA}(\text{DX}, 14)$. Values $\ge 25.0$ confirm robust directional trend momentum; values $< 20.0$ classify price action as choppy range-bound consolidation.
+- Rate of Change (ROC 10).
 
 ## Volatility
 
-- Bollinger Bands.
-- ATR.
-- Historical volatility.
+- Bollinger Bands (20 periods, 2 standard deviations) with Bollinger Bandwidth (BBW).
+- Average True Range (ATR 14).
+- Historical close-to-close rolling volatility.
 
-## Volume
+## Volume & Benchmark
 
-- Volume moving average.
-- Relative volume.
-- Volume breakout.
-- OBV.
+- Volume 20-day moving average.
+- Relative volume (RVOL) surge ratio.
+- Volume breakout detection ($> 1.5\times$ 20 SMA).
+- On-Balance Volume (OBV).
+- **Cumulative Volume Weighted Average Price (VWAP)** (`tech-v2.0.0`):
+  - $\text{VWAP} = \frac{\sum (\text{Typical Price} \times \text{Volume})}{\sum \text{Volume}}$ where $\text{Typical Price} = \frac{H + L + C}{3}$.
+  - Serves as the institutional liquidity benchmark. Price holding above VWAP indicates institutional buyer dominance; price trading below VWAP indicates distribution pressure.
 
-## Price structure
+## Price structure & Retracement
 
-- Support.
-- Resistance.
-- Swing highs.
-- Swing lows.
-- Breakouts.
-- Moving average crossovers.
+- Support & Resistance pivot levels.
+- Swing highs & swing lows.
+- 20-day price breakout signals (RESISTANCE_BREAKOUT / SUPPORT_BREAKDOWN).
+- Moving average crossovers (Golden Cross: SMA 50 crossing above SMA 200; Death Cross: SMA 50 crossing below SMA 200).
+- Parabolic SAR ($0.02$ step, $0.20$ max).
+- Fibonacci Retracements ($0.0\%, 23.6\%, 38.2\%, 50.0\%, 61.8\%, 78.6\%, 100.0\%$).
 
 ## Timeframes
 
@@ -1055,23 +1062,53 @@ Use a separate fundamental-data provider interface.
 
 If a reliable source is unavailable, allow manual data entry or mark the field unavailable.
 
-## Fundamental scoring
+## Fundamental scoring (`fund-v2.0.0`)
 
 Evaluate:
 
-- Growth.
-- Profitability.
-- Valuation.
-- Financial health.
-- Ownership.
-- Dividend history.
+- Growth (revenue & profit YoY).
+- Profitability (ROE, ROCE, operating & net margins).
+- Valuation (P/E relative to sector, P/B, EV/EBITDA).
+- Financial health (Debt/Equity, current ratio, interest coverage).
+- Ownership (promoter, FII, DII stability).
+- Dividend history & yield.
+
+### Institutional Scoring & Guardrails (`fund-v2.0.0`)
+
+1. **Piotroski 9-Point F-Score ($0 \le F \le 9$)**:
+   - **Profitability (4 pts)**:
+     - Positive ROA ($\text{ROA} > 0$).
+     - Positive Operating Cash Flow ($\text{CFO} > 0$).
+     - Increasing ROA YoY ($\Delta \text{ROA} > 0$).
+     - Accruals quality: Cash Flow from Operations exceeding Net Income ($\text{CFO} > \text{Net Income}$).
+   - **Leverage & Liquidity (3 pts)**:
+     - Decreasing or stable long-term financial leverage ($\Delta \text{Debt/Equity} \le 0$).
+     - Improving current liquidity ratio ($\Delta \text{Current Ratio} > 0$).
+     - Zero shareholder dilution (no new share issuances).
+   - **Operating Efficiency (2 pts)**:
+     - Expanding Gross Margin YoY ($\Delta \text{Gross Margin} > 0$).
+     - Improving Asset Turnover YoY ($\Delta \text{Asset Turnover} > 0$).
+   - **Value Trap Guardrail**: Any stock scoring $F \le 3$ is automatically flagged as a **Value Trap Hazard**, warning that low P/E multiples reflect operational deterioration rather than a genuine bargain.
+
+2. **Altman Z-Score Solvency Evaluation**:
+   $$Z = 1.2 X_1 + 1.4 X_2 + 3.3 X_3 + 0.6 X_4 + 0.999 X_5$$
+   - $Z \ge 2.99$: **Safe Zone** (negligible default risk, pristine solvency).
+   - $1.81 \le Z < 2.99$: **Grey Zone** (moderate leverage caution).
+   - $Z < 1.81$: **Distress Zone** (heightened risk of bankruptcy / credit failure). AI models automatically downgrade views to `AVOID` or `WATCH`.
+
+3. **DuPont 3-Stage ROE Decomposition**:
+   $$\text{ROE} = \underbrace{\frac{\text{Net Income}}{\text{Revenue}}}_{\text{Net Profit Margin}} \times \underbrace{\frac{\text{Revenue}}{\text{Total Assets}}}_{\text{Asset Turnover}} \times \underbrace{\frac{\text{Total Assets}}{\text{Shareholders' Equity}}}_{\text{Equity Multiplier}}$$
+   Reveals whether return on equity is driven by genuine operational efficiency, high asset turnover, or hazardous balance sheet financial leverage.
 
 Display:
 
-- Overall score.
+- Overall score (0-100).
+- Piotroski F-Score (0-9).
+- Altman Z-Score with solvency classification (Safe / Grey / Distress).
+- DuPont Asset Turnover and Equity Multiplier metrics.
 - Positive factors.
-- Negative factors.
-- Missing data.
+- Negative factors (Value Trap warnings if $F \le 3$, Solvency alerts if $Z < 1.81$).
+- Missing data tracking.
 - Sector comparison.
 
 Do not apply universal valuation thresholds across different sectors.
@@ -1551,6 +1588,63 @@ Store:
 
 ---
 
+# 16.1 PAPER TRADING VIRTUAL BROKERAGE SANDBOX
+
+A dedicated, institutional-grade simulated brokerage module (`apps/paper_trading/`) allowing traders and investors to paper trade Indian equities in real-time under realistic market conditions without risking real capital.
+
+## Core Architectural Principles
+
+1. **Strict Zero-Contamination Isolation**:
+   - The paper trading subsystem is physically decoupled from real user portfolios (`apps/portfolio/`), broker credentials (`apps/brokers/`), and Demat accounts.
+   - Virtual transactions never pollute real accounting ledgers, P&L calculations, or tax reports.
+   - A dedicated `PaperAccount` is auto-provisioned upon user creation or first terminal visit with a configurable virtual capital balance (default: **₹10,00,000 / ₹10 Lakhs**).
+   - "Reset Capital" capability allows users to cleanly purge all virtual positions and orders to start afresh with ₹10 Lakhs.
+
+2. **Realistic Indian Market Simulation**:
+   - **Product Types**:
+     - `CNC` (Cash & Carry / Delivery): Requires 100% upfront cash balance; held overnight for swing or long-term horizons.
+     - `MIS` (Margin Intraday Square-off): Provides 5× intraday leverage (20% margin requirement).
+   - **Order Execution Types**:
+     - `MARKET`: Instant atomic simulated fill against live LTP with dynamic bid-ask slippage (0.05%–0.10%).
+     - `LIMIT`: Stored as `PENDING` on the simulated order book, executing automatically when live market prices cross the limit threshold.
+     - `SL-L` / `SL-M`: Stop-loss orders activating when trigger prices are breached.
+     - `GTT` (Good-Till-Triggered) Bracket Orders: Automatically attaches protective stop-loss and multi-tier profit target orders.
+   - **Indian Statutory Charges & Friction Math (`services/paper_trading/tax_calculator.py`)**:
+     - **Brokerage**: Flat ₹20 or 0.03% of turnover (whichever is lower).
+     - **Securities Transaction Tax (STT)**: 0.1% on Buy & Sell for `CNC`; 0.025% on Sell only for `MIS`.
+     - **Exchange Transaction Charges**: 0.00297% of turnover (NSE standard).
+     - **GST**: 18% levied on (Brokerage + Exchange Transaction Charges).
+     - **SEBI Turnover Fee**: ₹10 per crore (0.0001% of turnover).
+     - **Stamp Duty**: 0.015% on Buy turnover for `CNC`; 0.003% on Buy turnover for `MIS`.
+
+3. **Relational Database Schema (`apps/paper_trading/models.py`)**:
+   - **`PaperAccount`**: One-to-one with user, `initial_capital`, `cash_balance`, `margin_utilized`, `realized_pnl`, `is_active`.
+   - **`PaperOrder`**: Relates to `PaperAccount` and `ExchangeListing`. Fields: `order_side` (`BUY`/`SELL`), `product_type` (`CNC`/`MIS`), `order_type` (`MARKET`/`LIMIT`/`SL_LIMIT`/`SL_MARKET`), `quantity`, `limit_price`, `trigger_price`, `target_price`, `stop_loss_price`, `status` (`PENDING`/`FILLED`/`CANCELLED`/`REJECTED`), `rejection_reason`.
+   - **`PaperPosition`**: Open positions tracking live mark-to-market. Fields: `product_type`, `quantity` (+ Long / - Short), `average_price`, `current_price`, `unrealized_pnl`, `stop_loss`, `target`.
+   - **`PaperTrade`**: Historical execution ledger. Fields: `execution_price`, `quantity`, `turnover`, `brokerage`, `taxes_and_charges`, `net_realized_pnl`.
+
+4. **User Interface Architecture**:
+   - **Kite-Style Slide-Out Order Drawer (`order_drawer.html`)**:
+     - Opened via `"⚡ Paper Trade"` CTA on stock detail pages or global keyboard shortcuts (`B` for Buy / `S` for Sell).
+     - Modern color palette: Soft emerald green (`#10b981`) for BUY, soft crimson/rose (`#f43f5e`) for SELL.
+     - 1-Click Quant Presets auto-populating Target 1, Target 2, and ATR Stop-Loss from the quantitative technical engine.
+     - Real-time client-side calculation of turnover, required margin, and statutory charges before placement.
+   - **Paper Trading Terminal (`/papertrading/`)**:
+     - Zerodha Kite-style horizontal metrics strip: Total Account Value, Available Cash, Open Floating P&L, Realized Net P&L formatted in Indian Rupees (`indian_inr`).
+     - Sub-filter tabs for Orders (`All`, `Pending`, `Executed`).
+     - Responsive table architecture with zero horizontal scrollbars.
+     - One-click position square-off and pending order cancellation.
+
+5. **AI Behavioral Coach & Discipline Audit (`PaperTradingBehavioralCoach`)**:
+   - Continuously audits user execution patterns and computes a Discipline Score (0–100):
+     - **Stop-Loss Coverage**: Flags naked/unprotected exposure if trades are placed without stop-loss orders.
+     - **Sizing Discipline**: Enforces a strict 20% max equity concentration cap per position.
+     - **Overtrading Velocity Alert**: Flags high intraday trade velocity to mitigate commission drag and decision fatigue.
+     - **Emotional Impulse Control**: Detects rapid revenge-trading re-entries following losing trades.
+   - **Trade Journal Bridge**: 1-click sync allowing traders to export closed paper trades into the permanent `TradeJournal` for post-trade retrospective analysis.
+
+---
+
 # 17. FUTURES AND OPTIONS ARCHITECTURE
 
 Prepare the system for F&O without making it part of the first release.
@@ -1658,31 +1752,56 @@ These are research opinions, not guarantees.
 
 Store prompt version, model identifier, input data references and output.
 
-Keep the AI provider configurable.
+Keep the AI provider configurable (`GeminiAIProvider` with fallback to deterministic quantitative engine).
+
+### Deterministic Quantitative AI Engine (`structured-rules-v2`)
+
+Implemented in `integrations/ai_providers/fallback.py`, this engine synthesizes institutional data into structured analysis without hallucinating:
+
+1. **Investor Persona**:
+   - Requires fundamental score $\ge 70$, Piotroski F-Score $\ge 6$, Altman Z-score $\ge 2.0$, and price above 200 SMA to recommend `BUY_CANDIDATE`.
+   - **Value Trap Guardrail**: Downgrades to `WATCH` if Piotroski F-score $\le 3$.
+   - **Solvency Guardrail**: Downgrades to `AVOID` if Altman Z-score $< 1.81$ (Distress Zone).
+2. **Swing Trader Persona**:
+   - Validates trend momentum: Requires ADX(14) $\ge 20$, SuperTrend Bullish, and price holding above VWAP.
+   - **Volatility-Anchored Bracket Targets**:
+     - $\text{Stop-Loss} = \text{LTP} - 1.5 \times \text{ATR}_{14}$ (below recent swing low).
+     - $\text{Target 1} = \text{LTP} + 2.0 \times \text{ATR}_{14}$ (1:1.33 R:R).
+     - $\text{Target 2} = \text{LTP} + 3.5 \times \text{ATR}_{14}$ (1:2.33 R:R).
+3. **Risk Manager Persona**:
+   - Enforces a 15% single-stock portfolio concentration cap.
+   - Mandates a strict $-8\%$ capital preservation stop-loss threshold.
+4. **Mandatory Institutional Disclaimer**:
+   - Every brief carries an explicit disclaimer: *"DISCLAIMER: Algorithmic decision-support model outputs are mathematical estimations and do not constitute guaranteed returns or SEBI-registered investment advice. All trading involves capital-at-risk."*
 
 ---
 
 # 19. MACHINE LEARNING MODULE
 
-Introduce ML only after reliable historical data is available.
+Introduce statistical and machine learning models based on reliable historical daily candlestick repositories.
 
-Potential features:
+## Time Series Regime Classifier & Ranker (`regime_v2`)
 
-- Trend classification.
-- Momentum classification.
-- Volatility classification.
-- Breakout research.
-- Stock ranking.
-- Anomaly detection.
-- Market regime classification.
+Implemented in `services/ml/engine.py` under model name `time_series_regime_ranker` (version `v2.0`):
 
-Requirements:
+1. **Garman-Klass Extreme-Value Volatility Estimator ($\sigma_{\text{GK}}$)**:
+   Overcomes the limitations of close-to-close rolling deviation by utilizing the full OHLC bar (open, high, low, close), providing up to 8× greater statistical efficiency:
+   $$\sigma_{\text{GK}}^2 = \frac{1}{N} \sum_{i=1}^N \left[ 0.5 \left(\ln\frac{H_i}{L_i}\right)^2 - (2\ln 2 - 1)\left(\ln\frac{C_i}{O_i}\right)^2 \right]$$
+   Annualized volatility: $\sigma_{\text{GK, Ann}} = \sqrt{252 \times \sigma_{\text{GK}}^2}$.
 
-- Time-series-aware validation.
-- No random chronological shuffling.
-- No look-ahead bias.
-- Avoid survivorship bias.
-- Compare with rule-based baselines.
+2. **Market Regime Classification**:
+   - Evaluates multi-factor signals across trend slope (SMA 20 vs SMA 50 ratio), momentum (RSI 14), Bollinger Bandwidth, and Garman-Klass volatility:
+     - `BULLISH_TRENDING`: Strong upward price structure with controlled volatility.
+     - `BEARISH_TRENDING`: Downward trend structure below key moving averages.
+     - `RANGE_BOUND`: Low directional momentum with price oscilating between support and resistance.
+     - `HIGH_VOLATILITY_EXPANSION`: Wide Bollinger Bandwidth combined with high Garman-Klass volatility indicating turbulent distribution.
+     - `LOW_VOLATILITY_COMPRESSION`: Severe Bollinger squeeze signaling imminent directional volatility breakout.
+
+3. **Requirements & Validation**:
+   - Time-series-aware validation (forward walk, no chronological random shuffling).
+   - Zero look-ahead bias and survivorship bias mitigation.
+   - Comparison against baseline rule models (naive momentum, random walk).
+   - Persists predictions in `MLPrediction` with complete feature contribution breakdowns (`garman_klass_volatility`, `sma_20_50_ratio`, `bollinger_bandwidth`).
 - Store model version.
 - Store training range.
 - Store features.

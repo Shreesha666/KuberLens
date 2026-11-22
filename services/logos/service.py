@@ -1,10 +1,13 @@
 """
 Company Logo Service.
-Fetches, caches, and proxies vector company logos from api.dharun.dev with local caching
-and deterministic SVG monogram fallbacks for offline resilience.
+Provides an institutional-grade, local-disk-first logo subsystem.
+Checks local persistent disk storage (static/branding/stock_logos/) in < 1ms,
+falling back to CDN fetch and deterministic vector monograms.
+Supports on-demand write-through disk caching and batch synchronization.
 """
 import hashlib
 import logging
+from pathlib import Path
 import urllib.error
 import urllib.request
 
@@ -30,71 +33,124 @@ MONOGRAM_PALETTE = [
 
 class CompanyLogoService:
     """
-    Manages vector company logos with multi-tier caching and graceful offline fallback.
+    Manages vector company logos with local-disk-first persistence,
+    multi-tier caching, and graceful offline fallback.
     """
-    CACHE_KEY_PREFIX = "stock_logo_svg_v1:"
-    CACHE_TIMEOUT = 60 * 60 * 24 * 7  # 7 days for live logos
-    FALLBACK_CACHE_TIMEOUT = 60 * 60 * 1  # 1 hour for fallbacks
+    CACHE_KEY_PREFIX = "stock_logo_svg_v2:"
+    CACHE_TIMEOUT = 60 * 60 * 24 * 7  # 7 days
+
+    @classmethod
+    def get_local_storage_dir(cls) -> Path:
+        """
+        Returns the persistent directory path for stock logos on disk.
+        """
+        logo_dir = Path(settings.BASE_DIR) / "static" / "branding" / "stock_logos"
+        logo_dir.mkdir(parents=True, exist_ok=True)
+        return logo_dir
 
     @classmethod
     def get_logo(cls, symbol: str) -> tuple[bytes, str]:
         """
-        Retrieves the SVG logo for a stock symbol.
-        Returns a tuple of (content_bytes, content_type).
+        Retrieves the logo for a stock symbol.
+        1. Checks persistent local disk storage (< 1ms).
+        2. Checks in-memory cache.
+        3. Attempts remote CDN fetch with write-through disk persistence.
+        4. Generates and persists a clean SVG monogram fallback.
         """
         clean_symbol = symbol.strip().upper()
-        cache_key = f"{cls.CACHE_KEY_PREFIX}{clean_symbol}"
+        logo_dir = cls.get_local_storage_dir()
 
-        # 1. Check local cache (distinguishing official logo from fallback monogram)
+        # 1. Local Disk Check (< 1ms instant serve)
+        local_svg = logo_dir / f"{clean_symbol}.svg"
+        if local_svg.is_file():
+            try:
+                content = local_svg.read_bytes()
+                if content:
+                    return content, "image/svg+xml"
+            except OSError as err:
+                logger.warning("Could not read local logo file %s: %s", local_svg, err)
+
+        local_png = logo_dir / f"{clean_symbol}.png"
+        if local_png.is_file():
+            try:
+                content = local_png.read_bytes()
+                if content:
+                    return content, "image/png"
+            except OSError as err:
+                logger.warning("Could not read local logo file %s: %s", local_png, err)
+
+        # 2. In-Memory Cache Check
+        cache_key = f"{cls.CACHE_KEY_PREFIX}{clean_symbol}"
         cached_data = cache.get(cache_key)
-        is_cached_monogram = bool(
-            cached_data and b'letter-spacing="0.5"' in cached_data
-        )
-        if cached_data and not is_cached_monogram:
+        if cached_data:
             return cached_data, "image/svg+xml"
 
-        # 2. Attempt fetching from CDN and API sources
+        # 3. Remote Fetch with Write-Through Disk Persistence
+        content, content_type = cls.fetch_remote_logo(clean_symbol)
+        if content:
+            # Persist to disk for future < 1ms visits
+            try:
+                ext = "png" if "png" in content_type else "svg"
+                save_path = logo_dir / f"{clean_symbol}.{ext}"
+                save_path.write_bytes(content)
+            except OSError as err:
+                logger.error("Could not write logo to disk for %s: %s", clean_symbol, err)
+
+            cache.set(cache_key, content, cls.CACHE_TIMEOUT)
+            return content, content_type
+
+        # 4. Deterministic Monogram Fallback & Write-Through Disk Save
+        monogram_svg = cls.generate_fallback_monogram(clean_symbol)
+        try:
+            (logo_dir / f"{clean_symbol}.svg").write_bytes(monogram_svg)
+        except OSError as err:
+            logger.error("Could not save fallback monogram to disk for %s: %s", clean_symbol, err)
+
+        cache.set(cache_key, monogram_svg, cls.CACHE_TIMEOUT)
+        return monogram_svg, "image/svg+xml"
+
+    @classmethod
+    def fetch_remote_logo(cls, symbol: str, timeout: float = 2.0) -> tuple[bytes | None, str]:
+        """
+        Attempts to fetch the official logo from high-speed vector CDNs and repositories.
+        """
+        clean_symbol = symbol.strip().upper()
         candidate_urls = [
-            f"https://cdn.jsdelivr.net/gh/MrChartist/global-stock-logos@main/logos/{clean_symbol}.svg",
-            f"https://raw.githubusercontent.com/MrChartist/global-stock-logos/main/logos/{clean_symbol}.svg",
+            f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/logos/nse/NSE_{clean_symbol}.svg",
+            f"https://cdn.jsdelivr.net/gh/dharunashokkumar/indian-listed-company-logos@main/data/logos/nse/NSE_{clean_symbol}.svg",
+            f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/logos/bse/BSE_{clean_symbol}.svg",
+            f"https://cdn.jsdelivr.net/gh/dharunashokkumar/indian-listed-company-logos@main/data/logos/bse/BSE_{clean_symbol}.svg",
+            f"https://cdn.jsdelivr.net/gh/dharunashokkumar/indian-listed-company-logos@main/data/brand-logos/svg/{clean_symbol}.svg",
+            f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/brand-logos/svg/{clean_symbol}.svg",
         ]
         api_url = getattr(settings, "DHARUN_LOGO_API_URL", "https://api.dharun.dev/v1/logos")
         if api_url:
             candidate_urls.append(f"{api_url.rstrip('/')}/{clean_symbol}")
 
-        api_key = getattr(settings, "DHARUN_API_KEY", "")
         headers = {
-            "User-Agent": "KuberLens/1.0 (Mozilla/5.0)",
+            "User-Agent": "KuberLens/2.0 (Mozilla/5.0; StockIntelligence)",
             "Accept": "image/svg+xml,image/*,*/*",
         }
+        api_key = getattr(settings, "DHARUN_API_KEY", "")
         if api_key:
             headers["x-api-key"] = api_key
 
         for url in candidate_urls:
             try:
                 req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, timeout=3.0) as response:
+                with urllib.request.urlopen(req, timeout=timeout) as response:
                     if response.status == 200:
                         content = response.read()
                         content_type = response.headers.get("Content-Type", "image/svg+xml")
                         if "svg" in content_type.lower() or content.strip().startswith(b"<svg"):
-                            cache.set(cache_key, content, cls.CACHE_TIMEOUT)
                             return content, "image/svg+xml"
                         elif "png" in content_type.lower():
-                            cache.set(cache_key, content, cls.CACHE_TIMEOUT)
                             return content, "image/png"
             except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError) as exc:
-                logger.debug("Could not fetch remote logo for %s from %s: %s", clean_symbol, url, exc)
+                logger.debug("Remote logo lookup failed for %s at %s: %s", clean_symbol, url, exc)
                 continue
 
-        # If previous fallback was cached and remote failed, reuse cached fallback
-        if cached_data:
-            return cached_data, "image/svg+xml"
-
-        # 3. Deterministic SVG Monogram Fallback
-        fallback_svg = cls.generate_fallback_monogram(clean_symbol)
-        cache.set(cache_key, fallback_svg, cls.FALLBACK_CACHE_TIMEOUT)
-        return fallback_svg, "image/svg+xml"
+        return None, ""
 
     @classmethod
     def generate_fallback_monogram(cls, symbol: str) -> bytes:

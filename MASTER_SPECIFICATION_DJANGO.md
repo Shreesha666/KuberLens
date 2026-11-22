@@ -1568,29 +1568,29 @@ Each setup must include:
 - Explanation.
 - Invalidation conditions.
 
-## Risk management
+## Risk management & Institutional Cockpit
 
-Calculate position sizing based on:
+The platform implements an **Institutional Risk Management Cockpit** (`apps/trading/views.py:RiskManagementView`) mapped to `/trading/risk-management/` and aliased to `/modules/risk_management/`.
 
-- Available capital.
-- Maximum risk percentage.
-- Entry.
-- Stop-loss.
-- Quantity.
-
-Example:
-
-```python
-risk_amount = trading_capital * risk_percentage
-
-risk_per_share = abs(entry_price - stop_loss)
-
-quantity = int(risk_amount / risk_per_share)
-```
-
-Validate zero or negative stop-loss distances.
-
-Apply practical liquidity and order-size limits.
+### Core Capabilities:
+1. **Portfolio Telemetry & Value at Risk (VaR)**:
+   - Total open stop-loss risk (₹ and % of capital).
+   - Single-asset concentration percentage vs 20% institutional ceiling.
+   - Setup asymmetry tracking (Average Risk-to-Reward ratio across open setups).
+   - Capital Preservation Health Index (0–100 quantitative score).
+2. **Interactive Quantitative Position Sizer**:
+   - Real-time HTMX calculation (`/trading/calculate-size/`) deriving exact shares from stop-loss distance:
+   ```python
+   risk_amount = trading_capital * (risk_percentage / 100)
+   risk_per_share = entry_price - stop_loss
+   quantity = int(risk_amount / risk_per_share)
+   ```
+   - Automatically checks capital requirements, enforces 20% single-stock concentration ceilings, and validates zero or negative stop-loss distances.
+3. **Portfolio Concentration & Exposure Limits**:
+   - Live single-stock exposure progress bars with threshold alerts for positions exceeding 20%.
+   - Sector allocation breakdown with 30% concentration alerts.
+4. **Active Swing Trades & Stop-Loss Exposure Monitor**:
+   - Table tracking all open trades with entry, stop-loss, target, risk per share, total capital at risk, and one-click exit controls.
 
 ## Trading journal
 

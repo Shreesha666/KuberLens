@@ -173,3 +173,4 @@
     initLiveActivityWidgets(target);
   });
 })();
+

@@ -2,82 +2,74 @@
 <!-- Stock Header -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
-        <div class="row align-items-center g-4 mb-3">
-            <!-- Left Column: Identity, Action CTAs & Live Price Quote -->
-            <div class="col-12 col-xl-8">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2">
-                    <div class="d-flex align-items-center gap-3">
-                        {% stock_logo listing size=52 css_class="p-1" %}
-                        <div>
-                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                <h1 class="h3 fw-bold mb-0 text-body">{{ listing.instrument.display_name }}</h1>
-                                <span class="badge bg-primary text-white fw-bold">{{ listing.symbol }}</span>
-                                <span class="badge bg-secondary-subtle text-body border">{{ listing.exchange.code }}</span>
-                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">{{ listing.instrument.sector }}</span>
-                                <span class="badge bg-light text-secondary border">{{ listing.instrument.get_market_cap_category_display }}</span>
-                            </div>
-                            <div class="text-muted small">
-                                {{ listing.instrument.legal_name }} &bull; ISIN: <span class="num-mono">{{ listing.instrument.isin }}</span> &bull; Industry: {{ listing.instrument.industry }}
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-2">
-                                <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3"
-                                        hx-get="{% url 'paper_trading:order_drawer' listing.symbol %}"
-                                        hx-target="#paper-order-drawer-container"
-                                        hx-swap="innerHTML">
-                                    <i class="bi bi-lightning-charge-fill"></i> Paper Trade
-                                </button>
-                                <span class="badge bg-light text-secondary border">
-                                    <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
-                                       hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
-                                       hx-target="#main-content" hx-push-url="true">
-                                        <i class="bi bi-plus-circle"></i> Add to Portfolio
-                                    </a>
-                                </span>
-                                {% if holding %}
-                                <span class="badge bg-light text-secondary border">
-                                <a href="{% url 'holdings:detail' listing.symbol %}"
-                                   hx-get="{% url 'holdings:detail' listing.symbol %}"
-                                   hx-target="#main-content" hx-push-url="true">
-                                    <i class="bi bi-wallet2"></i> View Holding ({{ holding.total_quantity }} shares)
-                                </a>
-                                </span>
-                                {% endif %}
-                            </div>
-                        </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
+                {% stock_logo listing size=52 css_class="p-1" %}
+                <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <h1 class="h3 fw-bold mb-0 text-body">{{ listing.instrument.display_name }}</h1>
+                        <span class="badge bg-primary text-white fw-bold">{{ listing.symbol }}</span>
+                        <span class="badge bg-secondary-subtle text-body border">{{ listing.exchange.code }}</span>
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">{{ listing.instrument.sector }}</span>
+                        <span class="badge bg-light text-secondary border">{{ listing.instrument.get_market_cap_category_display }}</span>
                     </div>
-
-                    <!-- Price & Quote Provenance Banner -->
-                    <div class="text-md-end mt-2 mt-md-0">
-                        {% if quote %}
-                        <div class="d-flex align-items-baseline justify-content-md-end gap-2">
-                            <span class="h2 fw-bold num-mono text-body mb-0">₹{{ quote.price|floatformat:2 }}</span>
-                            <span class="fs-5 num-mono {% if quote.change >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
-                                {% if quote.change >= 0 %}&#9650; +{% else %}&#9660; {% endif %}{{ quote.change|floatformat:2 }} ({{ quote.change_percent|floatformat:2 }}%)
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-md-end gap-2 mt-1">
-                            <!-- 2D Market Data Provenance Badges -->
-                            <span class="badge {% if quote.source_type == 'DIRECT' %}bg-success-subtle text-success border border-success-subtle{% elif quote.source_type == 'DELAYED' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} small">
-                                <i class="bi bi-broadcast"></i> {{ quote.source_type }}
-                                {% if quote.configured_delay_minutes > 0 %}({{ quote.configured_delay_minutes }}m delay){% endif %}
-                            </span>
-                            <span class="badge {% if quote.freshness_status == 'FRESH' %}bg-success text-white{% elif quote.freshness_status == 'CACHED' %}bg-info text-white{% elif quote.freshness_status == 'STALE' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %} small">
-                                {{ quote.freshness_status }}
-                            </span>
-                            <span class="text-muted small" style="font-size: 0.75rem;">
-                                {{ quote.source_provider }} &bull; {{ quote.retrieved_at|date:"H:i:s" }} IST
-                            </span>
-                        </div>
-                        {% else %}
-                        <div class="text-muted small">Live quote currently offline</div>
+                    <div class="text-muted small">
+                        {{ listing.instrument.legal_name }} &bull; ISIN: <span class="num-mono">{{ listing.instrument.isin }}</span> &bull; Industry: {{ listing.instrument.industry }}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3"
+                                hx-get="{% url 'paper_trading:order_drawer' listing.symbol %}"
+                                hx-target="#paper-order-drawer-container"
+                                hx-swap="innerHTML">
+                            <i class="bi bi-lightning-charge-fill"></i> Paper Trade
+                        </button>
+                        <span class="badge bg-light text-secondary border">
+                            <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
+                               hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}"
+                               hx-target="#main-content" hx-push-url="true">
+                                <i class="bi bi-plus-circle"></i> Add to Portfolio
+                            </a>
+                        </span>
+                        {% if holding %}
+                        <span class="badge bg-light text-secondary border">
+                        <a href="{% url 'holdings:detail' listing.symbol %}"
+                           hx-get="{% url 'holdings:detail' listing.symbol %}"
+                           hx-target="#main-content" hx-push-url="true">
+                            <i class="bi bi-wallet2"></i> View Holding ({{ holding.total_quantity }} shares)
+                        </a>
+                        </span>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Live Market Activity & Watcher Momentum Widget (CodeFronts cnc-07) -->
-            <div class="col-12 col-xl-4 d-flex justify-content-xl-end justify-content-start">
-                {% include "stocks/partials/live_activity_widget.html" with symbol=listing.symbol source=listing.exchange.code base_count=164 %}
+            <!-- Price & Quote Provenance Banner with KPI Animated Counter -->
+            <div class="text-md-end">
+                {% if quote %}
+                <div class="d-flex align-items-baseline justify-content-md-end gap-2">
+                    <span class="h2 fw-bold num-mono text-body mb-0">
+                        <span data-kpi-counter data-target="{{ quote.price }}" data-format="inr" data-decimals="2">₹{{ quote.price|floatformat:2 }}</span>
+                    </span>
+                    <span class="fs-5 num-mono {% if quote.change >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
+                        {% if quote.change >= 0 %}&#9650; +{% else %}&#9660; {% endif %}<span data-kpi-counter data-target="{{ quote.change }}" data-decimals="2">{{ quote.change|floatformat:2 }}</span> (<span data-kpi-counter data-target="{{ quote.change_percent }}" data-decimals="2">{{ quote.change_percent|floatformat:2 }}</span>%)
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-md-end gap-2 mt-1">
+                    <!-- 2D Market Data Provenance Badges -->
+                    <span class="badge {% if quote.source_type == 'DIRECT' %}bg-success-subtle text-success border border-success-subtle{% elif quote.source_type == 'DELAYED' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} small">
+                        <i class="bi bi-broadcast"></i> {{ quote.source_type }}
+                        {% if quote.configured_delay_minutes > 0 %}({{ quote.configured_delay_minutes }}m delay){% endif %}
+                    </span>
+                    <span class="badge {% if quote.freshness_status == 'FRESH' %}bg-success text-white{% elif quote.freshness_status == 'CACHED' %}bg-info text-white{% elif quote.freshness_status == 'STALE' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %} small">
+                        {{ quote.freshness_status }}
+                    </span>
+                    <span class="text-muted small" style="font-size: 0.75rem;">
+                        {{ quote.source_provider }} &bull; {{ quote.retrieved_at|date:"H:i:s" }} IST
+                    </span>
+                </div>
+                {% else %}
+                <div class="text-muted small">Live quote currently offline</div>
+                {% endif %}
             </div>
         </div>
 

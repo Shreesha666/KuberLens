@@ -26,6 +26,7 @@ class FundamentalSnapshot(AuditedModel):
     ps_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     ev_to_ebitda = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     dividend_yield = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    dividend_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Annualised dividend per share in ₹ (DPS)")
     sector_pe = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     # 2. Profitability Ratios

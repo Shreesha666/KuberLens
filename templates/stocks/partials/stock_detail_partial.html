@@ -101,11 +101,11 @@
             </div>
             <div class="col-6 col-sm-4 col-md-2">
                 <span class="text-muted d-block">Div Yield</span>
-                <span class="fw-semibold num-mono {% if fundamental and fundamental.dividend_yield > 0 %}text-success{% endif %}">
+                <span class="fw-semibold num-mono {% if dividend_yield or fundamental and fundamental.dividend_yield > 0 %}text-success{% endif %}">
                     {% if dividend_amount %}
-                        ₹{{ dividend_amount|floatformat:2 }} <span class="small fw-normal text-muted">({{ fundamental.dividend_yield|floatformat:2 }}%)</span>
-                    {% elif fundamental and fundamental.dividend_yield is not None %}
-                        {{ fundamental.dividend_yield|floatformat:2 }}%
+                        ₹{{ dividend_amount|floatformat:2 }} <span class="small fw-normal text-muted">({{ dividend_yield|default:fundamental.dividend_yield|floatformat:2 }}%)</span>
+                    {% elif dividend_yield or fundamental and fundamental.dividend_yield is not None %}
+                        {{ dividend_yield|default:fundamental.dividend_yield|floatformat:2 }}%
                     {% else %}
                         —
                     {% endif %}
@@ -842,9 +842,9 @@
                             <span class="text-muted">Dividend Yield (Annual)</span>
                             <span class="fw-bold num-mono text-gain">
                                 {% if dividend_amount %}
-                                    ₹{{ dividend_amount|floatformat:2 }} <span class="text-muted fw-normal">({{ fundamental.dividend_yield|floatformat:2 }}%)</span>
-                                {% elif fundamental and fundamental.dividend_yield is not None %}
-                                    {{ fundamental.dividend_yield|default:"0.0" }}%
+                                    ₹{{ dividend_amount|floatformat:2 }} <span class="text-muted fw-normal">({{ dividend_yield|default:fundamental.dividend_yield|floatformat:2 }}%)</span>
+                                {% elif dividend_yield or fundamental and fundamental.dividend_yield is not None %}
+                                    {{ dividend_yield|default:fundamental.dividend_yield|default:"0.0" }}%
                                 {% else %}
                                     —
                                 {% endif %}

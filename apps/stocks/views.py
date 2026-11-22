@@ -259,16 +259,32 @@ class StockDetailView(HTMXResponseMixin, DetailView):
 
         context["fundamental"] = fund_snapshot
 
-        # Calculate estimated annual dividend amount per share (DPS in ₹)
-        dividend_amount = None
-        if fund_snapshot and fund_snapshot.dividend_yield and quote and quote.price:
+        # Fetch / sync official trailing annual dividend rate and yield from Yahoo Finance
+        dividend_amount = getattr(fund_snapshot, "dividend_rate", None)
+        dividend_yield = getattr(fund_snapshot, "dividend_yield", None)
+
+        if dividend_amount is None:
+            try:
+                from services.fundamentals.analyzer import FundamentalAnalyzer
+                d_rate, d_yield = FundamentalAnalyzer.sync_dividend_from_yahoo(listing.symbol, listing.instrument)
+                if d_rate is not None:
+                    dividend_amount = d_rate
+                if d_yield is not None:
+                    dividend_yield = d_yield
+            except Exception as e:
+                logger.debug("Could not fetch Yahoo dividend for %s: %s", listing.symbol, e)
+
+        # Fallback to calculation if dividend_yield exists but rate is missing
+        if dividend_amount is None and dividend_yield and quote and quote.price:
             try:
                 dividend_amount = round(
-                    (Decimal(str(quote.price)) * Decimal(str(fund_snapshot.dividend_yield))) / Decimal("100.0"), 2
+                    (Decimal(str(quote.price)) * Decimal(str(dividend_yield))) / Decimal("100.0"), 2
                 )
             except Exception:
                 dividend_amount = None
+
         context["dividend_amount"] = dividend_amount
+        context["dividend_yield"] = dividend_yield
 
         # 5. Peer Listings in same sector
         context["peers"] = (

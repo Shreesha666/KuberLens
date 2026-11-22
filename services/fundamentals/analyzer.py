@@ -45,6 +45,7 @@ class FundamentalAnalyzer:
         ps = get_dec("ps_ratio")
         ev_ebitda = get_dec("ev_to_ebitda")
         div_yield = get_dec("dividend_yield")
+        div_rate = get_dec("dividend_rate")
         sector_pe = get_dec("sector_pe") or Decimal("25.0")
 
         roe = get_dec("roe")
@@ -240,6 +241,7 @@ class FundamentalAnalyzer:
                 "ps_ratio": ps,
                 "ev_to_ebitda": ev_ebitda,
                 "dividend_yield": div_yield,
+                "dividend_rate": div_rate,
                 "sector_pe": sector_pe,
                 "roe": roe,
                 "roce": roce,
@@ -273,3 +275,64 @@ class FundamentalAnalyzer:
             },
         )
         return snapshot
+
+    @classmethod
+    def sync_dividend_from_yahoo(cls, symbol: str, instrument: Instrument) -> tuple[Decimal | None, Decimal | None]:
+        """
+        Fetches official dividend rate (DPS in ₹) and yield (%) directly from Yahoo Finance.
+        Calculates trailing 12-month (TTM) actual cash dividend payouts from dividends history.
+        """
+        from datetime import timedelta
+        import yfinance as yf
+        from django.utils import timezone
+
+        try:
+            t = yf.Ticker(f"{symbol}.NS")
+            info = getattr(t, "info", None) or {}
+            rate = info.get("trailingAnnualDividendRate") or info.get("dividendRate")
+            yd = info.get("trailingAnnualDividendYield") or info.get("dividendYield")
+
+            # Check actual corporate dividends history for trailing 12 months
+            try:
+                divs = getattr(t, "dividends", None)
+                if divs is not None and not divs.empty:
+                    div_tz = getattr(divs.index, "tz", None)
+                    now_tz = timezone.now().astimezone(div_tz) if div_tz else timezone.now()
+                    cutoff = now_tz - timedelta(days=365)
+                    ttm = divs[divs.index >= cutoff]
+                    if not ttm.empty:
+                        ttm_sum = float(ttm.sum())
+                        if ttm_sum > 0:
+                            rate = ttm_sum
+            except Exception as e:
+                logger.debug("Could not calculate TTM dividends history for %s: %s", symbol, e)
+
+            dec_rate = Decimal(str(round(rate, 2))) if rate is not None else None
+
+            # Calculate accurate yield based on real TTM rate and current price
+            price = info.get("currentPrice") or info.get("regularMarketPrice") or info.get("previousClose")
+            if dec_rate and price:
+                dec_yield = Decimal(str(round((float(dec_rate) / float(price)) * 100.0, 2)))
+            elif yd is not None:
+                dec_yield = Decimal(str(round((yd * 100) if yd < 1.0 else yd, 2)))
+            else:
+                dec_yield = None
+
+            # Update existing or latest FundamentalSnapshot
+            if dec_rate is not None or dec_yield is not None:
+                f_snap = FundamentalSnapshot.objects.filter(instrument=instrument).order_by("-calculated_at").first()
+                if f_snap:
+                    updated_fields = []
+                    if dec_rate is not None:
+                        f_snap.dividend_rate = dec_rate
+                        updated_fields.append("dividend_rate")
+                    if dec_yield is not None:
+                        f_snap.dividend_yield = dec_yield
+                        updated_fields.append("dividend_yield")
+                    if updated_fields:
+                        f_snap.save(update_fields=updated_fields)
+
+            return dec_rate, dec_yield
+        except Exception as err:
+            logger.warning("Failed to sync dividend from Yahoo Finance for %s: %s", symbol, err)
+            return None, None

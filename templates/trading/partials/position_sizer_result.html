@@ -1,54 +1,88 @@
 {% load core_tags %}
-<div class="card bg-light border p-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="small fw-bold text-uppercase text-muted">Risk Sizing Summary</span>
-        <span class="badge {% if sizing.is_over_allocated %}bg-warning text-dark{% else %}bg-primary{% endif %}">
-            {{ sizing.capital_allocation_pct }}% of Account
+
+{% if error %}
+<div class="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-0">
+    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 text-danger fs-5"></i>
+    <div>
+        <strong>Calculation Error:</strong> {{ error }}
+    </div>
+</div>
+{% elif sizing %}
+<div class="risk-sizer-box">
+    <!-- Summary Header -->
+    <div class="d-flex justify-content-between align-items-center mb-2.5">
+        <span class="risk-kpi-title mb-0">
+            <i class="bi bi-shield-check text-primary"></i> Risk Sizing Summary
+        </span>
+        <span class="badge {% if sizing.is_over_allocated %}bg-warning text-dark border border-warning-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} px-2 py-1" style="font-size: 0.72rem;">
+            {% if sizing.is_over_allocated %}
+                <i class="bi bi-exclamation-triangle me-1"></i>Capped at 20% Limit
+            {% else %}
+                <i class="bi bi-check2-circle me-1"></i>{{ sizing.capital_allocation_pct }}% of Capital
+            {% endif %}
         </span>
     </div>
 
-    <div class="row g-2 text-center my-1">
+    <!-- 3-Tile Precision Grid -->
+    <div class="row g-2 mb-2">
+        <!-- Tile 1: Quantity -->
         <div class="col-4">
-            <div class="bg-white p-2 rounded border">
-                <div class="small text-muted">Suggested Qty</div>
-                <div class="fw-bold fs-5 text-primary">{{ sizing.quantity }}</div>
-                <div class="text-xs text-muted">Shares</div>
+            <div class="risk-tile">
+                <div class="risk-tile-label">Suggested Qty</div>
+                <div class="risk-tile-val text-primary">{{ sizing.quantity }}</div>
+                <div class="risk-tile-sub">Shares</div>
             </div>
         </div>
+
+        <!-- Tile 2: Capital at Risk -->
         <div class="col-4">
-            <div class="bg-white p-2 rounded border">
-                <div class="small text-muted">Risk Amount</div>
-                <div class="fw-bold fs-5 text-danger">{{ sizing.risk_amount|format_inr }}</div>
-                <div class="text-xs text-muted">{{ sizing.risk_percentage }}% capital</div>
+            <div class="risk-tile">
+                <div class="risk-tile-label">Capital at Risk</div>
+                <div class="risk-tile-val text-danger" title="{{ sizing.risk_amount|format_inr }}">{{ sizing.risk_amount|format_inr }}</div>
+                <div class="risk-tile-sub">{{ sizing.risk_percentage }}% capital</div>
             </div>
         </div>
+
+        <!-- Tile 3: Capital Required -->
         <div class="col-4">
-            <div class="bg-white p-2 rounded border">
-                <div class="small text-muted">Capital Required</div>
-                <div class="fw-bold fs-5 text-dark">{{ sizing.capital_required|format_inr }}</div>
-                <div class="text-xs text-muted">@ ₹{{ sizing.entry_price|floatformat:2 }}</div>
+            <div class="risk-tile">
+                <div class="risk-tile-label">Capital Required</div>
+                <div class="risk-tile-val text-body" title="{{ sizing.capital_required|format_inr }}">{{ sizing.capital_required|format_inr }}</div>
+                <div class="risk-tile-sub">@ ₹{{ sizing.entry_price|floatformat:2 }}</div>
             </div>
         </div>
     </div>
 
+    <!-- Visual Risk : Reward Gauge -->
     {% if risk_reward %}
-    <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
-        <span class="small text-muted">Risk-to-Reward Ratio:</span>
-        <span class="badge {% if risk_reward >= 2.0 %}bg-success{% elif risk_reward >= 1.5 %}bg-info text-dark{% else %}bg-warning text-dark{% endif %} fs-6">
-            1 : {{ risk_reward }}
-        </span>
+    <div class="rr-visual-box">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="small fw-semibold text-muted" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;">Risk-to-Reward Ratio</span>
+            <span class="badge {% if risk_reward >= 2.0 %}bg-success-subtle text-success border border-success-subtle{% elif risk_reward >= 1.5 %}bg-info-subtle text-info border border-info-subtle{% else %}bg-warning-subtle text-warning border border-warning-subtle{% endif %} num-mono px-2 py-0.5" style="font-size: 0.74rem;">
+                1 : {{ risk_reward }}
+            </span>
+        </div>
+        <div class="rr-visual-bar">
+            <div class="rr-segment-risk" style="width: 25%;" title="Downside Risk: 1.0 Unit"></div>
+            <div class="rr-segment-reward" style="width: 75%;" title="Upside Potential: {{ risk_reward }} Units"></div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.68rem;">
+            <span><i class="bi bi-dash-circle text-danger me-1"></i>Risk/Share: <strong class="num-mono text-danger">₹{{ sizing.risk_per_share|floatformat:2 }}</strong></span>
+            <span><i class="bi bi-plus-circle text-success me-1"></i>Upside: <strong class="num-mono text-success">1 : {{ risk_reward }} Target</strong></span>
+        </div>
     </div>
     {% endif %}
 
+    <!-- Warnings Container -->
     {% if sizing.warnings %}
-    <div class="mt-2">
+    <div class="mt-2.5">
         {% for w in sizing.warnings %}
-        <div class="alert alert-warning py-1 px-2 mb-1 small d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
+        <div class="alert alert-warning py-1.5 px-2.5 mb-1.5 small d-flex align-items-center gap-2" style="font-size: 0.74rem;">
+            <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0"></i>
             <div>{{ w }}</div>
         </div>
         {% endfor %}
     </div>
     {% endif %}
 </div>
-
+{% endif %}

@@ -1585,10 +1585,12 @@ The platform implements an **Institutional Risk Management Cockpit** (`apps/trad
    risk_per_share = entry_price - stop_loss
    quantity = int(risk_amount / risk_per_share)
    ```
+   - Features one-click risk preset guardrails (`1.0% Conservative`, `1.5% Standard`, `2.0% Aggressive`, `3.0% Max`).
+   - Renders 3-tile precision metrics (Suggested Qty, Capital at Risk, Capital Required) with non-wrapping currency typography (`static/css/risk-management.css`) and dynamic visual Setup Asymmetry (R:R) bar.
    - Automatically checks capital requirements, enforces 20% single-stock concentration ceilings, and validates zero or negative stop-loss distances.
 3. **Portfolio Concentration & Exposure Limits**:
-   - Live single-stock exposure progress bars with threshold alerts for positions exceeding 20%.
-   - Sector allocation breakdown with 30% concentration alerts.
+   - Live single-stock exposure progress bars with SVG stock logos, clear sector tags, and a physical red 20% SEBI limit ceiling reference marker on each track.
+   - Sector allocation breakdown with colorful status chips and 30% concentration alerts.
 4. **Active Swing Trades & Stop-Loss Exposure Monitor**:
    - Table tracking all open trades with entry, stop-loss, target, risk per share, total capital at risk, and one-click exit controls.
 

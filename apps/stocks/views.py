@@ -233,9 +233,17 @@ class StockDetailView(HTMXResponseMixin, DetailView):
 
                 t = yf.Ticker(f"{listing.symbol}.NS")
                 info = getattr(t, "info", None) or {}
+                div_yield = info.get("dividendYield")
+                if div_yield is not None:
+                    div_yield = (div_yield * 100) if div_yield < 1.0 else div_yield
+                elif info.get("trailingAnnualDividendYield") is not None:
+                    ty = info.get("trailingAnnualDividendYield")
+                    div_yield = (ty * 100) if ty < 1.0 else ty
+
                 raw_data = {
                     "pe_ratio": info.get("trailingPE") or info.get("forwardPE"),
                     "pb_ratio": info.get("priceToBook"),
+                    "dividend_yield": div_yield,
                     "roe": (info.get("returnOnEquity") * 100) if info.get("returnOnEquity") else None,
                     "roce": (info.get("returnOnAssets") * 100) if info.get("returnOnAssets") else None,
                     "debt_to_equity": info.get("debtToEquity"),

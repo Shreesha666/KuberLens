@@ -1006,17 +1006,17 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light border-bottom text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
                             <tr>
-                                <th class="text-start ps-3 py-2.5 fw-semibold">Ex-Dividend Date</th>
-                                <th class="text-end py-2.5 fw-semibold">Dividend</th>
-                                <th class="text-center py-2.5 fw-semibold">Type</th>
-                                <th class="text-start py-2.5 fw-semibold ps-4">Payment Date</th>
-                                <th class="text-end pe-3 py-2.5 fw-semibold">Yield</th>
+                                <th class="text-start ps-3 py-2.5 fw-semibold" style="width: 25%;">Ex-Dividend Date</th>
+                                <th class="text-end py-2.5 fw-semibold" style="width: 18%;">Dividend</th>
+                                <th class="text-center py-2.5 fw-semibold" style="width: 18%;">Type</th>
+                                <th class="text-start py-2.5 fw-semibold ps-4" style="width: 20%;">Payment Date</th>
+                                <th class="text-end pe-3 py-2.5 fw-semibold" style="width: 19%;">Yield</th>
                             </tr>
                         </thead>
-                        <tbody class="small">
+                        <tbody>
                             {% for div in dividend_history_5y %}
                             <tr>
-                                <td class="ps-3 py-3 fw-bold text-body num-mono">
+                                <td class="ps-3 py-3 fw-bold text-body">
                                     {{ div.ex_date|date:"M d, Y" }}
                                 </td>
                                 <td class="text-end py-3 fw-bold num-mono text-body">
@@ -1024,20 +1024,20 @@
                                 </td>
                                 <td class="text-center py-3">
                                     {% if div.type == 'FINAL' %}
-                                    <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded border border-primary-subtle bg-primary-subtle text-primary" style="font-size: 0.75rem; font-weight: 500;">
-                                        <i class="bi bi-calendar-check" style="font-size: 0.70rem;"></i> Final
+                                    <span class="d-inline-flex align-items-center gap-1.5 text-body fw-medium small">
+                                        <i class="bi bi-calendar-check text-primary"></i> Final
                                     </span>
                                     {% elif div.type == 'SPECIAL' %}
-                                    <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded border border-warning-subtle bg-warning-subtle text-warning-emphasis" style="font-size: 0.75rem; font-weight: 500;">
-                                        <i class="bi bi-star-fill" style="font-size: 0.70rem;"></i> Special
+                                    <span class="d-inline-flex align-items-center gap-1.5 text-warning-emphasis fw-semibold small">
+                                        <i class="bi bi-star-fill text-warning"></i> Special
                                     </span>
                                     {% else %}
-                                    <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded border border-success-subtle bg-success-subtle text-success" style="font-size: 0.75rem; font-weight: 500;">
-                                        <i class="bi bi-calendar-event" style="font-size: 0.70rem;"></i> Interim
+                                    <span class="d-inline-flex align-items-center gap-1.5 text-body fw-medium small">
+                                        <i class="bi bi-calendar-event text-success"></i> Interim
                                     </span>
                                     {% endif %}
                                 </td>
-                                <td class="text-start py-3 ps-4 text-body num-mono">
+                                <td class="text-start py-3 ps-4 text-secondary">
                                     {{ div.payment_date|date:"M d, Y" }}
                                 </td>
                                 <td class="text-end pe-3 py-3 fw-bold num-mono text-body">

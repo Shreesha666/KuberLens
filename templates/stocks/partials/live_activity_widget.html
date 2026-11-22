@@ -1,0 +1,39 @@
+<div class="law-widget {{ extra_class|default:'' }}"
+     data-live-activity
+     data-symbol="{{ symbol|default:'NSE' }}"
+     data-base-count="{{ base_count|default:148 }}"
+     data-interval="{{ interval|default:2600 }}"
+     aria-label="Live market setup watcher activity">
+    <header class="law-top">
+        <span class="law-live-badge">
+            <span class="law-dot" aria-hidden="true"></span>Live Activity
+        </span>
+        <span class="law-source">{{ source|default:listing.exchange.code|default:'NSE' }} Live Depth</span>
+    </header>
+
+    <div class="law-count-wrap" aria-hidden="true">
+        <div class="law-digits"></div>
+    </div>
+    <p class="law-label mb-0">{{ label|default:'market participants tracking setup' }}</p>
+
+    <!-- Real-time Dynamic SVG Sparkline -->
+    <svg class="law-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+            <linearGradient id="law-gradient-emerald" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+            </linearGradient>
+        </defs>
+        <polygon class="law-spark-area" points=""/>
+        <polyline class="law-sparkline" points=""/>
+    </svg>
+
+    <!-- Session Range Footer -->
+    <footer class="law-foot">
+        <span class="law-stat"><b class="law-peak">248</b> peak today</span>
+        <span class="law-stat"><b class="law-avg">132</b> session avg</span>
+    </footer>
+
+    <!-- Screen Reader Status -->
+    <p class="law-sr" role="status" aria-live="polite"></p>
+</div>

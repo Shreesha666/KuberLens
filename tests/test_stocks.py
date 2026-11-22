@@ -273,6 +273,11 @@ class TestStockViews:
         assert "50 shares" in content
         assert "View In Holdings" in content
         assert "New Prospective Investor" in content
+        assert "law-widget" in content
+        assert "data-live-activity" in content
+        assert "Live Activity" in content
+        assert "law-digits" in content
+        assert "law-sparkline" in content
 
     def test_stock_detail_nonexistent_returns_404(self):
         client = Client()

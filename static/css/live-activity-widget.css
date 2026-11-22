@@ -1,0 +1,208 @@
+/**
+ * Live Activity & Watcher Momentum Widget (CodeFronts cnc-07 mechanical rolling odometer)
+ * Adapts CodeFronts CSS Number Counter Animation to the KuberLens financial theme.
+ */
+
+.law-widget {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  padding: 1.15rem 1.25rem;
+  border-radius: var(--border-radius-lg, 0.75rem);
+  background: var(--bs-card-bg, #ffffff);
+  border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+[data-bs-theme="dark"] .law-widget,
+body.dark-mode .law-widget {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.law-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.law-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 99px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+
+.law-dot {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  display: inline-block;
+}
+
+.law-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: law-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes law-ping {
+  0% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+.law-source {
+  color: var(--bs-secondary-color, #64748b);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+/* Mechanical Rolling Odometer Digits */
+.law-count-wrap {
+  margin-top: 0.85rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.law-digits {
+  display: flex;
+  gap: 1px;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--bs-body-color, #0f172a);
+}
+
+[data-bs-theme="dark"] .law-digits,
+body.dark-mode .law-digits {
+  color: #f8fafc;
+}
+
+.law-cell {
+  position: relative;
+  display: block;
+  height: 1em;
+  overflow: hidden;
+}
+
+.law-strip {
+  display: block;
+  transform: translateY(var(--law-y, 0%));
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.law-strip i {
+  display: block;
+  height: 1em;
+  font-style: normal;
+  text-align: center;
+}
+
+.law-label {
+  margin-top: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--bs-secondary-color, #64748b);
+  font-weight: 500;
+}
+
+/* Dynamic Live SVG Sparkline */
+.law-spark {
+  display: block;
+  width: 100%;
+  height: 38px;
+  margin-top: 0.75rem;
+  overflow: visible;
+}
+
+.law-sparkline {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.3s ease;
+}
+
+.law-spark-area {
+  fill: url(#law-gradient-emerald);
+  opacity: 0.25;
+}
+
+/* Bottom Stats Row */
+.law-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color, #64748b);
+}
+
+[data-bs-theme="dark"] .law-foot,
+body.dark-mode .law-foot {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.law-stat b {
+  color: var(--bs-body-color, #0f172a);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-bs-theme="dark"] .law-stat b,
+body.dark-mode .law-stat b {
+  color: #f1f5f9;
+}
+
+/* Accessible Screen Reader Status */
+.law-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .law-dot::after {
+    animation: none;
+    opacity: 0;
+  }
+  .law-strip {
+    transition-duration: 0.01ms;
+  }
+}

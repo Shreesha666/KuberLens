@@ -226,8 +226,7 @@ AI_PROVIDER = os.getenv("AI_PROVIDER", "fallback")  # "gemini" or "fallback"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
-# Company Logo Provider Settings (api.dharun.dev)
-DHARUN_LOGO_API_URL = os.getenv("DHARUN_LOGO_API_URL", "https://api.dharun.dev/v1/logos")
-DHARUN_API_KEY = os.getenv("DHARUN_API_KEY", "india_live_4vQbtzlGl5N4SvRsL15rDezHLEkb7I0O3JyDax")
+# Company Logo Provider Settings (Shareperks ISIN CDN)
+SHAREPERKS_LOGO_BASE_URL = os.getenv("SHAREPERKS_LOGO_BASE_URL", "https://company-logo.shareperks.in/logo")
 
 

@@ -594,7 +594,7 @@ class SectorAnalysisView(HTMXResponseMixin, TemplateView):
 class StockLogoProxyView(View):
     """
     High-performance vector logo proxy endpoint.
-    Retrieves and caches SVG logos from api.dharun.dev with automatic offline monogram fallback.
+    Retrieves and caches SVG logos from Shareperks and vector CDNs with automatic offline monogram fallback.
     Sets aggressive browser cache headers (7 days) for instant subsequent renders.
     """
     def get(self, request, symbol: str, *args, **kwargs):

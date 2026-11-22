@@ -142,9 +142,10 @@ class CompanyLogoService:
 
         candidate_urls = []
 
-        # 1. Primary: Shareperks ISIN CDN (officially co-engineered by Dharun Ashokkumar)
+        # 1. Primary: Shareperks ISIN Production CDN
+        shareperks_base = getattr(settings, "SHAREPERKS_LOGO_BASE_URL", "https://company-logo.shareperks.in/logo").rstrip("/")
         if resolved_isin:
-            candidate_urls.append(f"https://company-logo.shareperks.in/logo/{resolved_isin}/icon.svg")
+            candidate_urls.append(f"{shareperks_base}/{resolved_isin}/icon.svg")
 
         # 2. Sibling NSE ticker CDN paths (for BSE numeric scrip codes e.g. 500112 -> SBIN)
         if nse_symbol:
@@ -153,7 +154,7 @@ class CompanyLogoService:
                 f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/logos/nse/NSE_{nse_symbol}.svg",
             ])
 
-        # 3. Direct Symbol CDN paths
+        # 3. Direct Symbol CDN paths (Open-source vector repository)
         candidate_urls.extend([
             f"https://cdn.jsdelivr.net/gh/dharunashokkumar/indian-listed-company-logos@main/data/logos/nse/NSE_{clean_symbol}.svg",
             f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/logos/nse/NSE_{clean_symbol}.svg",
@@ -163,16 +164,16 @@ class CompanyLogoService:
             f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/brand-logos/svg/{clean_symbol}.svg",
         ])
 
-        # 4. Optional Custom Endpoint (only if configured and not pointing to deprecated api.dharun.dev)
-        custom_api_url = getattr(settings, "CUSTOM_LOGO_API_URL", "") or getattr(settings, "DHARUN_LOGO_API_URL", "")
-        if custom_api_url and "api.dharun.dev" not in custom_api_url:
+        # 4. Optional Custom Endpoint (if configured by operator)
+        custom_api_url = getattr(settings, "CUSTOM_LOGO_API_URL", "")
+        if custom_api_url:
             candidate_urls.append(f"{custom_api_url.rstrip('/')}/{clean_symbol}")
 
         headers = {
             "User-Agent": "KuberLens/2.0 (Mozilla/5.0; StockIntelligence)",
             "Accept": "image/svg+xml,image/*,*/*",
         }
-        api_key = getattr(settings, "CUSTOM_LOGO_API_KEY", "") or getattr(settings, "DHARUN_API_KEY", "")
+        api_key = getattr(settings, "CUSTOM_LOGO_API_KEY", "")
         if api_key:
             headers["x-api-key"] = api_key
 

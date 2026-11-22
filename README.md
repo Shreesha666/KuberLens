@@ -15,7 +15,7 @@ An institutional-grade personal stock market research, technical analysis, portf
 
 1. [Architecture & Design Principles](#1-architecture--design-principles)
 2. [Key Capabilities & Modules](#2-key-capabilities--modules)
-3. [Company Logo Integration (api.dharun.dev)](#3-company-logo-integration-apidharundev)
+3. [Company Logo Subsystem & Vector Persistence](#3-company-logo-subsystem--offline-vector-persistence)
 4. [Dual-Perspective Recommendation Framework](#4-dual-perspective-recommendation-framework)
 5. [Interactive HTML5 Canvas Charting](#5-interactive-html5-canvas-charting)
 6. [Technology Stack](#6-technology-stack)
@@ -110,7 +110,6 @@ The platform implements an institutional-grade, **Local-Disk-First** vector bran
   - **Shareperks ISIN CDN (`company-logo.shareperks.in`):** Primary production vector CDN co-engineered by Dharun Ashokkumar and Shareperks, resolving logos by unique ISIN (`https://company-logo.shareperks.in/logo/{isin}/icon.svg`).
   - **GitHub / jsDelivr CDNs (`dharunashokkumar/indian-listed-company-logos`):** Serves exact NSE and BSE vector SVGs (`data/logos/nse/NSE_{symbol}.svg`).
   - **Cross-Exchange Sibling Resolution:** Automatically maps BSE numeric scrip codes (e.g. `500112`) to their NSE listing (`SBIN`) to guarantee official vector downloads across exchanges.
-  - **Legacy API Gateway Fallback:** In the event that `api.dharun.dev` encounters Cloudflare 530 origin downtime, the service automatically and seamlessly falls back to Shareperks and GitHub CDNs.
 - **On-Demand Write-Through Disk Cache:** If an un-cached stock is queried, the system attempts a fast CDN lookup. Upon success, the SVG is written directly to disk so future requests never hit the network.
 - **Deterministic SVG Monogram Fallbacks:** For obscure SME or micro-cap listings lacking an official logo, the service automatically generates a crisp, high-DPI SVG monogram badge (using the symbol's initials and a deterministic brand color palette) and saves it to disk. **Broken images and blank placeholders are 100% eliminated.**
 - **Batch Synchronization CLI Command:**
@@ -204,7 +203,7 @@ The interactive price chart (`static/js/charting.js`) is an institutional-grade,
 | **Database** | PostgreSQL 16+ (or SQLite for dev) | ACID-compliant relational data and JSONB |
 | **Task Queue** | Celery 5.4 + Redis 7 | Asynchronous data ingestion and calculations |
 | **Market Data** | Jugaad-Data & Yahoo Finance | NSE Bhavcopy and historical candle feeds |
-| **Logo Provider** | `api.dharun.dev` | Official vector Indian equity brand logos |
+| **Logo Provider** | Shareperks & Open-Source CDNs | Official vector Indian equity brand logos |
 | **Security** | Fernet (Cryptography) | AES-128-CBC + HMAC credential encryption |
 | **Code Quality** | Pytest, Pytest-Django, Ruff | 183 automated tests, 100% pass, strict linting |
 
@@ -236,9 +235,8 @@ ENABLE_JUGAAD_DATA=True
 ENABLE_YAHOO_FINANCE=True
 MARKET_DATA_PROVIDER_PRIORITY=jugaad,yahoo
 
-# Company Logo API (api.dharun.dev)
-DHARUN_LOGO_API_URL=https://api.dharun.dev/v1/logos
-DHARUN_API_KEY=your_dharun_api_key_here
+# Company Logo CDN Settings
+SHAREPERKS_LOGO_BASE_URL=https://company-logo.shareperks.in/logo
 
 # AI Research Provider (Optional: "gemini" or "fallback")
 AI_PROVIDER=fallback

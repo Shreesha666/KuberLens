@@ -75,25 +75,35 @@
 
         <!-- Quick Metrics Bar -->
         <div class="row g-2 pt-3 border-top border-secondary border-opacity-10 small">
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-sm-4 col-md-2">
                 <span class="text-muted d-block">Day Range</span>
                 <span class="fw-semibold num-mono">
                     {% if quote %}₹{{ quote.low|floatformat:1 }} - ₹{{ quote.high|floatformat:1 }}{% else %}—{% endif %}
                 </span>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-sm-4 col-md-2">
                 <span class="text-muted d-block">52-Week Range</span>
                 <span class="fw-semibold num-mono">
                     {% if low_52w and high_52w %}₹{{ low_52w|floatformat:1 }} - ₹{{ high_52w|floatformat:1 }}{% else %}—{% endif %}
                 </span>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-sm-4 col-md-2">
                 <span class="text-muted d-block">Volume</span>
                 <span class="fw-semibold num-mono">{% if quote %}{{ quote.volume }}{% else %}—{% endif %}</span>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-sm-4 col-md-2">
                 <span class="text-muted d-block">Prev Close</span>
                 <span class="fw-semibold num-mono">{% if quote %}₹{{ quote.previous_close|floatformat:2 }}{% else %}—{% endif %}</span>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <span class="text-muted d-block">P/E Ratio</span>
+                <span class="fw-semibold num-mono">{% if fundamental and fundamental.pe_ratio %}{{ fundamental.pe_ratio|floatformat:1 }}{% else %}—{% endif %}</span>
+            </div>
+            <div class="col-6 col-sm-4 col-md-2">
+                <span class="text-muted d-block">Div Yield</span>
+                <span class="fw-semibold num-mono {% if fundamental and fundamental.dividend_yield > 0 %}text-success{% endif %}">
+                    {% if fundamental and fundamental.dividend_yield is not None %}{{ fundamental.dividend_yield|floatformat:2 }}%{% else %}—{% endif %}
+                </span>
             </div>
         </div>
     </div>

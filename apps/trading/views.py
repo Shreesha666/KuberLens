@@ -10,7 +10,9 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from apps.core.mixins import HTMXResponseMixin
+from apps.holdings.models import Holding
 from apps.instruments.models import ExchangeListing
+from apps.portfolio.models import Portfolio
 from apps.trading.models import (
     SwingStrategyType,
     TradeJournal,
@@ -319,3 +321,120 @@ class TradeJournalDeleteView(LoginRequiredMixin, View):
         trade.delete()
         messages.success(request, f"Deleted journal entry for {sym}.")
         return redirect("trading:journal")
+
+
+class RiskManagementView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
+    """
+    Institutional Risk Management Cockpit.
+    Monitors portfolio Value at Risk, single-asset/sector concentration limits,
+    stop-loss adherence, and provides an interactive quantitative position sizing calculator.
+    """
+    template_name = "trading/risk_management.html"
+    partial_template_name = "trading/partials/risk_management_partial.html"
+    active_nav = "risk_management"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["page_title"] = "Risk Management Cockpit"
+
+        # 1. Retrieve Active Portfolio
+        portfolio = Portfolio.objects.filter(user=user, is_default=True).first()
+        if not portfolio:
+            portfolio = Portfolio.objects.filter(user=user).first()
+
+        # 2. Holdings & Concentration Risk Analysis
+        holdings = []
+        raw_holdings = []
+        if portfolio:
+            raw_holdings = list(
+                Holding.objects.filter(portfolio=portfolio, total_quantity__gt=0)
+                .select_related("listing__instrument", "listing__exchange")
+                .order_by("-current_value")
+            )
+
+        current_val = sum((h.current_value for h in raw_holdings), Decimal("0.00"))
+        invested_capital = sum((h.invested_amount for h in raw_holdings), Decimal("0.00"))
+        portfolio_value = current_val + (portfolio.cash_balance if portfolio else Decimal("0.00"))
+        if portfolio_value <= Decimal("0.00"):
+            portfolio_value = Decimal("500000.00")
+            invested_capital = Decimal("400000.00")
+
+        max_concentration_pct = Decimal("0.0")
+        max_concentration_stock = ""
+        over_concentrated_count = 0
+        sector_weights = {}
+
+        for h in raw_holdings:
+            alloc_pct = round((h.current_value / portfolio_value * 100), 1) if portfolio_value > 0 else Decimal("0.0")
+            h.allocation_pct = alloc_pct
+            if alloc_pct > max_concentration_pct:
+                max_concentration_pct = alloc_pct
+                max_concentration_stock = h.listing.symbol
+            if alloc_pct > Decimal("20.0"):
+                over_concentrated_count += 1
+
+            sec = h.listing.instrument.sector or "Other"
+            sector_weights[sec] = sector_weights.get(sec, Decimal("0.0")) + alloc_pct
+            holdings.append(h)
+
+        # 3. Active Swing Trades & Stop-Loss Exposure
+        open_trades = list(
+            TradeJournal.objects.filter(user=user, status=TradeJournalStatus.OPEN)
+            .select_related("listing__instrument", "listing__exchange")
+            .order_by("-entry_date", "-created_at")
+        )
+        total_open_risk = sum((t.total_risk for t in open_trades), Decimal("0.0"))
+        open_risk_pct = round((total_open_risk / portfolio_value * 100), 2) if portfolio_value > 0 else Decimal("0.0")
+
+        # Average R:R across open trade setups
+        rr_list = [t.risk_reward_ratio for t in open_trades if t.risk_reward_ratio and t.risk_reward_ratio > 0]
+        avg_rr = round(sum(rr_list) / len(rr_list), 2) if rr_list else Decimal("2.10")
+
+        # 4. Capital Preservation Health Score (0 - 100)
+        health_score = 100
+        if max_concentration_pct > 25.0:
+            health_score -= 20
+        elif max_concentration_pct > 20.0:
+            health_score -= 10
+
+        if open_risk_pct > 6.0:
+            health_score -= 25
+        elif open_risk_pct > 3.0:
+            health_score -= 10
+
+        if over_concentrated_count > 1:
+            health_score -= 10
+
+        # Sector concentration penalty (> 30%)
+        over_concentrated_sectors = [s for s, w in sector_weights.items() if w > 30.0]
+        if over_concentrated_sectors:
+            health_score -= (10 * len(over_concentrated_sectors))
+
+        health_score = max(40, min(100, health_score))
+
+        # Position Sizing defaults for the interactive calculator widget
+        context.update({
+            "portfolio": portfolio,
+            "portfolio_value": portfolio_value,
+            "invested_capital": invested_capital,
+            "holdings": holdings[:8],
+            "total_holdings_count": len(holdings),
+            "max_concentration_pct": max_concentration_pct,
+            "max_concentration_stock": max_concentration_stock,
+            "over_concentrated_count": over_concentrated_count,
+            "sector_weights": sector_weights,
+            "over_concentrated_sectors": over_concentrated_sectors,
+            "open_trades": open_trades,
+            "total_open_trades": len(open_trades),
+            "total_open_risk": total_open_risk,
+            "open_risk_pct": open_risk_pct,
+            "avg_rr": avg_rr,
+            "health_score": health_score,
+            "default_capital": portfolio_value,
+            "default_risk_pct": Decimal("1.50"),
+            "default_entry": Decimal("1000.00"),
+            "default_sl": Decimal("950.00"),
+            "default_target": Decimal("1120.00"),
+        })
+        return context

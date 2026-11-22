@@ -1,0 +1,359 @@
+{% load core_tags %}
+<div class="container-fluid p-0">
+    <!-- Header & Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'trading:scanner' %}" class="text-decoration-none text-muted">Trading</a></li>
+                    <li class="breadcrumb-item active text-body" aria-current="page">Risk Management</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="h3 fw-bold mb-0">Risk Management Cockpit</h2>
+                <span class="badge {% if health_score >= 80 %}bg-success-subtle text-success border border-success-subtle{% elif health_score >= 60 %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} px-2.5 py-1">
+                    <i class="bi bi-shield-check me-1"></i>Health Score: {{ health_score }}/100
+                </span>
+            </div>
+            <p class="text-muted small mb-0">Quantitative capital preservation, position sizing limits, stop-loss exposure, and single-asset concentration controls.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'trading:journal' %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5"
+               hx-get="{% url 'trading:journal' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-journal-text"></i> Trade Journal
+            </a>
+            <a href="{% url 'trading:scanner' %}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5"
+               hx-get="{% url 'trading:scanner' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-crosshair"></i> Swing Scanner
+            </a>
+        </div>
+    </div>
+
+    <!-- Top KPI Telemetry Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Open Stop-Loss Risk -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card stat-card-elevated border-accent-danger">
+                <div class="kpi-header">
+                    <span class="kpi-title">Total Open Stop Risk</span>
+                    <span class="kpi-icon-pill danger"><i class="bi bi-shield-slash"></i></span>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-value-text text-danger" title="{{ total_open_risk|format_inr }}">
+                        <span data-kpi-counter data-target="{{ total_open_risk|default:0 }}" data-format="inr" data-decimals="2">{{ total_open_risk|format_inr }}</span>
+                    </div>
+                </div>
+                <div class="kpi-footer text-muted">
+                    <span>Portfolio At Risk: <strong class="num-mono text-body"><span data-kpi-counter data-target="{{ open_risk_pct|default:0 }}" data-suffix="%" data-decimals="2">{{ open_risk_pct }}%</span></strong></span>
+                    <span class="badge {% if open_risk_pct <= 3.0 %}bg-success-subtle text-success{% elif open_risk_pct <= 6.0 %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %} py-0.5 px-1.5" style="font-size: 0.7rem;">
+                        {% if open_risk_pct <= 3.0 %}Conservative{% elif open_risk_pct <= 6.0 %}Moderate{% else %}High Risk{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Max Position Concentration -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card stat-card-elevated border-accent-warning">
+                <div class="kpi-header">
+                    <span class="kpi-title">Max Single Stock Weight</span>
+                    <span class="kpi-icon-pill warning"><i class="bi bi-pie-chart"></i></span>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-value-text {% if max_concentration_pct > 20 %}text-warning-emphasis{% else %}text-body{% endif %}" title="{{ max_concentration_pct }}%">
+                        <span data-kpi-counter data-target="{{ max_concentration_pct|default:0 }}" data-suffix="%" data-decimals="1">{{ max_concentration_pct }}%</span>
+                    </div>
+                </div>
+                <div class="kpi-footer text-muted">
+                    <span>Top Stock: <strong class="num-mono text-body">{{ max_concentration_stock|default:"None" }}</strong></span>
+                    <span class="badge {% if max_concentration_pct <= 20 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} py-0.5 px-1.5" style="font-size: 0.7rem;">
+                        {% if max_concentration_pct <= 20 %}Safe (&le; 20% limit){% else %}Over-Allocated{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Average Setup Asymmetry (R:R) -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card stat-card-elevated border-accent-primary">
+                <div class="kpi-header">
+                    <span class="kpi-title">Avg Setup Asymmetry</span>
+                    <span class="kpi-icon-pill primary"><i class="bi bi-aspect-ratio"></i></span>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-value-text text-body" title="1 : {{ avg_rr }}">
+                        1 : <span data-kpi-counter data-target="{{ avg_rr|default:2.0 }}" data-decimals="2">{{ avg_rr }}</span>
+                    </div>
+                </div>
+                <div class="kpi-footer text-muted">
+                    <span>Target Minimum: <strong class="num-mono text-body">1 : 1.50</strong></span>
+                    <span class="badge {% if avg_rr >= 2.0 %}bg-success-subtle text-success{% else %}bg-info-subtle text-info{% endif %} py-0.5 px-1.5" style="font-size: 0.7rem;">
+                        {% if avg_rr >= 2.0 %}Institutional Asymmetry{% else %}Acceptable{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Portfolio Capital Base -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card stat-card-elevated border-accent-success">
+                <div class="kpi-header">
+                    <span class="kpi-title">Capital Base Monitored</span>
+                    <span class="kpi-icon-pill success"><i class="bi bi-bank"></i></span>
+                </div>
+                <div class="kpi-body">
+                    <div class="kpi-value-text text-body" title="{{ portfolio_value|format_inr }}">
+                        <span data-kpi-counter data-target="{{ portfolio_value|default:0 }}" data-format="inr" data-decimals="2">{{ portfolio_value|format_inr }}</span>
+                    </div>
+                </div>
+                <div class="kpi-footer text-muted">
+                    <span>Holdings: <strong class="num-mono text-body">{{ total_holdings_count }}</strong></span>
+                    <span>Open Swings: <strong class="num-mono text-body">{{ total_open_trades }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle Section: Position Sizing Calculator & Concentration Matrix -->
+    <div class="row g-4 mb-4">
+        <!-- Interactive Quantitative Position Sizer -->
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm h-100 border-top border-4 border-primary">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-calculator text-primary fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-body">Quantitative Position Sizer</h5>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
+                        Institutional Rule Engine
+                    </span>
+                </div>
+                <div class="card-body px-4 py-2">
+                    <p class="text-muted small mb-3">
+                        Derives strictly allowed position size from your stop-loss distance and enforces the 20% single-stock capital limit.
+                    </p>
+
+                    <form id="position-sizer-form"
+                          hx-get="{% url 'trading:calculate_size' %}"
+                          hx-trigger="load, input changed delay:200ms"
+                          hx-target="#risk-sizer-result"
+                          class="mb-3">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label text-muted small fw-semibold mb-1">Trading Capital (₹)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted">₹</span>
+                                    <input type="number" step="1000" name="capital" class="form-control form-control-sm num-mono fw-semibold"
+                                           value="{{ default_capital|floatformat:0 }}" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-muted small fw-semibold mb-1">Max Risk Per Trade (%)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.1" min="0.2" max="5.0" name="risk_pct" class="form-control form-control-sm num-mono fw-semibold"
+                                           value="1.5" required>
+                                    <span class="input-group-text bg-light text-muted">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label text-muted small fw-semibold mb-1">Entry Price (₹)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted">₹</span>
+                                    <input type="number" step="0.05" name="entry" class="form-control form-control-sm num-mono"
+                                           value="1000.00" required>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label text-muted small fw-semibold mb-1 text-danger">Stop Loss (₹)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted">₹</span>
+                                    <input type="number" step="0.05" name="stop_loss" class="form-control form-control-sm num-mono text-danger fw-semibold"
+                                           value="950.00" required>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label text-muted small fw-semibold mb-1 text-success">Target (₹)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted">₹</span>
+                                    <input type="number" step="0.05" name="target" class="form-control form-control-sm num-mono text-success fw-semibold"
+                                           value="1120.00">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Real-time HTMX Calculation Target Container -->
+                    <div id="risk-sizer-result" class="mt-2">
+                        <div class="text-center py-3 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Computing risk constraints...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Concentration & Exposure Matrix -->
+        <div class="col-12 col-xl-7">
+            <div class="card border-0 shadow-sm h-100 border-top border-4 border-warning">
+                <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pie-chart text-warning fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-body">Portfolio Concentration & Exposure Limits</h5>
+                    </div>
+                    <span class="badge bg-secondary-subtle text-secondary border small">
+                        SEBI Risk Guidelines (&le; 20% single-stock)
+                    </span>
+                </div>
+                <div class="card-body px-4 py-2">
+                    {% if over_concentrated_count > 0 %}
+                    <div class="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning flex-shrink-0"></i>
+                        <div>
+                            <strong>Concentration Alert:</strong> You have <strong>{{ over_concentrated_count }}</strong> holding(s) exceeding the safe 20% allocation ceiling. Consider trimming to protect against idiosyncratic downside.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if over_concentrated_sectors %}
+                    <div class="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-shield-x fs-5 text-danger flex-shrink-0"></i>
+                        <div>
+                            <strong>Sector Exposure Warning:</strong> Sector <strong>{{ over_concentrated_sectors|join:", " }}</strong> exceeds the recommended 30% aggregate threshold.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Holdings Allocation Progress Bars -->
+                    <h6 class="text-uppercase fw-bold text-muted small mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">Single-Stock Exposure (% of Net Worth)</h6>
+                    {% if holdings %}
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        {% for h in holdings %}
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center small mb-1">
+                                <span class="d-flex align-items-center gap-1.5">
+                                    {% stock_logo h.listing size=20 %}
+                                    <strong class="text-body">{{ h.listing.symbol }}</strong>
+                                    <span class="text-muted" style="font-size: 0.72rem;">({{ h.listing.instrument.sector }})</span>
+                                </span>
+                                <span class="num-mono fw-bold {% if h.allocation_pct > 20 %}text-danger{% elif h.allocation_pct > 15 %}text-warning{% else %}text-body{% endif %}">
+                                    {{ h.allocation_pct }}%
+                                    <span class="text-muted fw-normal">({{ h.current_value|format_inr }})</span>
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar {% if h.allocation_pct > 20 %}bg-danger{% elif h.allocation_pct > 15 %}bg-warning{% else %}bg-primary{% endif %}"
+                                     role="progressbar"
+                                     style="width: {{ h.allocation_pct }}%;"
+                                     aria-valuenow="{{ h.allocation_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-folder2-open fs-2 d-block text-secondary opacity-50 mb-1"></i>
+                        No active portfolio holdings detected to compute concentration.
+                    </div>
+                    {% endif %}
+
+                    <!-- Sector Exposure Breakdown -->
+                    <h6 class="text-uppercase fw-bold text-muted small mb-2 pt-2 border-top" style="font-size: 0.72rem; letter-spacing: 0.05em;">Sector Weights</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        {% for sec, weight in sector_weights.items %}
+                        <span class="badge {% if weight > 30 %}bg-danger-subtle text-danger border border-danger-subtle{% elif weight > 20 %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-light text-body border{% endif %} px-2.5 py-1.5">
+                            {{ sec }}: <strong class="num-mono ms-1">{{ weight }}%</strong>
+                        </span>
+                        {% empty %}
+                        <span class="text-muted small">No sector allocations recorded.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Section: Active Open Trades & Stop-Loss Monitor -->
+    <div class="card border-0 shadow-sm mb-4 border-top border-4 border-danger">
+        <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-slash text-danger fs-5"></i>
+                <h5 class="fw-bold mb-0 text-body">Active Swing Trades &amp; Stop-Loss Exposure Monitor</h5>
+            </div>
+            <a href="{% url 'trading:journal_add' %}" class="btn btn-sm btn-outline-primary"
+               hx-get="{% url 'trading:journal_add' %}" hx-target="#main-content" hx-push-url="true">
+                <i class="bi bi-plus-circle me-1"></i> Log Trade
+            </a>
+        </div>
+        <div class="card-body px-4 py-2">
+            {% if open_trades %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th>Instrument</th>
+                            <th>Strategy</th>
+                            <th>Entry Price</th>
+                            <th class="text-danger">Stop Loss</th>
+                            <th class="text-success">Target Price</th>
+                            <th>Qty</th>
+                            <th>Capital Allocated</th>
+                            <th class="text-danger">Risk at Stop</th>
+                            <th>R:R</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for t in open_trades %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% stock_logo t.listing size=28 %}
+                                    <div>
+                                        <a href="{% url 'stocks:stock_detail' t.listing.symbol %}"
+                                           hx-get="{% url 'stocks:stock_detail' t.listing.symbol %}"
+                                           hx-target="#main-content" hx-push-url="true"
+                                           class="fw-bold text-decoration-none text-body">
+                                            {{ t.listing.symbol }}
+                                        </a>
+                                        <div class="text-muted extra-small">{{ t.listing.exchange.code }} &bull; {{ t.entry_date|date:"d M Y" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-secondary-subtle text-body border">{{ t.strategy }}</span></td>
+                            <td class="num-mono fw-semibold">₹{{ t.entry_price|floatformat:2 }}</td>
+                            <td class="num-mono fw-bold text-danger">₹{{ t.stop_loss|floatformat:2 }}</td>
+                            <td class="num-mono fw-bold text-success">₹{{ t.target_price|floatformat:2 }}</td>
+                            <td class="num-mono">{{ t.quantity }}</td>
+                            <td class="num-mono">₹{{ t.total_invested|floatformat:2 }}</td>
+                            <td class="num-mono fw-bold text-danger">₹{{ t.total_risk|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge {% if t.risk_reward_ratio >= 2.0 %}bg-success-subtle text-success{% else %}bg-primary-subtle text-primary{% endif %} num-mono">
+                                    1 : {{ t.risk_reward_ratio }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'trading:journal_close' t.id %}"
+                                   hx-get="{% url 'trading:journal_close' t.id %}"
+                                   hx-target="#main-content" hx-push-url="true"
+                                   class="btn btn-xs btn-outline-danger py-0.5 px-2">
+                                    Close / Exit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                <i class="bi bi-shield-check fs-2 d-block text-success opacity-75 mb-1"></i>
+                Zero open stop-loss risk exposure. All swing capital is preserved and uncommitted.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

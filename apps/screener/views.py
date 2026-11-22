@@ -72,6 +72,7 @@ class ScreenerView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
                 "min_roce",
                 "max_debt_to_equity",
                 "min_sales_growth",
+                "min_dividend_yield",
             ]:
                 val = self.request.GET.get(field)
                 if val:

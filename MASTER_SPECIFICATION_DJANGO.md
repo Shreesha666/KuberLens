@@ -2353,13 +2353,21 @@ Users can inspect upcoming/live/closed IPOs, calculate bid capital, estimate all
 
 ## Phase 5 — Screener and watchlists
 
-- Custom screening.
-- Saved filters.
-- Watchlists.
-- Stock monitoring.
+- Custom screening with multi-factor technical, fundamental, and market criteria.
+- One-Click Strategy Presets:
+  - Deep Value (`preset=value`)
+  - High Quality Moats (`preset=quality`)
+  - High Growth (`preset=growth`)
+  - Bullish Momentum (`preset=momentum`)
+  - Oversold Pullback (`preset=oversold_swing`)
+  - Bluechip Large Cap Leaders (`preset=large_cap_leaders`)
+  - High Dividend Yield (`preset=dividend` - Dividend Yield ≥ 2.0%, Debt/Equity ≤ 1.2, Quality Score ≥ 50)
+- Parameter filter builder with Dividend Yield (`min_dividend_yield`), P/E, ROE, ROCE, Sales Growth, D/E, RSI, MAs.
+- Saved filters and export to CSV.
+- Watchlists and quick stock monitoring.
 
 Acceptance:
-Users can create and save screeners and watchlists.
+Users can create, run, export, and save custom screeners and watchlists with one-click presets.
 
 ## Phase 6 — Swing trading
 

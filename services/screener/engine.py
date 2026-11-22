@@ -76,6 +76,15 @@ SYSTEM_PRESETS = {
             "min_score": 60,
         },
     },
+    "dividend": {
+        "name": "High Dividend Yield",
+        "description": "Consistent income generators with Dividend Yield ≥ 2.0%, sustainable Debt/Equity ≤ 1.2, and Quality Score ≥ 50.",
+        "filters": {
+            "min_dividend_yield": Decimal("2.0"),
+            "max_debt_to_equity": Decimal("1.2"),
+            "min_score": 50,
+        },
+    },
 }
 
 
@@ -261,6 +270,16 @@ class ScreenerEngine:
                 else:
                     reasons.append(f"Sales Growth {curr_sg:.1f}% ≥ {sg_lim}%")
 
+            # 11. Fundamental: Dividend Yield
+            min_div = filters.get("min_dividend_yield")
+            if min_div is not None and min_div != "":
+                div_lim = Decimal(str(min_div))
+                curr_div = fund.dividend_yield if fund and fund.dividend_yield is not None else None
+                if curr_div is None or curr_div < div_lim:
+                    passes = False
+                else:
+                    reasons.append(f"Div Yield {curr_div:.2f}% ≥ {div_lim:.2f}%")
+
             if passes:
                 cur_price = quote.price if quote else (tech.sma_20 if tech else Decimal("0.0"))
                 chg = quote.change if quote else Decimal("0.0")
@@ -281,6 +300,7 @@ class ScreenerEngine:
                     "pe_ratio": fund.pe_ratio if fund and fund.pe_ratio is not None else None,
                     "roe": fund.roe if fund and fund.roe is not None else None,
                     "debt_to_equity": fund.debt_to_equity if fund and fund.debt_to_equity is not None else None,
+                    "dividend_yield": fund.dividend_yield if fund and fund.dividend_yield is not None else None,
                     "reasons": reasons,
                 }
                 matched_results.append(item_data)
@@ -296,6 +316,7 @@ class ScreenerEngine:
                                 "pe": str(fund.pe_ratio) if fund and fund.pe_ratio is not None else None,
                                 "roe": str(fund.roe) if fund and fund.roe is not None else None,
                                 "score": fund.overall_score if fund else None,
+                                "dividend_yield": str(fund.dividend_yield) if fund and fund.dividend_yield is not None else None,
                             },
                             match_reasons=reasons,
                             calculation_version="v1.0",
@@ -328,6 +349,7 @@ class ScreenerEngine:
             "P/E",
             "ROE (%)",
             "Debt/Equity",
+            "Div Yield (%)",
             "Match Reasons",
         ])
 
@@ -345,6 +367,7 @@ class ScreenerEngine:
                 f"{r['pe_ratio']:.1f}" if r["pe_ratio"] is not None else "-",
                 f"{r['roe']:.1f}%" if r["roe"] is not None else "-",
                 f"{r['debt_to_equity']:.2f}" if r["debt_to_equity"] is not None else "-",
+                f"{r['dividend_yield']:.2f}%" if r.get("dividend_yield") is not None else "-",
                 " | ".join(r["reasons"]),
             ])
 

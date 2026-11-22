@@ -76,6 +76,7 @@ def screener_data(db):
         roce=Decimal("19.2"),
         debt_to_equity=Decimal("0.45"),
         revenue_growth_yoy=Decimal("16.8"),
+        dividend_yield=Decimal("2.40"),
     )
 
     # 2. Oversold Small Cap Stock: TINY
@@ -122,6 +123,7 @@ def screener_data(db):
         roce=Decimal("9.0"),
         debt_to_equity=Decimal("1.40"),
         revenue_growth_yoy=Decimal("-4.2"),
+        dividend_yield=Decimal("0.50"),
     )
 
     return {
@@ -169,6 +171,18 @@ class TestScreenerEngine:
         assert "RELIANCE" in symbols
         assert "TINY" not in symbols
 
+    def test_filter_by_dividend_yield(self, screener_data):
+        # Dividend filter: Min dividend yield 2.0%
+        filters = {"min_dividend_yield": "2.0"}
+        results = ScreenerEngine.run_screen(filters)
+        symbols = [r["symbol"] for r in results]
+        assert "RELIANCE" in symbols
+        assert "TINY" not in symbols
+
+        rel = next(r for r in results if r["symbol"] == "RELIANCE")
+        assert any("Div Yield" in reason for reason in rel["reasons"])
+        assert rel["dividend_yield"] == Decimal("2.40")
+
     def test_match_reasons_explanation(self, screener_data):
         filters = {
             "market_cap": "LARGE",
@@ -214,6 +228,15 @@ class TestScreenerViews:
         assert resp.status_code == 200
         assert "High Quality Moats" in resp.content.decode()
         assert "RELIANCE" in resp.content.decode()
+
+    def test_preset_dividend_screener_execution(self, screener_data, client):
+        client.force_login(screener_data["user"])
+        url = f"{reverse('screener:index')}?preset=dividend"
+        resp = client.get(url)
+        assert resp.status_code == 200
+        assert "High Dividend Yield" in resp.content.decode()
+        assert "RELIANCE" in resp.content.decode()
+        assert "TINY" not in resp.content.decode()
 
     def test_save_and_delete_screener_configuration(self, screener_data, client):
         user = screener_data["user"]

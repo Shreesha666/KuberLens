@@ -37,6 +37,7 @@
 .risk-kpi-card.accent-amber::before { background: #f59e0b; }
 .risk-kpi-card.accent-blue::before { background: #2563eb; }
 .risk-kpi-card.accent-rose::before { background: #ef4444; }
+.risk-kpi-card.accent-slate::before { background: #94a3b8; }
 
 .risk-kpi-title {
   font-size: 0.75rem;

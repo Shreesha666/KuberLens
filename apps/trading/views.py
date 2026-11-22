@@ -387,9 +387,9 @@ class RiskManagementView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
         total_open_risk = sum((t.total_risk for t in open_trades), Decimal("0.0"))
         open_risk_pct = round((total_open_risk / portfolio_value * 100), 2) if portfolio_value > 0 else Decimal("0.0")
 
-        # Average R:R across open trade setups
+        # Average R:R across open trade setups (None if zero open trades)
         rr_list = [t.risk_reward_ratio for t in open_trades if t.risk_reward_ratio and t.risk_reward_ratio > 0]
-        avg_rr = round(sum(rr_list) / len(rr_list), 2) if rr_list else Decimal("2.10")
+        avg_rr = round(sum(rr_list) / len(rr_list), 2) if rr_list else None
 
         # 4. Capital Preservation Health Score (0 - 100)
         health_score = 100

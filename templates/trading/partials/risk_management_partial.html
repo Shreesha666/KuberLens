@@ -74,23 +74,33 @@
             </div>
         </div>
 
-        <!-- 3. Average Setup Asymmetry (R:R) -->
+        <!-- 3. Average Risk / Reward (R:R) -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="risk-kpi-card {% if avg_rr >= 2.0 %}accent-emerald{% else %}accent-blue{% endif %}">
+            <div class="risk-kpi-card {% if avg_rr and avg_rr >= 2.0 %}accent-emerald{% elif avg_rr %}accent-blue{% else %}accent-slate{% endif %}">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="risk-kpi-title">Avg Setup Asymmetry</span>
-                    <span class="risk-kpi-icon {% if avg_rr >= 2.0 %}icon-emerald{% else %}icon-blue{% endif %}">
-                        <i class="bi bi-aspect-ratio"></i>
+                    <span class="risk-kpi-title">Avg Risk-to-Reward</span>
+                    <span class="risk-kpi-icon {% if avg_rr and avg_rr >= 2.0 %}icon-emerald{% elif avg_rr %}icon-blue{% else %}icon-slate{% endif %}">
+                        <i class="bi bi-bullseye"></i>
                     </span>
                 </div>
-                <div class="risk-kpi-value text-body" title="1 : {{ avg_rr }}">
-                    1 : <span data-kpi-counter data-target="{{ avg_rr|default:2.0 }}" data-decimals="2">{{ avg_rr }}</span>
+                <div class="risk-kpi-value text-body" title="{% if avg_rr %}1 : {{ avg_rr }}{% else %}No Open Trades{% endif %}">
+                    {% if avg_rr %}
+                        1 : <span data-kpi-counter data-target="{{ avg_rr }}" data-decimals="2">{{ avg_rr }}</span>
+                    {% else %}
+                        <span class="text-muted fs-2">—</span>
+                    {% endif %}
                 </div>
                 <div class="risk-kpi-footer">
-                    <span>Target Minimum: <strong class="num-mono text-body">1 : 1.50</strong></span>
-                    <span class="badge {% if avg_rr >= 2.0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} py-0.5 px-1.5" style="font-size: 0.7rem;">
-                        {% if avg_rr >= 2.0 %}Institutional Asymmetry{% else %}Acceptable{% endif %}
-                    </span>
+                    <span>Target: <strong class="num-mono text-body">&ge; 1 : 1.50</strong></span>
+                    {% if avg_rr %}
+                        <span class="badge {% if avg_rr >= 2.0 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} py-0.5 px-1.5" style="font-size: 0.7rem;">
+                            {% if avg_rr >= 2.0 %}Optimal (&ge; 2.0){% else %}Acceptable{% endif %}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-muted border border-secondary-subtle py-0.5 px-1.5" style="font-size: 0.7rem;">
+                            0 Open Swings
+                        </span>
+                    {% endif %}
                 </div>
             </div>
         </div>

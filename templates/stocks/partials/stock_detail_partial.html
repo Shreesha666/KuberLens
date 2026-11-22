@@ -994,68 +994,57 @@
 
             <!-- Corporate Dividends History Table -->
             <div class="card border border-secondary border-opacity-10 shadow-none">
-                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-2.5 px-3 d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold small text-body text-uppercase" style="letter-spacing: 0.04em;">
-                        <i class="bi bi-table text-secondary me-1"></i> 5-Year Dividend Action Log
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-3 px-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold small text-body d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-secondary"></i> Dividend Payout History
                     </span>
                     <span class="badge bg-secondary-subtle text-secondary small">
                         {{ dividend_history_5y|length }} Distributions
                     </span>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 small">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light border-bottom text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
                             <tr>
-                                <th class="text-start ps-3 py-2.5">Ex-Dividend Date</th>
-                                <th class="text-end py-2.5">Dividend (₹)</th>
-                                <th class="text-center py-2.5">Type</th>
-                                <th class="text-start py-2.5">Payment Date</th>
-                                <th class="text-end pe-3 py-2.5">Yield (%)</th>
+                                <th class="text-start ps-3 py-2.5 fw-semibold">Ex-Dividend Date</th>
+                                <th class="text-end py-2.5 fw-semibold">Dividend</th>
+                                <th class="text-center py-2.5 fw-semibold">Type</th>
+                                <th class="text-start py-2.5 fw-semibold ps-4">Payment Date</th>
+                                <th class="text-end pe-3 py-2.5 fw-semibold">Yield</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="small">
                             {% for div in dividend_history_5y %}
                             <tr>
-                                <td class="ps-3 py-2.5">
-                                    <div class="fw-bold text-body num-mono">{{ div.ex_date|date:"M d, Y" }}</div>
-                                    <span class="text-muted extra-small" style="font-size: 0.70rem;">NSE / BSE Record</span>
+                                <td class="ps-3 py-3 fw-bold text-body num-mono">
+                                    {{ div.ex_date|date:"M d, Y" }}
                                 </td>
-                                <td class="text-end py-2.5">
-                                    <span class="fw-bold num-mono fs-6 text-body">₹{{ div.amount|floatformat:2 }}</span>
-                                    <span class="text-muted extra-small d-block" style="font-size: 0.70rem;">per share</span>
+                                <td class="text-end py-3 fw-bold num-mono text-body">
+                                    ₹{{ div.amount|floatformat:2 }}
                                 </td>
-                                <td class="text-center py-2.5">
+                                <td class="text-center py-3">
                                     {% if div.type == 'FINAL' %}
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" title="Final Annual Dividend">
-                                        <i class="bi bi-calendar-check me-1"></i>Final
+                                    <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded border border-primary-subtle bg-primary-subtle text-primary" style="font-size: 0.75rem; font-weight: 500;">
+                                        <i class="bi bi-calendar-check" style="font-size: 0.70rem;"></i> Final
                                     </span>
                                     {% elif div.type == 'SPECIAL' %}
-                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" title="Special Dividend">
-                                        <i class="bi bi-star-fill me-1"></i>Special
+                                    <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded border border-warning-subtle bg-warning-subtle text-warning-emphasis" style="font-size: 0.75rem; font-weight: 500;">
+                                        <i class="bi bi-star-fill" style="font-size: 0.70rem;"></i> Special
                                     </span>
                                     {% else %}
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" title="Interim Dividend">
-                                        <i class="bi bi-calendar-event me-1"></i>Interim
+                                    <span class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded border border-success-subtle bg-success-subtle text-success" style="font-size: 0.75rem; font-weight: 500;">
+                                        <i class="bi bi-calendar-event" style="font-size: 0.70rem;"></i> Interim
                                     </span>
                                     {% endif %}
                                 </td>
-                                <td class="text-start py-2.5">
-                                    <div class="d-flex align-items-center gap-1.5 text-body">
-                                        <i class="bi bi-calendar3 text-muted" style="font-size: 0.75rem;"></i>
-                                        <span class="num-mono">{{ div.payment_date|date:"M d, Y" }}</span>
-                                    </div>
-                                    <span class="badge bg-light text-muted border extra-small mt-0.5" style="font-size: 0.65rem;">
-                                        {{ div.status }}
-                                    </span>
+                                <td class="text-start py-3 ps-4 text-body num-mono">
+                                    {{ div.payment_date|date:"M d, Y" }}
                                 </td>
-                                <td class="text-end pe-3 py-2.5">
+                                <td class="text-end pe-3 py-3 fw-bold num-mono text-body">
                                     {% if div.yield_pct %}
-                                    <span class="fw-bold num-mono text-body">{{ div.yield_pct|floatformat:2 }}%</span>
-                                    {% if div.close_price %}
-                                    <span class="text-muted extra-small d-block" style="font-size: 0.70rem;">at ₹{{ div.close_price|floatformat:2 }}</span>
-                                    {% endif %}
+                                    {{ div.yield_pct|floatformat:2 }}%
                                     {% else %}
-                                    <span class="text-muted num-mono">—</span>
+                                    <span class="text-muted fw-normal">—</span>
                                     {% endif %}
                                 </td>
                             </tr>

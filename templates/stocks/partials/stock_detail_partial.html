@@ -1006,11 +1006,11 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light border-bottom text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
                             <tr>
-                                <th class="text-start ps-3 py-2.5 fw-semibold" style="width: 25%;">Ex-Dividend Date</th>
-                                <th class="text-end py-2.5 fw-semibold" style="width: 18%;">Dividend</th>
-                                <th class="text-center py-2.5 fw-semibold" style="width: 18%;">Type</th>
-                                <th class="text-start py-2.5 fw-semibold ps-4" style="width: 20%;">Payment Date</th>
-                                <th class="text-end pe-3 py-2.5 fw-semibold" style="width: 19%;">Yield</th>
+                                <th class="text-start ps-3 py-3 fw-semibold" style="width: 25%;">Ex-Dividend Date</th>
+                                <th class="text-end py-3 fw-semibold" style="width: 18%;">Dividend (₹)</th>
+                                <th class="text-center py-3 fw-semibold" style="width: 18%;">Type</th>
+                                <th class="text-start py-3 fw-semibold ps-4" style="width: 20%;">Payment Date</th>
+                                <th class="text-end pe-3 py-3 fw-semibold" style="width: 19%;">Yield (%)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1024,17 +1024,11 @@
                                 </td>
                                 <td class="text-center py-3">
                                     {% if div.type == 'FINAL' %}
-                                    <span class="d-inline-flex align-items-center gap-1.5 text-body fw-medium small">
-                                        <i class="bi bi-calendar-check text-primary"></i> Final
-                                    </span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 fw-medium" style="font-size: 0.76rem;">Final</span>
                                     {% elif div.type == 'SPECIAL' %}
-                                    <span class="d-inline-flex align-items-center gap-1.5 text-warning-emphasis fw-semibold small">
-                                        <i class="bi bi-star-fill text-warning"></i> Special
-                                    </span>
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 fw-semibold" style="font-size: 0.76rem;">Special</span>
                                     {% else %}
-                                    <span class="d-inline-flex align-items-center gap-1.5 text-body fw-medium small">
-                                        <i class="bi bi-calendar-event text-success"></i> Interim
-                                    </span>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2.5 py-1 fw-medium" style="font-size: 0.76rem;">Interim</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-start py-3 ps-4 text-secondary">

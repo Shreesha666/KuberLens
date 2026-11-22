@@ -1,0 +1,157 @@
+/* ==========================================================================
+   KuberLens - Dashboard KPI Metric Card & Number Counter Animation Engine
+   Inspired by modern CSS Houdini & high-precision JavaScript animation.
+   ========================================================================== */
+
+/* 1. Modern CSS Houdini Custom Property for Pure CSS Counters */
+@property --kpi-num {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+/* 2. Reusable KPI Metric Card Styling */
+.kpi-card {
+  position: relative;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: 14px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 4px -1px rgba(15, 23, 42, 0.04);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
+  overflow: hidden;
+}
+
+[data-bs-theme="dark"] .kpi-card {
+  background: var(--bg-surface, #1e293b);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.4);
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+[data-bs-theme="dark"] .kpi-card:hover {
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.6);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+/* Accent Borders */
+.kpi-card.accent-primary { border-top: 3px solid #3b82f6; }
+.kpi-card.accent-success { border-top: 3px solid #10b981; }
+.kpi-card.accent-warning { border-top: 3px solid #f59e0b; }
+.kpi-card.accent-info    { border-top: 3px solid #06b6d4; }
+.kpi-card.accent-danger  { border-top: 3px solid #ef4444; }
+
+/* KPI Icon Badges with Soft Glow */
+.kpi-icon-pill {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.kpi-card:hover .kpi-icon-pill {
+  transform: scale(1.08);
+}
+
+.kpi-icon-pill.primary {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+[data-bs-theme="dark"] .kpi-icon-pill.primary {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.kpi-icon-pill.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+[data-bs-theme="dark"] .kpi-icon-pill.success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.kpi-icon-pill.warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+[data-bs-theme="dark"] .kpi-icon-pill.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.kpi-icon-pill.info {
+  background: rgba(6, 182, 212, 0.12);
+  color: #0891b2;
+}
+[data-bs-theme="dark"] .kpi-icon-pill.info {
+  background: rgba(6, 182, 212, 0.2);
+  color: #22d3ee;
+}
+
+/* 3. Number Counter Element */
+.kpi-value-text {
+  font-family: var(--font-mono, 'JetBrains Mono', 'SF Mono', Consolas, monospace);
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+  letter-spacing: -0.02em;
+  display: inline-block;
+  will-change: contents;
+}
+
+/* Pulse highlight on value update */
+.kpi-updated {
+  animation: kpiGlow 0.8s ease-out;
+}
+
+@keyframes kpiGlow {
+  0% {
+    transform: scale(1.04);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* 4. Pure CSS Counter Fallback (for whole numbers without decimals) */
+.kpi-counter-css {
+  counter-reset: kpi-num var(--kpi-num);
+  animation: kpiCountUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.kpi-counter-css::after {
+  content: counter(kpi-num);
+}
+
+@keyframes kpiCountUp {
+  from { --kpi-num: 0; }
+  to { --kpi-num: var(--target-num, 100); }
+}
+
+/* 5. Accessibility: Respect User's Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card {
+    transition: none !important;
+  }
+  .kpi-card:hover {
+    transform: none !important;
+  }
+  .kpi-value-text,
+  .kpi-counter-css {
+    animation: none !important;
+  }
+}
+

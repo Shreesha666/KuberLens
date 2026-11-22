@@ -37,37 +37,39 @@
     <div class="row g-3 mb-4">
         <!-- Portfolio Net Worth -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated border-accent-primary h-100">
+            <div class="kpi-card accent-primary stat-card-elevated border-accent-primary h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Portfolio Net Worth</span>
-                        <h3 class="fw-bold num-mono mt-1 mb-0" style="font-size: 1.625rem;">{{ summary_stats.portfolio_value|format_inr }}</h3>
+                        <h3 class="fw-bold num-mono mt-1 mb-0 kpi-value-text text-body" style="font-size: 1.625rem;">
+                            <span data-kpi-counter data-target="{{ summary_stats.portfolio_value|default:0 }}" data-format="inr" data-decimals="2">{{ summary_stats.portfolio_value|format_inr }}</span>
+                        </h3>
                     </div>
-                    <span class="badge badge-soft-info p-2 rounded-3"><i class="bi bi-wallet2 fs-5"></i></span>
+                    <span class="kpi-icon-pill primary"><i class="bi bi-wallet2"></i></span>
                 </div>
                 <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
-                    <span>Invested: <strong class="num-mono text-secondary">{{ summary_stats.invested_capital|format_inr }}</strong></span>
-                    <span>Holdings: <strong class="num-mono text-secondary">{{ summary_stats.holdings_count }}</strong></span>
+                    <span>Invested: <strong class="num-mono text-secondary"><span data-kpi-counter data-target="{{ summary_stats.invested_capital|default:0 }}" data-format="inr" data-decimals="2">{{ summary_stats.invested_capital|format_inr }}</span></strong></span>
+                    <span>Holdings: <strong class="num-mono text-secondary"><span data-kpi-counter data-target="{{ summary_stats.holdings_count|default:0 }}" data-decimals="0">{{ summary_stats.holdings_count }}</span></strong></span>
                 </div>
             </div>
         </div>
 
         <!-- Unrealised P&L -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated border-accent-success h-100">
+            <div class="kpi-card accent-success stat-card-elevated border-accent-success h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">Unrealised P&L</span>
-                        <h3 class="fw-bold num-mono mt-1 mb-0 {{ summary_stats.unrealised_pnl|financial_color }}" style="font-size: 1.625rem;">
-                            {{ summary_stats.unrealised_pnl|format_inr }}
+                        <h3 class="fw-bold num-mono mt-1 mb-0 kpi-value-text {{ summary_stats.unrealised_pnl|financial_color }}" style="font-size: 1.625rem;">
+                            <span data-kpi-counter data-target="{{ summary_stats.unrealised_pnl|default:0 }}" data-format="inr" data-decimals="2">{{ summary_stats.unrealised_pnl|format_inr }}</span>
                         </h3>
                     </div>
-                    <span class="badge badge-soft-success p-2 rounded-3"><i class="bi bi-graph-up fs-5"></i></span>
+                    <span class="kpi-icon-pill success"><i class="bi bi-graph-up"></i></span>
                 </div>
                 <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
                     <span class="text-muted">Net Return:</span>
                     <span class="badge {% if summary_stats.total_return_pct >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if summary_stats.total_return_pct >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono px-2 py-0.5">
-                        {% if summary_stats.total_return_pct > 0 %}+{% endif %}{{ summary_stats.total_return_pct }}%
+                        <span data-kpi-counter data-target="{{ summary_stats.total_return_pct|default:0 }}" data-suffix="%" data-decimals="1" data-show-sign="true">{% if summary_stats.total_return_pct > 0 %}+{% endif %}{{ summary_stats.total_return_pct }}%</span>
                     </span>
                 </div>
             </div>
@@ -75,20 +77,20 @@
 
         <!-- Day P&L -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated border-accent-warning h-100">
+            <div class="kpi-card accent-warning stat-card-elevated border-accent-warning h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">1-Day Session P&L</span>
-                        <h3 class="fw-bold num-mono mt-1 mb-0 {{ summary_stats.day_pnl|financial_color }}" style="font-size: 1.625rem;">
-                            {{ summary_stats.day_pnl|format_inr }}
+                        <h3 class="fw-bold num-mono mt-1 mb-0 kpi-value-text {{ summary_stats.day_pnl|financial_color }}" style="font-size: 1.625rem;">
+                            <span data-kpi-counter data-target="{{ summary_stats.day_pnl|default:0 }}" data-format="inr" data-decimals="2">{{ summary_stats.day_pnl|format_inr }}</span>
                         </h3>
                     </div>
-                    <span class="badge badge-soft-warning p-2 rounded-3"><i class="bi bi-clock-history fs-5"></i></span>
+                    <span class="kpi-icon-pill warning"><i class="bi bi-clock-history"></i></span>
                 </div>
                 <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
                     <span class="text-muted">Today's Move:</span>
                     <span class="badge {% if summary_stats.day_pnl_pct >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if summary_stats.day_pnl_pct >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold num-mono px-2 py-0.5">
-                        {% if summary_stats.day_pnl_pct > 0 %}+{% endif %}{{ summary_stats.day_pnl_pct }}%
+                        <span data-kpi-counter data-target="{{ summary_stats.day_pnl_pct|default:0 }}" data-suffix="%" data-decimals="2" data-show-sign="true">{% if summary_stats.day_pnl_pct > 0 %}+{% endif %}{{ summary_stats.day_pnl_pct }}%</span>
                     </span>
                 </div>
             </div>
@@ -96,16 +98,18 @@
 
         <!-- Active Swing Setups -->
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="stat-card-elevated border-accent-info h-100">
+            <div class="kpi-card accent-info stat-card-elevated border-accent-info h-100">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: var(--font-size-xs, 0.72rem); letter-spacing: 0.05em;">High-Conviction Radar</span>
-                        <h3 class="fw-bold num-mono mt-1 mb-0 text-primary" style="font-size: 1.625rem;">{{ summary_stats.active_setups_count }}</h3>
+                        <h3 class="fw-bold num-mono mt-1 mb-0 kpi-value-text text-primary" style="font-size: 1.625rem;">
+                            <span data-kpi-counter data-target="{{ summary_stats.active_setups_count|default:0 }}" data-decimals="0">{{ summary_stats.active_setups_count }}</span>
+                        </h3>
                     </div>
-                    <span class="badge badge-soft-info p-2 rounded-3"><i class="bi bi-lightning-charge fs-5"></i></span>
+                    <span class="kpi-icon-pill info"><i class="bi bi-lightning-charge"></i></span>
                 </div>
                 <div class="mt-3 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.75rem;">
-                    <span>Active IPOs: <strong class="num-mono text-secondary">{{ summary_stats.active_ipos_count }} Live</strong></span>
+                    <span>Active IPOs: <strong class="num-mono text-secondary"><span data-kpi-counter data-target="{{ summary_stats.active_ipos_count|default:0 }}" data-decimals="0">{{ summary_stats.active_ipos_count }}</span> Live</strong></span>
                     <a href="{% url 'trading:scanner' %}" class="text-primary text-decoration-none fw-semibold"
                        hx-get="{% url 'trading:scanner' %}" hx-target="#main-content" hx-push-url="true">
                         Explore &rarr;

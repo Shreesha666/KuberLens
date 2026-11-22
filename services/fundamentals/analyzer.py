@@ -311,10 +311,14 @@ class FundamentalAnalyzer:
 
             # Calculate accurate yield based on real TTM rate and current price
             price = info.get("currentPrice") or info.get("regularMarketPrice") or info.get("previousClose")
-            if dec_rate and price:
+            if dec_rate is not None and dec_rate > 0 and price:
                 dec_yield = Decimal(str(round((float(dec_rate) / float(price)) * 100.0, 2)))
             elif yd is not None:
                 dec_yield = Decimal(str(round((yd * 100) if yd < 1.0 else yd, 2)))
+            elif info:
+                # Stock was found on Yahoo Finance but has no declared cash dividends
+                dec_rate = Decimal("0.00")
+                dec_yield = Decimal("0.00")
             else:
                 dec_yield = None
 

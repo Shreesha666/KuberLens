@@ -285,6 +285,16 @@ class ScreenerEngine:
                 chg = quote.change if quote else Decimal("0.0")
                 chg_pct = quote.change_percent if quote else Decimal("0.0")
 
+                # Actual declared corporate dividend per share (₹) and yield (%)
+                div_rate = fund.dividend_rate if (fund and fund.dividend_rate is not None) else None
+                div_yield = fund.dividend_yield if (fund and fund.dividend_yield is not None) else None
+                if div_rate is not None:
+                    div_amount = div_rate
+                elif div_yield is not None and cur_price:
+                    div_amount = round((cur_price * div_yield) / Decimal("100.0"), 2)
+                else:
+                    div_amount = None
+
                 item_data = {
                     "listing": listing,
                     "symbol": listing.symbol,
@@ -300,8 +310,8 @@ class ScreenerEngine:
                     "pe_ratio": fund.pe_ratio if fund and fund.pe_ratio is not None else None,
                     "roe": fund.roe if fund and fund.roe is not None else None,
                     "debt_to_equity": fund.debt_to_equity if fund and fund.debt_to_equity is not None else None,
-                    "dividend_yield": fund.dividend_yield if fund and fund.dividend_yield is not None else None,
-                    "dividend_amount": round((cur_price * fund.dividend_yield) / Decimal("100.0"), 2) if (fund and fund.dividend_yield and cur_price) else None,
+                    "dividend_yield": div_yield,
+                    "dividend_amount": div_amount,
                     "reasons": reasons,
                 }
                 matched_results.append(item_data)

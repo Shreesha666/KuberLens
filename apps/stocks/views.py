@@ -145,6 +145,10 @@ class StockDetailView(HTMXResponseMixin, DetailView):
             .first()
         )
         if not listing:
+            from services.market_data.auto_ingest import AutoIngestionService
+            listing = AutoIngestionService.get_or_create_listing(symbol)
+
+        if not listing:
             raise Http404(f"Instrument listing '{symbol}' not found.")
         return listing
 

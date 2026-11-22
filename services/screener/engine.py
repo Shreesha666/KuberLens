@@ -95,45 +95,73 @@ class ScreenerEngine:
         filters: dict[str, Any],
         configuration: ScreenerConfiguration | None = None,
         save_results: bool = False,
+        sort_by: str | None = None,
+        sort_dir: str = "asc",
     ) -> list[dict[str, Any]]:
         """
         Executes a screen against the entire active exchange listings universe.
         Returns matched records with human-readable reasons explaining why conditions passed.
+        Supports high-performance snapshot preloading, fast rejection pruning, and multi-field sorting.
         """
+        from django.db.models import Max
+
+        # Push database-level filters directly to the listings QuerySet
         listings = (
             ExchangeListing.objects.filter(is_tradeable=True, is_primary=True)
             .select_related("instrument", "exchange")
             .order_by("symbol")
         )
+        if filters.get("market_cap"):
+            listings = listings.filter(instrument__market_cap_category=filters["market_cap"])
+        if filters.get("sector"):
+            listings = listings.filter(instrument__sector__iexact=filters["sector"])
 
-        # Preload latest snapshots in a database-agnostic manner
-        latest_quotes: dict[str, MarketQuote] = {}
-        for q in MarketQuote.objects.order_by("-retrieved_at"):
-            lid = str(q.listing_id)
-            if lid not in latest_quotes:
-                latest_quotes[lid] = q
+        # High-performance single-pass snapshot preloading using max ID grouping
+        q_ids = MarketQuote.objects.values("listing_id").annotate(max_id=Max("id")).values_list("max_id", flat=True)
+        latest_quotes = {str(q.listing_id): q for q in MarketQuote.objects.filter(id__in=q_ids)}
 
-        latest_tech: dict[str, TechnicalIndicatorSnapshot] = {}
-        for t in TechnicalIndicatorSnapshot.objects.order_by("-timestamp"):
-            lid = str(t.listing_id)
-            if lid not in latest_tech:
-                latest_tech[lid] = t
+        t_ids = TechnicalIndicatorSnapshot.objects.values("listing_id").annotate(max_id=Max("id")).values_list("max_id", flat=True)
+        latest_tech = {str(t.listing_id): t for t in TechnicalIndicatorSnapshot.objects.filter(id__in=t_ids)}
 
-        latest_fund: dict[str, FundamentalSnapshot] = {}
-        for f in FundamentalSnapshot.objects.order_by("-calculated_at"):
-            iid = str(f.instrument_id)
-            if iid not in latest_fund:
-                latest_fund[iid] = f
+        f_ids = FundamentalSnapshot.objects.values("instrument_id").annotate(max_id=Max("id")).values_list("max_id", flat=True)
+        latest_fund = {str(f.instrument_id): f for f in FundamentalSnapshot.objects.filter(id__in=f_ids)}
+
+        has_tech_filter = any(
+            filters.get(k) for k in ["trend_signal", "min_rsi", "max_rsi", "above_sma20", "above_sma50", "above_sma200"]
+        )
+        has_fund_filter = any(
+            filters.get(k)
+            for k in [
+                "min_score",
+                "max_pe",
+                "min_pe",
+                "min_roe",
+                "min_roce",
+                "max_debt_to_equity",
+                "min_sales_growth",
+                "min_profit_growth",
+                "min_dividend_yield",
+            ]
+        )
 
         matched_results: list[dict[str, Any]] = []
         now = timezone.now()
         audit_records: list[ScreenerResult] = []
 
         for listing in listings:
+            lid_str = str(listing.id)
             inst = listing.instrument
-            quote = latest_quotes.get(str(listing.id))
-            tech = latest_tech.get(str(listing.id))
-            fund = latest_fund.get(str(inst.id))
+            iid_str = str(inst.id)
+
+            # Fast rejection pruning: skip listings without snapshots if indicator filters are required
+            if has_tech_filter and lid_str not in latest_tech:
+                continue
+            if has_fund_filter and iid_str not in latest_fund:
+                continue
+
+            quote = latest_quotes.get(lid_str)
+            tech = latest_tech.get(lid_str)
+            fund = latest_fund.get(iid_str)
 
             passes = True
             reasons = []
@@ -338,7 +366,47 @@ class ScreenerEngine:
         if save_results and audit_records:
             ScreenerResult.objects.bulk_create(audit_records)
 
+        if sort_by:
+            matched_results = cls.sort_results(matched_results, sort_by=sort_by, sort_dir=sort_dir)
+
         return matched_results
+
+    @classmethod
+    def sort_results(
+        cls,
+        results: list[dict[str, Any]],
+        sort_by: str,
+        sort_dir: str = "asc",
+    ) -> list[dict[str, Any]]:
+        """
+        Sorts screener results by the specified field with nulls always placed at the end.
+        """
+        if not sort_by:
+            return results
+
+        is_desc = str(sort_dir).lower() == "desc"
+
+        def key_func(item: dict[str, Any]):
+            val = item.get(sort_by)
+            is_missing = val is None or val == "" or val == "-"
+            if is_desc:
+                # Descending: valid items first (flag=1), descending by val; missing items last (flag=0)
+                if is_missing:
+                    return (0, 0.0)
+                try:
+                    return (1, float(val))
+                except (ValueError, TypeError):
+                    return (1, str(val).lower())
+            else:
+                # Ascending: valid items first (flag=0), ascending by val; missing items last (flag=1)
+                if is_missing:
+                    return (1, 0.0)
+                try:
+                    return (0, float(val))
+                except (ValueError, TypeError):
+                    return (0, str(val).lower())
+
+        return sorted(results, key=key_func, reverse=is_desc)
 
     @classmethod
     def export_to_csv(cls, results: list[dict[str, Any]]) -> str:

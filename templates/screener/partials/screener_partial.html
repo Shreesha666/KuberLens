@@ -12,7 +12,7 @@
     </div>
     <div class="d-flex gap-2">
         {% if results %}
-        <a href="{% url 'screener:export' %}?{% for k, v in active_filters.items %}{{ k }}={{ v }}&{% endfor %}" class="btn btn-outline-secondary btn-sm">
+        <a href="{% url 'screener:export' %}?sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-download"></i> Export CSV ({{ matched_count }})
         </a>
         {% endif %}
@@ -231,17 +231,17 @@
         <div class="d-flex align-items-center gap-2">
             <span class="small text-muted">Rows:</span>
             <div class="btn-group btn-group-sm" role="group" aria-label="Rows per page">
-                <a href="?per_page=25{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                <a href="?per_page=25&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                    class="btn btn-outline-secondary {% if per_page == 25 %}active fw-bold{% endif %}"
-                   hx-get="?per_page=25{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   hx-get="?per_page=25&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                    hx-target="#main-content" hx-push-url="true">25</a>
-                <a href="?per_page=50{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                <a href="?per_page=50&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                    class="btn btn-outline-secondary {% if per_page == 50 %}active fw-bold{% endif %}"
-                   hx-get="?per_page=50{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   hx-get="?per_page=50&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                    hx-target="#main-content" hx-push-url="true">50</a>
-                <a href="?per_page=100{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                <a href="?per_page=100&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                    class="btn btn-outline-secondary {% if per_page == 100 %}active fw-bold{% endif %}"
-                   hx-get="?per_page=100{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   hx-get="?per_page=100&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                    hx-target="#main-content" hx-push-url="true">100</a>
             </div>
         </div>
@@ -253,15 +253,114 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light text-muted small text-uppercase">
                     <tr>
-                        <th class="ps-4">Stock</th>
+                        <!-- Stock Symbol Sort -->
+                        <th class="ps-4">
+                            <a href="?sort=symbol&dir={% if sort_by == 'symbol' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'symbol' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center"
+                               hx-get="?sort=symbol&dir={% if sort_by == 'symbol' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by Stock Symbol">
+                                Stock
+                                {% if sort_by == 'symbol' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>Sector & Cap</th>
-                        <th class="text-end">LTP</th>
+
+                        <!-- LTP (Price) Sort -->
+                        <th class="text-end">
+                            <a href="?sort=price&dir={% if sort_by == 'price' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'price' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center justify-content-end"
+                               hx-get="?sort=price&dir={% if sort_by == 'price' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by Last Traded Price">
+                                LTP
+                                {% if sort_by == 'price' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+
                         <th>Trend</th>
-                        <th class="text-end">RSI 14</th>
-                        <th class="text-end">Quality Score</th>
-                        <th class="text-end">P/E</th>
-                        <th class="text-end">ROE</th>
-                        <th class="text-end">Div Yield</th>
+
+                        <!-- RSI 14 Sort -->
+                        <th class="text-end">
+                            <a href="?sort=rsi&dir={% if sort_by == 'rsi' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'rsi' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center justify-content-end"
+                               hx-get="?sort=rsi&dir={% if sort_by == 'rsi' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by 14-Day RSI">
+                                RSI 14
+                                {% if sort_by == 'rsi' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+
+                        <!-- Quality Score Sort -->
+                        <th class="text-end">
+                            <a href="?sort=overall_score&dir={% if sort_by == 'overall_score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'overall_score' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center justify-content-end"
+                               hx-get="?sort=overall_score&dir={% if sort_by == 'overall_score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by Fundamental Quality Score">
+                                Quality Score
+                                {% if sort_by == 'overall_score' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+
+                        <!-- P/E Ratio Sort -->
+                        <th class="text-end">
+                            <a href="?sort=pe_ratio&dir={% if sort_by == 'pe_ratio' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'pe_ratio' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center justify-content-end"
+                               hx-get="?sort=pe_ratio&dir={% if sort_by == 'pe_ratio' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by Price to Earnings (P/E)">
+                                P/E
+                                {% if sort_by == 'pe_ratio' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+
+                        <!-- ROE Sort -->
+                        <th class="text-end">
+                            <a href="?sort=roe&dir={% if sort_by == 'roe' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'roe' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center justify-content-end"
+                               hx-get="?sort=roe&dir={% if sort_by == 'roe' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by Return on Equity (ROE)">
+                                ROE
+                                {% if sort_by == 'roe' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+
+                        <!-- Div Yield Sort -->
+                        <th class="text-end">
+                            <a href="?sort=dividend_yield&dir={% if sort_by == 'dividend_yield' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               class="text-decoration-none {% if sort_by == 'dividend_yield' %}text-primary fw-bold{% else %}text-muted{% endif %} d-inline-flex align-items-center justify-content-end"
+                               hx-get="?sort=dividend_yield&dir={% if sort_by == 'dividend_yield' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}&page=1"
+                               hx-target="#main-content" hx-push-url="true" title="Sort by Dividend Yield (%)">
+                                Div Yield
+                                {% if sort_by == 'dividend_yield' %}
+                                    <i class="bi bi-arrow-{% if sort_dir == 'desc' %}down{% else %}up{% endif %} ms-1 text-primary"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down-up opacity-25 ms-1" style="font-size: 0.72rem;"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+
                         <th>Why Matched?</th>
                         <th class="text-center pe-4">Actions</th>
                     </tr>
@@ -379,8 +478,8 @@
                     <!-- First Page Link -->
                     {% if page_obj.number > 2 %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
-                           hx-get="?page=1&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                        <a class="page-link" href="?page=1&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-get="?page=1&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                            hx-target="#main-content" hx-push-url="true" title="First Page">
                             <i class="bi bi-chevron-double-left"></i>
                         </a>
@@ -389,9 +488,9 @@
 
                     <!-- Previous Page Link -->
                     <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-                        <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}{% else %}#{% endif %}"
+                        <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}{% else %}#{% endif %}"
                            {% if page_obj.has_previous %}
-                           hx-get="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-get="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                            hx-target="#main-content" hx-push-url="true"
                            {% endif %} aria-label="Previous">
                             &laquo; Prev
@@ -408,8 +507,8 @@
                             </li>
                         {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_num }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
-                                   hx-get="?page={{ page_num }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                                <a class="page-link" href="?page={{ page_num }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                                   hx-get="?page={{ page_num }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                                    hx-target="#main-content" hx-push-url="true">
                                     {{ page_num }}
                                 </a>
@@ -419,9 +518,9 @@
 
                     <!-- Next Page Link -->
                     <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-                        <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}{% else %}#{% endif %}"
+                        <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}{% else %}#{% endif %}"
                            {% if page_obj.has_next %}
-                           hx-get="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-get="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                            hx-target="#main-content" hx-push-url="true"
                            {% endif %} aria-label="Next">
                             Next &raquo;
@@ -431,8 +530,8 @@
                     <!-- Last Page Link -->
                     {% if page_obj.number < page_obj.paginator.num_pages|add:"-1" %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
-                           hx-get="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-get="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}&sort={{ sort_by }}&dir={{ sort_dir }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
                            hx-target="#main-content" hx-push-url="true" title="Last Page">
                             <i class="bi bi-chevron-double-right"></i>
                         </a>

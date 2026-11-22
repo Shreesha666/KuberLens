@@ -272,6 +272,9 @@ class TestScreenerViews:
         assert "RELIANCE" in resp.content.decode()
 
     def test_screener_pagination(self, screener_data, client):
+        from django.core.cache import cache
+        cache.clear()
+
         # Create additional instruments to trigger multi-page pagination
         exchange = Exchange.objects.get(code="NSE")
         now = timezone.now()
@@ -283,10 +286,10 @@ class TestScreenerViews:
                 sector="Test",
                 market_cap_category="MID",
             )
-            l = ExchangeListing.objects.create(instrument=inst, exchange=exchange, symbol=f"STK{i}", is_tradeable=True)
+            l = ExchangeListing.objects.create(instrument=inst, exchange=exchange, symbol=f"STK{i:02d}", is_tradeable=True)
             MarketQuote.objects.create(
                 listing=l,
-                price=Decimal("100.00"),
+                price=Decimal(str(100.0 + i * 10)),
                 open=Decimal("100.00"),
                 high=Decimal("105.00"),
                 low=Decimal("99.00"),
@@ -322,3 +325,16 @@ class TestScreenerViews:
         assert resp_50.status_code == 200
         assert resp_50.context["page_obj"].paginator.per_page == 50
         assert len(resp_50.context["results"]) >= 31
+
+        # Test Sorting by LTP descending
+        resp_sort_price = client.get(f"{reverse('screener:index')}?sort=price&dir=desc")
+        assert resp_sort_price.status_code == 200
+        top_stock = resp_sort_price.context["results"][0]
+        # RELIANCE has price 2800.00, which is higher than STK29 (390.0)
+        assert top_stock["symbol"] == "RELIANCE"
+
+        # Test Sorting by P/E ascending
+        resp_sort_pe = client.get(f"{reverse('screener:index')}?sort=pe_ratio&dir=asc")
+        assert resp_sort_pe.status_code == 200
+        # RELIANCE has PE 22.5, items with PE should come before None
+        assert resp_sort_pe.context["results"][0]["pe_ratio"] is not None

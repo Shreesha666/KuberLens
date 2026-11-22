@@ -906,17 +906,20 @@ To prevent external network latency and eliminate broken images across the UI, i
 1. **Local-Disk-First Architecture**:
    - Stock vector logos are stored permanently on local disk at `static/branding/stock_logos/{SYMBOL}.svg` (or `.png`).
    - Served in **< 1 millisecond** with zero external network requests and **0 MB server RAM consumption**.
-2. **Multi-Tier Resolution Strategy**:
-   - **Tier 1 (Local Disk)**: Reads pre-downloaded vector files directly from disk.
+2. **Multi-Tier Resolution Strategy & Sources**:
+   - **Tier 1 (Local Disk)**: Reads pre-downloaded vector files directly from disk (`< 1ms`).
    - **Tier 2 (In-Memory Cache)**: Checks Django cache for high-concurrency partial requests.
-   - **Tier 3 (Verified Vector CDNs)**: Fetches official SVG vectors from Indian equity repositories (`dharunashokkumar/indian-listed-company-logos` for NSE and BSE) with a short 2.0s timeout. Upon a successful response, it immediately writes the file to `static/branding/stock_logos/` (on-demand write-through disk cache).
-   - **Tier 4 (Deterministic Vector Monogram)**: If an obscure SME/microcap stock lacks an official logo, generates a high-DPI SVG monogram badge using the symbol's initials and a deterministic brand color palette. The monogram is permanently saved to disk so future requests render in 0 ms.
+   - **Tier 3 (Shareperks ISIN CDN - Primary CDN)**: Queries `https://company-logo.shareperks.in/logo/{isin}/icon.svg` (officially co-engineered by Dharun Ashokkumar and Shareperks). Resolves vector SVGs directly via the instrument's unique ISIN code (e.g. `INE002A01018` for Reliance, `INE155A01022` for Tata Motors, `INE062A01020` for SBI).
+   - **Tier 4 (Cross-Exchange & Direct Symbol CDNs)**: Fetches official SVG vectors from `dharunashokkumar/indian-listed-company-logos` on GitHub/jsDelivr (`data/logos/nse/NSE_{symbol}.svg` and `data/logos/bse/BSE_{symbol}.svg`). Automatically maps BSE numeric scrip codes (e.g. `500112`) to their sibling primary NSE ticker (`SBIN`) to guarantee official vector coverage across exchanges.
+   - **Tier 5 (Legacy API Gateway / Custom Endpoint)**: Checks `DHARUN_LOGO_API_URL` (`api.dharun.dev`). Note: When `api.dharun.dev` experiences Cloudflare 530 origin errors, the service automatically and transparently bypasses it using Tier 3 (Shareperks ISIN CDN) and Tier 4 (GitHub/jsDelivr raw vector CDNs).
+   - **Tier 6 (Deterministic Vector Monogram)**: If an obscure SME/microcap stock or ETF basket lacks an official logo, generates a high-DPI SVG monogram badge using the symbol's initials and a deterministic brand color palette. The monogram is permanently saved to disk so future requests render in 0 ms.
 3. **Batch Synchronization Command**:
    ```bash
    python manage.py sync_stock_logos [--force] [--concurrency 16] [--symbols SYMBOL1,SYMBOL2]
    ```
-   - Multithreaded CLI tool downloading official SVGs for the database's active equities and pre-generating monograms for all remaining listings.
-   - Storage footprint is extremely lightweight: **~360 KB for 284 benchmark stocks** (< 0.4 MB) and projected at ~20 MB for the full 8,000+ NSE/BSE universe.
+   - Multithreaded CLI tool synchronizing logos for all distinct symbols currently present in the database's `ExchangeListing` table.
+   - *Active Tracking Universe vs Full Market Universe*: The command queries `ExchangeListing.objects.values_list("symbol", flat=True).distinct()`. In the initial seeded database, there are **284 benchmark listings** (Nifty 50, Nifty Next 50, Nifty Midcap 150 benchmark listings, IPO radar, and tracked equities). As additional stocks from the broader ~2,700 NSE or ~5,700 BSE universe are imported, their logos are automatically saved on-demand via Tier 3/4 write-through caching, or can be bulk-synced using this command.
+   - Storage footprint is extremely lightweight: **~365 KB for 284 benchmark stocks** (< 0.4 MB) and projected at ~20 MB for the full 8,000+ NSE/BSE universe with zero RAM overhead.
 
 ---
 

@@ -102,11 +102,16 @@ The platform is designed as a **Django Modular Monolith** adhering to clean doma
 
 ## 3. Company Logo Subsystem & Offline Vector Persistence
 
-The platform implements an institutional-grade, **Local-Disk-First** vector brand logo subsystem (`services/logos/service.py`) and internal streaming proxy (`/stocks/<symbol>/logo/`). It guarantees **< 1ms response times**, zero external network delays, zero memory footprint, and 100% offline resilience across all 7,000+ Indian equities on NSE and BSE.
+The platform implements an institutional-grade, **Local-Disk-First** vector brand logo subsystem (`services/logos/service.py`) and internal streaming proxy (`/stocks/<symbol>/logo/`). It guarantees **< 1ms response times**, zero external network delays, zero memory footprint, and 100% offline resilience across all Indian equities on NSE and BSE.
 
 ### Architecture & Service Design
 - **Local-Disk-First Lookups:** Logos are permanently stored as vector SVGs in `static/branding/stock_logos/{SYMBOL}.svg`. If the file exists on disk, it is served directly in sub-millisecond time with **0 MB RAM usage**.
-- **On-Demand Write-Through Disk Cache:** If an un-cached stock is queried, the system attempts a fast CDN lookup against verified Indian stock repositories (`dharunashokkumar/indian-listed-company-logos` for NSE and BSE). Upon success, the SVG is written directly to disk so future requests never hit the network.
+- **ISIN & Multi-CDN Resolution:**
+  - **Shareperks ISIN CDN (`company-logo.shareperks.in`):** Primary production vector CDN co-engineered by Dharun Ashokkumar and Shareperks, resolving logos by unique ISIN (`https://company-logo.shareperks.in/logo/{isin}/icon.svg`).
+  - **GitHub / jsDelivr CDNs (`dharunashokkumar/indian-listed-company-logos`):** Serves exact NSE and BSE vector SVGs (`data/logos/nse/NSE_{symbol}.svg`).
+  - **Cross-Exchange Sibling Resolution:** Automatically maps BSE numeric scrip codes (e.g. `500112`) to their NSE listing (`SBIN`) to guarantee official vector downloads across exchanges.
+  - **Legacy API Gateway Fallback:** In the event that `api.dharun.dev` encounters Cloudflare 530 origin downtime, the service automatically and seamlessly falls back to Shareperks and GitHub CDNs.
+- **On-Demand Write-Through Disk Cache:** If an un-cached stock is queried, the system attempts a fast CDN lookup. Upon success, the SVG is written directly to disk so future requests never hit the network.
 - **Deterministic SVG Monogram Fallbacks:** For obscure SME or micro-cap listings lacking an official logo, the service automatically generates a crisp, high-DPI SVG monogram badge (using the symbol's initials and a deterministic brand color palette) and saves it to disk. **Broken images and blank placeholders are 100% eliminated.**
 - **Batch Synchronization CLI Command:**
   Pre-download official vector logos and pre-generate monograms for your entire active stock universe in one shot:
@@ -120,7 +125,8 @@ The platform implements an institutional-grade, **Local-Disk-First** vector bran
   # Download specific tickers
   python manage.py sync_stock_logos --symbols RELIANCE,TCS,INFY,HDFCBANK
   ```
-  *Footprint:* **~360 KB for 284 benchmark stocks** (< 0.4 MB total disk space). Even for the full universe of 8,000+ NSE/BSE stocks, total disk storage remains capped at ~20 MB with zero impact on RAM.
+  *Active Database Universe vs Total Market Universe:* The command operates on all distinct symbols currently stored in `ExchangeListing`. The seeded database contains **284 benchmark listings** (Nifty 50, Nifty Next 50, Nifty Midcap 150 benchmark listings, IPO radar, and tracked equities). Whenever additional stocks from the broader ~2,700 NSE or ~5,700 BSE universe are added to the database, running this command syncs their logos instantly.
+  *Footprint:* **~365 KB for 284 benchmark stocks** (< 0.4 MB total disk space). Even for the full universe of 8,000+ NSE/BSE stocks, total disk storage remains capped at ~20 MB with zero impact on RAM.
 
 - **Template Tag Helper:**
   Any Django template can render a responsive, self-healing logo using the `stock_logo` tag:

@@ -57,7 +57,8 @@ class TestCompanyLogos:
 
     def test_stock_logo_caching_behavior(self):
         url = reverse("stocks:stock_logo", kwargs={"symbol": "INFY"})
-        cache_key = "stock_logo_svg_v1:INFY"
+        cache_key = f"{CompanyLogoService.CACHE_KEY_PREFIX}INFY"
+        cache.delete(cache_key)
 
         assert cache.get(cache_key) is None
         response = self.client.get(url)

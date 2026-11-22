@@ -89,10 +89,45 @@ class ScreenerView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
             {k: str(v) if isinstance(v, Decimal) else v for k, v in active_filters.items()}
         )
 
+        from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+
         # Run screener
         results = ScreenerEngine.run_screen(filters=active_filters)
-        context["results"] = results
-        context["matched_count"] = len(results)
+        total_matched = len(results)
+        context["matched_count"] = total_matched
+
+        # Pagination support (defaults to 25 stocks per page)
+        per_page = self.request.GET.get("per_page", 25)
+        try:
+            per_page = int(per_page)
+            if per_page not in [10, 25, 50, 100]:
+                per_page = 25
+        except (ValueError, TypeError):
+            per_page = 25
+
+        paginator = Paginator(results, per_page)
+        page_number = self.request.GET.get("page", 1)
+        try:
+            page_obj = paginator.get_page(page_number)
+        except (EmptyPage, PageNotAnInteger):
+            page_obj = paginator.get_page(1)
+
+        context["paginator"] = paginator
+        context["page_obj"] = page_obj
+        context["results"] = page_obj.object_list
+        context["per_page"] = per_page
+        if paginator.num_pages > 1:
+            context["elided_page_range"] = paginator.get_elided_page_range(
+                page_obj.number, on_each_side=2, on_ends=1
+            )
+        else:
+            context["elided_page_range"] = []
+
+        # Preserved query string for pagination links
+        query_params = self.request.GET.copy()
+        query_params.pop("page", None)
+        query_params.pop("per_page", None)
+        context["filter_querystring"] = query_params.urlencode()
 
         return context
 

@@ -196,3 +196,4 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"  ✓ Full NSE Universe Ingested: {created_list} new listings, {created_inst} new instruments.")
         )
+

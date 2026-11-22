@@ -216,11 +216,36 @@
 
 <!-- Screener Results Table -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
             <h5 class="fw-bold mb-0 text-body">Matching Stocks ({{ matched_count }})</h5>
-            <small class="text-muted">Filtered across pre-calculated indicators & fundamentals</small>
+            <small class="text-muted">
+                {% if page_obj.paginator.count > 0 %}
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ matched_count }} stocks &bull; Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                {% else %}
+                Filtered across pre-calculated indicators & fundamentals
+                {% endif %}
+            </small>
         </div>
+        {% if matched_count > 10 %}
+        <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted">Rows:</span>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Rows per page">
+                <a href="?per_page=25{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   class="btn btn-outline-secondary {% if per_page == 25 %}active fw-bold{% endif %}"
+                   hx-get="?per_page=25{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   hx-target="#main-content" hx-push-url="true">25</a>
+                <a href="?per_page=50{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   class="btn btn-outline-secondary {% if per_page == 50 %}active fw-bold{% endif %}"
+                   hx-get="?per_page=50{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   hx-target="#main-content" hx-push-url="true">50</a>
+                <a href="?per_page=100{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   class="btn btn-outline-secondary {% if per_page == 100 %}active fw-bold{% endif %}"
+                   hx-get="?per_page=100{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                   hx-target="#main-content" hx-push-url="true">100</a>
+            </div>
+        </div>
+        {% endif %}
     </div>
     <div class="card-body px-0 py-2">
         {% if results %}
@@ -341,6 +366,82 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination Controls -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer bg-transparent d-flex flex-wrap justify-content-between align-items-center py-3 px-4 border-top gap-2">
+            <div class="text-muted small">
+                Showing <span class="fw-semibold text-body">{{ page_obj.start_index }}</span> to <span class="fw-semibold text-body">{{ page_obj.end_index }}</span> of <span class="fw-semibold text-body">{{ matched_count }}</span> stocks
+            </div>
+            
+            <nav aria-label="Screener Pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <!-- First Page Link -->
+                    {% if page_obj.number > 2 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-get="?page=1&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-target="#main-content" hx-push-url="true" title="First Page">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <!-- Previous Page Link -->
+                    <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                        <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}{% else %}#{% endif %}"
+                           {% if page_obj.has_previous %}
+                           hx-get="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-target="#main-content" hx-push-url="true"
+                           {% endif %} aria-label="Previous">
+                            &laquo; Prev
+                        </a>
+                    </li>
+
+                    <!-- Elided Page Numbers -->
+                    {% for page_num in elided_page_range %}
+                        {% if page_num == page_obj.paginator.ELLIPSIS %}
+                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                        {% elif page_num == page_obj.number %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link fw-bold">{{ page_num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_num }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                                   hx-get="?page={{ page_num }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                                   hx-target="#main-content" hx-push-url="true">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- Next Page Link -->
+                    <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}{% else %}#{% endif %}"
+                           {% if page_obj.has_next %}
+                           hx-get="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-target="#main-content" hx-push-url="true"
+                           {% endif %} aria-label="Next">
+                            Next &raquo;
+                        </a>
+                    </li>
+
+                    <!-- Last Page Link -->
+                    {% if page_obj.number < page_obj.paginator.num_pages|add:"-1" %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-get="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}{% if filter_querystring %}&{{ filter_querystring }}{% endif %}"
+                           hx-target="#main-content" hx-push-url="true" title="Last Page">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
         {% else %}
         <div class="text-center py-5 text-muted">
             <i class="bi bi-funnel fs-1 d-block mb-2 text-secondary opacity-50"></i>

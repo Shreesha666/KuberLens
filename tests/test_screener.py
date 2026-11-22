@@ -270,3 +270,55 @@ class TestScreenerViews:
         assert resp["Content-Type"] == "text/csv"
         assert "attachment; filename=" in resp["Content-Disposition"]
         assert "RELIANCE" in resp.content.decode()
+
+    def test_screener_pagination(self, screener_data, client):
+        # Create additional instruments to trigger multi-page pagination
+        exchange = Exchange.objects.get(code="NSE")
+        now = timezone.now()
+        for i in range(30):
+            inst = Instrument.objects.create(
+                isin=f"INE_TEST_{i:04d}",
+                display_name=f"Stock {i}",
+                legal_name=f"Stock {i} Limited",
+                sector="Test",
+                market_cap_category="MID",
+            )
+            l = ExchangeListing.objects.create(instrument=inst, exchange=exchange, symbol=f"STK{i}", is_tradeable=True)
+            MarketQuote.objects.create(
+                listing=l,
+                price=Decimal("100.00"),
+                open=Decimal("100.00"),
+                high=Decimal("105.00"),
+                low=Decimal("99.00"),
+                close=Decimal("100.00"),
+                previous_close=Decimal("98.00"),
+                change=Decimal("2.00"),
+                change_percent=Decimal("2.04"),
+                volume=1000,
+                source_provider="YAHOO",
+                source_type="DELAYED",
+                freshness_status="FRESH",
+                source_timestamp=now,
+                retrieved_at=now,
+            )
+
+        client.force_login(screener_data["user"])
+        # Page 1 (default 25 per page)
+        resp1 = client.get(reverse("screener:index"))
+        assert resp1.status_code == 200
+        assert resp1.context["page_obj"].number == 1
+        assert resp1.context["page_obj"].paginator.per_page == 25
+        assert len(resp1.context["results"]) == 25
+        assert "Showing 1–25" in resp1.content.decode() or "Showing 1" in resp1.content.decode()
+
+        # Page 2
+        resp2 = client.get(f"{reverse('screener:index')}?page=2")
+        assert resp2.status_code == 200
+        assert resp2.context["page_obj"].number == 2
+        assert len(resp2.context["results"]) >= 5
+
+        # Custom per_page=50
+        resp_50 = client.get(f"{reverse('screener:index')}?per_page=50")
+        assert resp_50.status_code == 200
+        assert resp_50.context["page_obj"].paginator.per_page == 50
+        assert len(resp_50.context["results"]) >= 31

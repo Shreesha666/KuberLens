@@ -151,3 +151,4 @@ class AutoIngestionService:
 
         logger.info("Successfully auto-ingested %s into local catalog.", symbol)
         return listing
+

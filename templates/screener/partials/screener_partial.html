@@ -287,7 +287,11 @@
                             {% if r.roe %}{{ r.roe|floatformat:1 }}%{% else %}-{% endif %}
                         </td>
                         <td class="text-end num-mono">
-                            {% if r.dividend_yield %}
+                            {% if r.dividend_amount %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" title="Est. Annual Dividend: ₹{{ r.dividend_amount|floatformat:2 }} per share">
+                                ₹{{ r.dividend_amount|floatformat:1 }} ({{ r.dividend_yield|floatformat:1 }}%)
+                            </span>
+                            {% elif r.dividend_yield %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle">{{ r.dividend_yield|floatformat:2 }}%</span>
                             {% else %}-{% endif %}
                         </td>

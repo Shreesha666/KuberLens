@@ -102,7 +102,13 @@
             <div class="col-6 col-sm-4 col-md-2">
                 <span class="text-muted d-block">Div Yield</span>
                 <span class="fw-semibold num-mono {% if fundamental and fundamental.dividend_yield > 0 %}text-success{% endif %}">
-                    {% if fundamental and fundamental.dividend_yield is not None %}{{ fundamental.dividend_yield|floatformat:2 }}%{% else %}—{% endif %}
+                    {% if dividend_amount %}
+                        ₹{{ dividend_amount|floatformat:2 }} <span class="small fw-normal text-muted">({{ fundamental.dividend_yield|floatformat:2 }}%)</span>
+                    {% elif fundamental and fundamental.dividend_yield is not None %}
+                        {{ fundamental.dividend_yield|floatformat:2 }}%
+                    {% else %}
+                        —
+                    {% endif %}
                 </span>
             </div>
         </div>
@@ -833,8 +839,16 @@
                             <span class="fw-bold num-mono text-gain">{{ fundamental.roce|default:"—" }}%</span>
                         </div>
                         <div class="d-flex justify-content-between small py-1">
-                            <span class="text-muted">Dividend Yield</span>
-                            <span class="fw-bold num-mono">{{ fundamental.dividend_yield|default:"0.0" }}%</span>
+                            <span class="text-muted">Dividend Yield (Annual)</span>
+                            <span class="fw-bold num-mono text-gain">
+                                {% if dividend_amount %}
+                                    ₹{{ dividend_amount|floatformat:2 }} <span class="text-muted fw-normal">({{ fundamental.dividend_yield|floatformat:2 }}%)</span>
+                                {% elif fundamental and fundamental.dividend_yield is not None %}
+                                    {{ fundamental.dividend_yield|default:"0.0" }}%
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
                         </div>
                     </div>
                 </div>

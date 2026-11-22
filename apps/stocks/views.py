@@ -251,6 +251,17 @@ class StockDetailView(HTMXResponseMixin, DetailView):
 
         context["fundamental"] = fund_snapshot
 
+        # Calculate estimated annual dividend amount per share (DPS in ₹)
+        dividend_amount = None
+        if fund_snapshot and fund_snapshot.dividend_yield and quote and quote.price:
+            try:
+                dividend_amount = round(
+                    (Decimal(str(quote.price)) * Decimal(str(fund_snapshot.dividend_yield))) / Decimal("100.0"), 2
+                )
+            except Exception:
+                dividend_amount = None
+        context["dividend_amount"] = dividend_amount
+
         # 5. Peer Listings in same sector
         context["peers"] = (
             ExchangeListing.objects.filter(

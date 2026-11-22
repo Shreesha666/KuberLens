@@ -14,7 +14,7 @@ from apps.accounts.models import CustomUser
 from apps.fundamental_analysis.models import FundamentalSnapshot
 from apps.holdings.models import Holding
 from apps.instruments.models import Exchange, ExchangeListing, Instrument
-from apps.market.models import HistoricalCandle
+from apps.market.models import HistoricalCandle, MarketQuote
 from apps.portfolio.models import Portfolio
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 
@@ -127,8 +127,29 @@ def seeded_stocks(db):
         sector_pe=Decimal("22.0"),
         roe=Decimal("14.5"),
         debt_to_equity=Decimal("0.40"),
+        dividend_yield=Decimal("2.40"),
         overall_score=78,
         calculation_version="fund-v2.0.0",
+    )
+
+    # MarketQuote for RELIANCE
+    now_ts = timezone.now()
+    MarketQuote.objects.create(
+        listing=rel_listing,
+        price=Decimal("2850.00"),
+        open=Decimal("2800.00"),
+        high=Decimal("2860.00"),
+        low=Decimal("2790.00"),
+        close=Decimal("2850.00"),
+        previous_close=Decimal("2820.00"),
+        change=Decimal("30.00"),
+        change_percent=Decimal("1.06"),
+        volume=1500000,
+        source_provider="YAHOO",
+        source_type="DELAYED",
+        freshness_status="FRESH",
+        source_timestamp=now_ts,
+        retrieved_at=now_ts,
     )
 
     return {"rel": rel_listing, "tcs": tcs_listing}
@@ -234,6 +255,8 @@ class TestStockViews:
         assert "Existing Holder Strategy" in content
         assert "New Prospective Investor" in content
         assert "Optimal Entry Zone" in content
+        assert "68.40" in content  # ₹68.40 (2.40%) dividend amount per share
+        assert "2.40%" in content
 
         # HTMX partial
         resp_htmx = client.get(url, HTTP_HX_REQUEST="true")

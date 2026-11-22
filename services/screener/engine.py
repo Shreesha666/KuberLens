@@ -301,6 +301,7 @@ class ScreenerEngine:
                     "roe": fund.roe if fund and fund.roe is not None else None,
                     "debt_to_equity": fund.debt_to_equity if fund and fund.debt_to_equity is not None else None,
                     "dividend_yield": fund.dividend_yield if fund and fund.dividend_yield is not None else None,
+                    "dividend_amount": round((cur_price * fund.dividend_yield) / Decimal("100.0"), 2) if (fund and fund.dividend_yield and cur_price) else None,
                     "reasons": reasons,
                 }
                 matched_results.append(item_data)

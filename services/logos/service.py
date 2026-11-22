@@ -163,16 +163,16 @@ class CompanyLogoService:
             f"https://raw.githubusercontent.com/dharunashokkumar/indian-listed-company-logos/main/data/brand-logos/svg/{clean_symbol}.svg",
         ])
 
-        # 4. Optional Custom / Dharun API Endpoint (if configured)
-        api_url = getattr(settings, "DHARUN_LOGO_API_URL", "https://api.dharun.dev/v1/logos")
-        if api_url:
-            candidate_urls.append(f"{api_url.rstrip('/')}/{clean_symbol}")
+        # 4. Optional Custom Endpoint (only if configured and not pointing to deprecated api.dharun.dev)
+        custom_api_url = getattr(settings, "CUSTOM_LOGO_API_URL", "") or getattr(settings, "DHARUN_LOGO_API_URL", "")
+        if custom_api_url and "api.dharun.dev" not in custom_api_url:
+            candidate_urls.append(f"{custom_api_url.rstrip('/')}/{clean_symbol}")
 
         headers = {
             "User-Agent": "KuberLens/2.0 (Mozilla/5.0; StockIntelligence)",
             "Accept": "image/svg+xml,image/*,*/*",
         }
-        api_key = getattr(settings, "DHARUN_API_KEY", "")
+        api_key = getattr(settings, "CUSTOM_LOGO_API_KEY", "") or getattr(settings, "DHARUN_API_KEY", "")
         if api_key:
             headers["x-api-key"] = api_key
 

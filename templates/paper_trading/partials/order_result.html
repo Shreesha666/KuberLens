@@ -90,7 +90,7 @@
         </button>
         <button type="button" class="btn text-white flex-fill py-2 rounded-2"
                 style="background-color: #10b981; border: none;"
-                onclick="document.getElementById('paperOrderOffcanvas').remove();">
+                onclick="if (window.closePaperOrderDrawer) { closePaperOrderDrawer(); } else { const el = document.getElementById('paperOrderOffcanvas'); if (el) el.remove(); }">
             <i class="bi bi-check2 me-1"></i> Done
         </button>
     </div>

@@ -1,6 +1,11 @@
 {% load core_tags %}
+<!-- Backdrop Overlay (Dims the background page and allows click-outside to dismiss) -->
+<div class="offcanvas-backdrop fade show" id="paperOrderBackdrop" onclick="closePaperOrderDrawer()" style="z-index: 1045; background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px);"></div>
+
 <!-- Kite-Style Offcanvas Slide-out Order Drawer -->
-<div class="offcanvas offcanvas-end shadow-lg border-0 show theme-buy" tabindex="-1" id="paperOrderOffcanvas" style="width: 440px; visibility: visible;" aria-modal="true" role="dialog">
+<div class="offcanvas offcanvas-end shadow-lg border-0 show theme-buy" tabindex="-1" id="paperOrderOffcanvas"
+     style="width: 480px; max-width: 95vw; visibility: visible; z-index: 1050; box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18);"
+     aria-modal="true" role="dialog">
     <style>
         /* Scoped Order Drawer Styles */
         #paperOrderOffcanvas {
@@ -23,7 +28,7 @@
         .segmented-track {
             background-color: var(--bs-tertiary-bg, #f1f5f9);
             border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
-            padding: 3px;
+            padding: 4px;
             border-radius: 10px;
         }
 
@@ -37,7 +42,7 @@
         .order-choice-card {
             border: 1.5px solid var(--bs-border-color, #e2e8f0);
             border-radius: 10px;
-            padding: 9px 12px;
+            padding: 10px 14px;
             background-color: var(--bs-body-bg);
             cursor: pointer;
             transition: all 0.15s ease-in-out;
@@ -67,7 +72,7 @@
             color: var(--bs-secondary-color, #64748b);
             border: 1px solid transparent;
             font-size: 0.78rem;
-            padding: 6px 10px;
+            padding: 7px 12px;
             border-radius: 8px;
             transition: all 0.15s ease;
         }
@@ -81,11 +86,12 @@
 
         /* Micro Quantity Pills */
         .qty-pill {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             background: var(--bs-body-bg);
             color: var(--bs-secondary-color);
             border: 1px solid var(--bs-border-color) !important;
             transition: all 0.15s ease;
+            padding: 2px 8px;
         }
         .qty-pill:hover {
             background: var(--bs-tertiary-bg);
@@ -95,11 +101,12 @@
 
         /* Quant Presets */
         .preset-pill {
-            font-size: 0.72rem;
-            padding: 3px 9px;
+            font-size: 0.75rem;
+            padding: 5px 10px;
             border-radius: 6px;
             transition: all 0.15s ease;
             cursor: pointer;
+            text-align: center;
         }
         .preset-target {
             background: #ecfdf5;
@@ -127,7 +134,7 @@
             border: none;
             border-radius: 10px;
             color: #ffffff;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             letter-spacing: 0.5px;
             transition: all 0.2s ease;
         }
@@ -139,46 +146,45 @@
     </style>
 
     <!-- Drawer Header -->
-    <div class="offcanvas-header border-bottom py-3 px-4 bg-body-tertiary">
-        <div class="d-flex align-items-center gap-2 min-w-0">
-            {% stock_logo listing size=36 css_class="p-1 rounded-2 border bg-body" %}
+    <div class="offcanvas-header border-bottom py-3 px-3 px-sm-4 bg-body-tertiary d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2.5 min-w-0">
+            {% stock_logo listing size=36 css_class="p-1 rounded-2 border bg-body flex-shrink-0" %}
             <div class="min-w-0">
                 <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <span class="fw-bold text-body fs-6 text-truncate">{{ listing.symbol }}</span>
-                    <span class="badge bg-light text-secondary border px-1.5 py-0" style="font-size: 0.65rem;">{{ listing.exchange.code }}</span>
-                    <span class="badge border fw-medium px-1.5 py-0" style="font-size: 0.62rem; background: #e0f2fe; color: #0369a1; border-color: #bae6fd !important;">PAPER</span>
+                    <span class="fw-bold text-body fs-6 text-truncate mb-0">{{ listing.symbol }}</span>
+                    <span class="badge bg-secondary-subtle text-secondary px-1.5 py-0.5" style="font-size: 0.65rem;">{{ listing.exchange.code }}</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1.5 py-0.5" style="font-size: 0.65rem;">PAPER</span>
                 </div>
-                <div class="text-muted text-truncate" style="font-size: 0.75rem; max-width: 175px;">{{ listing.instrument.display_name }}</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem; max-width: 180px;">{{ listing.instrument.display_name }}</div>
             </div>
         </div>
-        <div class="d-flex align-items-center gap-3 flex-shrink-0">
+        <div class="d-flex align-items-center gap-2.5 flex-shrink-0">
             <div class="text-end">
                 <div class="fw-bold num-mono fs-6 text-body">₹{{ current_price|floatformat:2 }}</div>
-                <div class="badge px-1.5 py-0" style="font-size: 0.62rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
-                    <span class="spinner-grow spinner-grow-sm me-1" style="width: 5px; height: 5px; vertical-align: middle;" role="status"></span>LIVE LTP
-                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5" style="font-size: 0.62rem;">
+                    <span class="spinner-grow spinner-grow-sm text-success me-1" style="width: 4px; height: 4px;" role="status"></span>LIVE LTP
+                </span>
             </div>
-            <button type="button" class="btn-close text-reset ms-1" data-bs-dismiss="offcanvas" aria-label="Close"
-                    onclick="document.getElementById('paperOrderOffcanvas').remove();"></button>
+            <button type="button" class="btn-close text-reset p-2 ms-1" aria-label="Close" onclick="closePaperOrderDrawer()"></button>
         </div>
     </div>
 
     <!-- Drawer Body -->
-    <div class="offcanvas-body p-4" id="orderDrawerContent">
+    <div class="offcanvas-body p-3 p-sm-4" id="orderDrawerContent">
         <!-- Order Placement Form -->
         <form id="paperOrderForm" hx-post="{% url 'paper_trading:order_place' %}" hx-target="#orderDrawerContent" hx-swap="innerHTML">
             {% csrf_token %}
             <input type="hidden" name="symbol" value="{{ listing.symbol }}">
 
-            <!-- Buy / Sell Segmented Switcher (Soft Green / Soft Red) -->
+            <!-- Buy / Sell Segmented Switcher -->
             <div class="segmented-track d-flex mb-3" role="group">
                 <input type="radio" class="btn-check" name="order_side" id="sideBuy" value="BUY" {% if default_side == 'BUY' %}checked{% endif %} onchange="updateDrawerTheme()">
-                <label class="side-tab flex-fill text-center py-2 rounded-2 fw-bold text-uppercase user-select-none cursor-pointer" for="sideBuy" id="labelBuy">
+                <label class="side-tab flex-fill text-center py-2.5 rounded-2 fw-bold text-uppercase user-select-none cursor-pointer" for="sideBuy" id="labelBuy">
                     <i class="bi bi-arrow-up-circle-fill me-1"></i> BUY
                 </label>
 
                 <input type="radio" class="btn-check" name="order_side" id="sideSell" value="SELL" {% if default_side == 'SELL' %}checked{% endif %} onchange="updateDrawerTheme()">
-                <label class="side-tab flex-fill text-center py-2 rounded-2 fw-bold text-uppercase user-select-none cursor-pointer" for="sideSell" id="labelSell">
+                <label class="side-tab flex-fill text-center py-2.5 rounded-2 fw-bold text-uppercase user-select-none cursor-pointer" for="sideSell" id="labelSell">
                     <i class="bi bi-arrow-down-circle-fill me-1"></i> SELL
                 </label>
             </div>
@@ -188,7 +194,7 @@
             <div class="alert alert-light border small py-2 px-3 mb-3 d-flex justify-content-between align-items-center rounded-3">
                 <span>
                     <i class="bi bi-info-circle text-primary me-1"></i>
-                    Current Open Position:
+                    Open Position:
                     <strong class="{% if existing_position.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
                         {{ existing_position.quantity }} shares
                     </strong>
@@ -202,12 +208,12 @@
 
             <!-- Product Type: Delivery (CNC) vs Intraday (MIS) -->
             <div class="mb-3">
-                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Product Type</label>
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1.5" style="font-size: 0.72rem; letter-spacing: 0.5px;">Product Type</label>
                 <div class="d-flex gap-2">
                     <div class="flex-fill">
                         <input type="radio" class="btn-check" name="product_type" id="prodCNC" value="CNC" checked onchange="recalculateTotals()">
                         <label class="order-choice-card w-100 d-block text-start" for="prodCNC">
-                            <div class="fw-bold small choice-title text-body">
+                            <div class="fw-bold small choice-title text-body mb-0.5">
                                 Delivery <span class="badge bg-secondary-subtle text-secondary px-1 py-0 ms-1" style="font-size: 0.65rem;">CNC</span>
                             </div>
                             <div class="text-muted" style="font-size: 0.7rem;">Holding &bull; 100% Cash</div>
@@ -216,7 +222,7 @@
                     <div class="flex-fill">
                         <input type="radio" class="btn-check" name="product_type" id="prodMIS" value="MIS" onchange="recalculateTotals()">
                         <label class="order-choice-card w-100 d-block text-start" for="prodMIS">
-                            <div class="fw-bold small choice-title text-body">
+                            <div class="fw-bold small choice-title text-body mb-0.5">
                                 Intraday <span class="badge bg-info-subtle text-info-emphasis px-1 py-0 ms-1" style="font-size: 0.65rem;">MIS</span>
                             </div>
                             <div class="text-muted" style="font-size: 0.7rem;">5× Margin Leverage</div>
@@ -227,7 +233,7 @@
 
             <!-- Order Execution Type: Market vs Limit -->
             <div class="mb-3">
-                <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Order Execution Type</label>
+                <label class="form-label text-muted small fw-semibold text-uppercase mb-1.5" style="font-size: 0.72rem; letter-spacing: 0.5px;">Order Execution Type</label>
                 <div class="segmented-track d-flex gap-1">
                     <input type="radio" class="btn-check" name="order_type" id="typeMarket" value="MARKET" checked onchange="togglePriceInput()">
                     <label class="order-type-btn flex-fill text-center cursor-pointer" for="typeMarket">Market (Instant Fill)</label>
@@ -243,10 +249,11 @@
                     <label class="form-label text-muted small fw-semibold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Quantity (Shares)</label>
                     <input type="number" class="form-control form-control-sm num-mono fw-bold" id="orderQty" name="quantity" value="10" min="1" step="1" required oninput="recalculateTotals()">
                     <!-- Quick Increment Pills -->
-                    <div class="d-flex gap-1 mt-1.5">
-                        <button type="button" class="btn btn-sm py-0 px-2 rounded-pill qty-pill" onclick="addQty(10)">+10</button>
-                        <button type="button" class="btn btn-sm py-0 px-2 rounded-pill qty-pill" onclick="addQty(50)">+50</button>
-                        <button type="button" class="btn btn-sm py-0 px-2 rounded-pill qty-pill" onclick="addQty(100)">+100</button>
+                    <div class="d-flex gap-1 mt-1.5 flex-wrap">
+                        <button type="button" class="btn btn-sm rounded-pill qty-pill" onclick="addQty(10)">+10</button>
+                        <button type="button" class="btn btn-sm rounded-pill qty-pill" onclick="addQty(25)">+25</button>
+                        <button type="button" class="btn btn-sm rounded-pill qty-pill" onclick="addQty(50)">+50</button>
+                        <button type="button" class="btn btn-sm rounded-pill qty-pill" onclick="addQty(100)">+100</button>
                     </div>
                 </div>
 
@@ -266,24 +273,33 @@
                     </span>
                     <span class="badge bg-light text-secondary border px-1.5 py-0" style="font-size: 0.65rem;">Engine Verified</span>
                 </div>
-                <div class="d-flex flex-wrap gap-1.5">
+                <div class="row g-1.5">
                     {% if rec.target_1_value %}
-                    <button type="button" class="btn btn-sm preset-pill preset-target"
-                            onclick="applyPreset('target', '{{ rec.target_1_value }}')">
-                        <span class="fw-bold">T1:</span> ₹{{ rec.target_1_value }} <span class="opacity-75">(+{{ rec.target_1_pct }}%)</span>
-                    </button>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-sm preset-pill preset-target w-100"
+                                onclick="applyPreset('target', '{{ rec.target_1_value }}')">
+                            <span class="fw-bold d-block">T1: ₹{{ rec.target_1_value|floatformat:2 }}</span>
+                            <span class="opacity-75" style="font-size: 0.68rem;">+{{ rec.target_1_pct }}%</span>
+                        </button>
+                    </div>
                     {% endif %}
                     {% if rec.target_2_value %}
-                    <button type="button" class="btn btn-sm preset-pill preset-target"
-                            onclick="applyPreset('target', '{{ rec.target_2_value }}')">
-                        <span class="fw-bold">T2:</span> ₹{{ rec.target_2_value }} <span class="opacity-75">(+{{ rec.target_2_pct }}%)</span>
-                    </button>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-sm preset-pill preset-target w-100"
+                                onclick="applyPreset('target', '{{ rec.target_2_value }}')">
+                            <span class="fw-bold d-block">T2: ₹{{ rec.target_2_value|floatformat:2 }}</span>
+                            <span class="opacity-75" style="font-size: 0.68rem;">+{{ rec.target_2_pct }}%</span>
+                        </button>
+                    </div>
                     {% endif %}
                     {% if rec.stop_loss_value %}
-                    <button type="button" class="btn btn-sm preset-pill preset-sl"
-                            onclick="applyPreset('stop_loss', '{{ rec.stop_loss_value }}')">
-                        <span class="fw-bold">SL (ATR):</span> ₹{{ rec.stop_loss_value }}
-                    </button>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-sm preset-pill preset-sl w-100"
+                                onclick="applyPreset('stop_loss', '{{ rec.stop_loss_value }}')">
+                            <span class="fw-bold d-block">SL (ATR)</span>
+                            <span style="font-size: 0.68rem;">₹{{ rec.stop_loss_value|floatformat:2 }}</span>
+                        </button>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -301,11 +317,11 @@
                 <div id="bracketInputs" class="row g-2 d-none">
                     <div class="col-6">
                         <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">Stop Loss (₹)</label>
-                        <input type="number" class="form-control form-control-sm num-mono" id="bracketSL" name="stop_loss_price" step="0.05" placeholder="e.g. {{ rec.stop_loss_value|default:'' }}">
+                        <input type="number" class="form-control form-control-sm num-mono" id="bracketSL" name="stop_loss_price" step="0.05" placeholder="e.g. {{ rec.stop_loss_value|floatformat:2|default:'' }}">
                     </div>
                     <div class="col-6">
                         <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">Target Profit (₹)</label>
-                        <input type="number" class="form-control form-control-sm num-mono" id="bracketTarget" name="target_price" step="0.05" placeholder="e.g. {{ rec.target_1_value|default:'' }}">
+                        <input type="number" class="form-control form-control-sm num-mono" id="bracketTarget" name="target_price" step="0.05" placeholder="e.g. {{ rec.target_1_value|floatformat:2|default:'' }}">
                     </div>
                 </div>
             </div>
@@ -342,8 +358,8 @@
                 </div>
             </div>
 
-            <!-- Big Action Button (Soft Green for BUY, Soft Red for SELL) -->
-            <button type="submit" class="btn w-100 py-2.5 fw-bold text-uppercase paper-submit-btn d-flex justify-content-center align-items-center gap-2" id="submitOrderBtn">
+            <!-- Big Action Button -->
+            <button type="submit" class="btn w-100 py-3 fw-bold text-uppercase paper-submit-btn d-flex justify-content-center align-items-center gap-2" id="submitOrderBtn">
                 <i class="bi bi-lightning-charge-fill"></i> PLACE BUY ORDER
             </button>
         </form>
@@ -355,6 +371,20 @@
 (function() {
     const currentPrice = parseFloat("{{ current_price }}");
     const availableMargin = parseFloat("{{ account.available_margin }}");
+
+    window.closePaperOrderDrawer = function() {
+        const drawer = document.getElementById("paperOrderOffcanvas");
+        const backdrop = document.getElementById("paperOrderBackdrop");
+        if (drawer) drawer.remove();
+        if (backdrop) backdrop.remove();
+    };
+
+    // Close on Escape key press
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+            window.closePaperOrderDrawer();
+        }
+    });
 
     window.updateDrawerTheme = function() {
         const drawer = document.getElementById("paperOrderOffcanvas");

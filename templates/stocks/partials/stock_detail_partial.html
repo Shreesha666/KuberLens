@@ -918,21 +918,14 @@
 
         <!-- 3. DIVIDEND HISTORY (5Y) TAB -->
         <div class="tab-pane fade" id="dividends-pane" role="tabpanel">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                <div>
-                    <h5 class="fw-bold mb-1 text-body d-flex align-items-center gap-2">
-                        <i class="bi bi-cash-coin text-warning"></i> {{ listing.instrument.display_name }} Dividends History (5Y)
-                        <span class="badge bg-secondary-subtle text-secondary small fw-normal">{{ listing.symbol }}</span>
-                    </h5>
-                    <p class="text-muted small mb-0">
-                        Official corporate dividend distributions, cash payouts per share (DPS), declaration calendar, and historical yields.
-                    </p>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-sm btn-outline-primary" type="button" onclick="bootstrap.Tab.getOrCreateInstance(document.getElementById('ai-research-tab')).show();">
-                        <i class="bi bi-shield-check text-success me-1"></i> Is {{ listing.symbol }}'s Dividend Safe?
-                    </button>
-                </div>
+            <div class="mb-4">
+                <h5 class="fw-bold mb-1 text-body d-flex align-items-center gap-2">
+                    <i class="bi bi-cash-coin text-warning"></i> {{ listing.instrument.display_name }} Dividends History (5Y)
+                    <span class="badge bg-secondary-subtle text-secondary small fw-normal">{{ listing.symbol }}</span>
+                </h5>
+                <p class="text-muted small mb-0">
+                    Official corporate dividend distributions, cash payouts per share (DPS), declaration calendar, and historical yields.
+                </p>
             </div>
 
             {% if dividend_history_5y %}

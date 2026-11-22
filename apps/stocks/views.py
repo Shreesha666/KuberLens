@@ -334,6 +334,21 @@ class StockDetailView(HTMXResponseMixin, DetailView):
         context["recommendations"] = recommendations
         context["holding"] = holding
 
+        # 7. 5-Year Dividend History & Payout Analytics
+        try:
+            from services.fundamentals.analyzer import FundamentalAnalyzer
+
+            cur_p = quote.price if quote and quote.price else None
+            div_history_5y, div_summary_5y = FundamentalAnalyzer.get_five_year_dividend_history(
+                symbol=listing.symbol, current_price=cur_p
+            )
+        except Exception as e:
+            logger.warning("Could not fetch 5-year dividend history for %s: %s", listing.symbol, e)
+            div_history_5y, div_summary_5y = [], {}
+
+        context["dividend_history_5y"] = div_history_5y
+        context["dividend_summary_5y"] = div_summary_5y
+
         return context
 
 

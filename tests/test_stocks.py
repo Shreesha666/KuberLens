@@ -257,12 +257,15 @@ class TestStockViews:
         assert "Optimal Entry Zone" in content
         assert "68.40" in content  # ₹68.40 (2.40%) dividend amount per share
         assert "2.40%" in content
+        assert "Dividend History (5Y)" in content
+        assert "dividends-pane" in content
 
         # HTMX partial
         resp_htmx = client.get(url, HTTP_HX_REQUEST="true")
         assert resp_htmx.status_code == 200
         assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
         assert "Reliance Industries Limited" in resp_htmx.content.decode()
+        assert "Dividend History (5Y)" in resp_htmx.content.decode()
         assert "Existing Holder Strategy" in resp_htmx.content.decode()
         assert "New Prospective Investor" in resp_htmx.content.decode()
 
@@ -359,3 +362,41 @@ class TestStockViews:
         content = response.content.decode()
         assert "Constituent Stocks in Energy" in content
         assert "RELIANCE" in content
+
+    def test_five_year_dividend_history_retrieval(self, monkeypatch):
+        import pandas as pd
+        from datetime import datetime, timezone as dt_timezone
+        from services.fundamentals.analyzer import FundamentalAnalyzer
+
+        # Mock yfinance Ticker dividends
+        mock_tz = dt_timezone.utc
+        dates = [
+            datetime(2026, 8, 14, tzinfo=mock_tz),
+            datetime(2026, 3, 12, tzinfo=mock_tz),
+            datetime(2025, 12, 18, tzinfo=mock_tz),
+        ]
+        mock_divs = pd.Series([1.25, 2.00, 5.00], index=pd.to_datetime(dates))
+
+        class MockTicker:
+            def __init__(self, ticker):
+                self.dividends = mock_divs
+                self.history_called = False
+
+            def history(self, period="5y"):
+                return pd.DataFrame(
+                    {"Close": [100.0, 100.0, 100.0]},
+                    index=pd.to_datetime(dates)
+                )
+
+        import yfinance as yf
+        monkeypatch.setattr(yf, "Ticker", MockTicker)
+
+        history, summary = FundamentalAnalyzer.get_five_year_dividend_history("TESTSTOCK", current_price=100.0)
+        assert len(history) == 3
+        assert summary["total_5y_count"] == 3
+        assert summary["total_5y_payout"] == Decimal("8.25")
+        assert summary["paying_years"] >= 2
+        assert history[0]["amount"] == Decimal("1.25")
+        assert history[0]["type"] == "FINAL"  # August is Final
+        assert history[1]["type"] == "INTERIM"  # March is Interim
+

@@ -71,3 +71,4 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"\nDone! Successfully synced dividends for {synced}/{total} stocks.")
         )
+

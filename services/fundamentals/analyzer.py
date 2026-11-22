@@ -336,3 +336,151 @@ class FundamentalAnalyzer:
         except Exception as err:
             logger.warning("Failed to sync dividend from Yahoo Finance for %s: %s", symbol, err)
             return None, None
+
+    @classmethod
+    def get_five_year_dividend_history(
+        cls, symbol: str, current_price: float | Decimal | None = None
+    ) -> tuple[list[dict], dict]:
+        """
+        Retrieves the complete 5-year corporate dividend history and analytics for a stock listing.
+        Includes ex-date, amount, dividend type (Interim/Final/Special), estimated payment date,
+        and dividend yield (%) at the time of distribution.
+        """
+        from datetime import timedelta
+        from django.core.cache import cache
+        from django.utils import timezone
+        import yfinance as yf
+
+        cache_key = f"div_history_5y_{symbol.upper()}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None and isinstance(cached_data, dict):
+            return cached_data.get("history", []), cached_data.get("summary", {})
+
+        history = []
+        summary = {
+            "total_5y_payout": Decimal("0.00"),
+            "total_5y_count": 0,
+            "ttm_payout": Decimal("0.00"),
+            "ttm_yield": None,
+            "avg_annual_payout": Decimal("0.00"),
+            "paying_years": 0,
+            "frequency": "—",
+            "growth_streak": 0,
+        }
+
+        try:
+            t = yf.Ticker(f"{symbol}.NS")
+            divs = getattr(t, "dividends", None)
+            if divs is None or (hasattr(divs, "empty") and divs.empty):
+                # Fallback to BSE ticker if NSE has no dividend records
+                t_bse = yf.Ticker(f"{symbol}.BO")
+                bse_divs = getattr(t_bse, "dividends", None)
+                if bse_divs is not None and not bse_divs.empty:
+                    t = t_bse
+                    divs = bse_divs
+
+            if divs is not None and not divs.empty:
+                div_tz = getattr(divs.index, "tz", None)
+                now_tz = timezone.now().astimezone(div_tz) if div_tz else timezone.now()
+                today_date = now_tz.date()
+                cutoff = now_tz - timedelta(days=5 * 365 + 45)  # 5-year window with buffer
+                divs_5y = divs[divs.index >= cutoff].sort_index(ascending=False)
+
+                # Fetch historical close prices for yield-at-distribution calculation
+                hist = None
+                try:
+                    hist = t.history(period="5y")
+                except Exception:
+                    pass
+
+                cur_p_float = float(current_price) if current_price else None
+
+                years_set = set()
+                total_5y_payout = Decimal("0.00")
+                ttm_cutoff = now_tz - timedelta(days=365)
+                ttm_sum = Decimal("0.00")
+
+                for dt, amt in divs_5y.items():
+                    amt_float = float(amt)
+                    amt_dec = Decimal(str(round(amt_float, 2)))
+                    dt_date = dt.date()
+                    years_set.add(dt_date.year)
+                    total_5y_payout += amt_dec
+
+                    if dt >= ttm_cutoff:
+                        ttm_sum += amt_dec
+
+                    # Determine Dividend Type:
+                    # In India, AGM approvals in July/Aug/Sept are usually FINAL, others are INTERIM
+                    if dt_date.month in [7, 8, 9]:
+                        div_type = "FINAL"
+                        type_code = "F"
+                    else:
+                        div_type = "INTERIM"
+                        type_code = "I"
+
+                    # Estimate statutory Payment Date (~25 days after ex-date, SEBI 30-day mandate)
+                    payment_date = dt_date + timedelta(days=25)
+
+                    # Historical close price on or before ex-date
+                    close_price = None
+                    if hist is not None and not hist.empty:
+                        try:
+                            sub = hist.loc[: dt.strftime("%Y-%m-%d")]
+                            if not sub.empty:
+                                close_price = float(sub["Close"].iloc[-1])
+                        except Exception:
+                            close_price = None
+
+                    ref_price = close_price if close_price and close_price > 0 else cur_p_float
+                    if ref_price and ref_price > 0:
+                        yield_pct = Decimal(str(round((amt_float / ref_price) * 100.0, 2)))
+                    else:
+                        yield_pct = None
+
+                    status = "UPCOMING" if dt_date > today_date else "PAID"
+
+                    history.append({
+                        "ex_date": dt_date,
+                        "amount": amt_dec,
+                        "type": div_type,
+                        "type_code": type_code,
+                        "payment_date": payment_date,
+                        "yield_pct": yield_pct,
+                        "close_price": Decimal(str(round(close_price, 2))) if close_price else None,
+                        "status": status,
+                    })
+
+                total_count = len(history)
+                avg_annual = round(total_5y_payout / Decimal("5.0"), 2) if total_count > 0 else Decimal("0.00")
+
+                if total_count >= 15:
+                    freq = "Quarterly"
+                elif total_count >= 8:
+                    freq = "Semi-Annual"
+                elif total_count >= 1:
+                    freq = "Annual"
+                else:
+                    freq = "Sporadic"
+
+                if cur_p_float and cur_p_float > 0 and ttm_sum > 0:
+                    ttm_yield = Decimal(str(round((float(ttm_sum) / cur_p_float) * 100.0, 2)))
+                else:
+                    ttm_yield = None
+
+                summary = {
+                    "total_5y_payout": total_5y_payout,
+                    "total_5y_count": total_count,
+                    "ttm_payout": ttm_sum,
+                    "ttm_yield": ttm_yield,
+                    "avg_annual_payout": avg_annual,
+                    "paying_years": len(years_set),
+                    "frequency": freq,
+                    "growth_streak": len(years_set),
+                }
+
+                cache.set(cache_key, {"history": history, "summary": summary}, timeout=3600)
+        except Exception as err:
+            logger.warning("Error fetching 5Y dividend history for %s: %s", symbol, err)
+
+        return history, summary

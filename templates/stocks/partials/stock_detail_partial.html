@@ -643,6 +643,11 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="dividends-tab" data-bs-toggle="tab" data-bs-target="#dividends-pane" type="button" role="tab">
+                    <i class="bi bi-cash-coin text-warning"></i> Dividend History (5Y)
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link fw-semibold" id="peers-tab" data-bs-toggle="tab" data-bs-target="#peers-pane" type="button" role="tab">
                     <i class="bi bi-people text-info"></i> Sector Peers
                 </button>
@@ -911,7 +916,184 @@
             {% endif %}
         </div>
 
-        <!-- 3. PEERS TAB -->
+        <!-- 3. DIVIDEND HISTORY (5Y) TAB -->
+        <div class="tab-pane fade" id="dividends-pane" role="tabpanel">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <div>
+                    <h5 class="fw-bold mb-1 text-body d-flex align-items-center gap-2">
+                        <i class="bi bi-cash-coin text-warning"></i> {{ listing.instrument.display_name }} Dividends History (5Y)
+                        <span class="badge bg-secondary-subtle text-secondary small fw-normal">{{ listing.symbol }}</span>
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        Official corporate dividend distributions, cash payouts per share (DPS), declaration calendar, and historical yields.
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-primary" type="button" onclick="bootstrap.Tab.getOrCreateInstance(document.getElementById('ai-research-tab')).show();">
+                        <i class="bi bi-shield-check text-success me-1"></i> Is {{ listing.symbol }}'s Dividend Safe?
+                    </button>
+                </div>
+            </div>
+
+            {% if dividend_history_5y %}
+            <!-- Summary Telemetry Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 bg-body-tertiary rounded h-100 border border-secondary border-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.03em;">Annualised Payout</span>
+                            <span class="badge bg-success-subtle text-success small" style="font-size: 0.68rem;"><i class="bi bi-arrow-repeat"></i> {{ dividend_summary_5y.frequency }}</span>
+                        </div>
+                        <div class="fs-4 fw-bold num-mono text-body">
+                            ₹{{ dividend_summary_5y.ttm_payout|floatformat:2 }}
+                        </div>
+                        <div class="text-muted extra-small mt-1" style="font-size: 0.72rem;">
+                            Trailing 12-Month cash per share
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 bg-body-tertiary rounded h-100 border border-secondary border-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.03em;">Dividend Yield</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis small" style="font-size: 0.68rem;">TTM</span>
+                        </div>
+                        <div class="fs-4 fw-bold num-mono {% if dividend_summary_5y.ttm_yield and dividend_summary_5y.ttm_yield >= 2.0 %}text-success{% else %}text-body{% endif %}">
+                            {% if dividend_summary_5y.ttm_yield %}{{ dividend_summary_5y.ttm_yield|floatformat:2 }}%{% elif dividend_yield %}{{ dividend_yield|floatformat:2 }}%{% else %}—{% endif %}
+                        </div>
+                        <div class="text-muted extra-small mt-1" style="font-size: 0.72rem;">
+                            {% if quote.price %}At ₹{{ quote.price|floatformat:2 }} current close{% else %}Relative to market price{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 bg-body-tertiary rounded h-100 border border-secondary border-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.03em;">5-Year Total Paid</span>
+                            <span class="badge bg-primary-subtle text-primary small" style="font-size: 0.68rem;">{{ dividend_summary_5y.total_5y_count }} Declarations</span>
+                        </div>
+                        <div class="fs-4 fw-bold num-mono text-primary">
+                            ₹{{ dividend_summary_5y.total_5y_payout|floatformat:2 }}
+                        </div>
+                        <div class="text-muted extra-small mt-1" style="font-size: 0.72rem;">
+                            Avg ₹{{ dividend_summary_5y.avg_annual_payout|floatformat:2 }} / year cumulative
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 bg-body-tertiary rounded h-100 border border-secondary border-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.03em;">Paying Consistency</span>
+                            <span class="badge bg-info-subtle text-info small" style="font-size: 0.68rem;"><i class="bi bi-shield-check"></i> 5Y Track</span>
+                        </div>
+                        <div class="fs-4 fw-bold num-mono text-body">
+                            {{ dividend_summary_5y.paying_years }} / 5 Years
+                        </div>
+                        <div class="text-muted extra-small mt-1" style="font-size: 0.72rem;">
+                            Active multi-year distribution record
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Corporate Dividends History Table -->
+            <div class="card border border-secondary border-opacity-10 shadow-none">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-2.5 px-3 d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold small text-body text-uppercase" style="letter-spacing: 0.04em;">
+                        <i class="bi bi-table text-secondary me-1"></i> 5-Year Dividend Action Log
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary small">
+                        {{ dividend_history_5y|length }} Distributions
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start ps-3 py-2.5">Ex-Dividend Date</th>
+                                <th class="text-end py-2.5">Dividend (₹)</th>
+                                <th class="text-center py-2.5">Type</th>
+                                <th class="text-start py-2.5">Payment Date</th>
+                                <th class="text-end pe-3 py-2.5">Yield (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for div in dividend_history_5y %}
+                            <tr>
+                                <td class="ps-3 py-2.5">
+                                    <div class="fw-bold text-body num-mono">{{ div.ex_date|date:"M d, Y" }}</div>
+                                    <span class="text-muted extra-small" style="font-size: 0.70rem;">NSE / BSE Record</span>
+                                </td>
+                                <td class="text-end py-2.5">
+                                    <span class="fw-bold num-mono fs-6 text-body">₹{{ div.amount|floatformat:2 }}</span>
+                                    <span class="text-muted extra-small d-block" style="font-size: 0.70rem;">per share</span>
+                                </td>
+                                <td class="text-center py-2.5">
+                                    {% if div.type == 'FINAL' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" title="Final Annual Dividend">
+                                        <i class="bi bi-calendar-check me-1"></i>Final
+                                    </span>
+                                    {% elif div.type == 'SPECIAL' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" title="Special Dividend">
+                                        <i class="bi bi-star-fill me-1"></i>Special
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" title="Interim Dividend">
+                                        <i class="bi bi-calendar-event me-1"></i>Interim
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-start py-2.5">
+                                    <div class="d-flex align-items-center gap-1.5 text-body">
+                                        <i class="bi bi-calendar3 text-muted" style="font-size: 0.75rem;"></i>
+                                        <span class="num-mono">{{ div.payment_date|date:"M d, Y" }}</span>
+                                    </div>
+                                    <span class="badge bg-light text-muted border extra-small mt-0.5" style="font-size: 0.65rem;">
+                                        {{ div.status }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-3 py-2.5">
+                                    {% if div.yield_pct %}
+                                    <span class="fw-bold num-mono text-body">{{ div.yield_pct|floatformat:2 }}%</span>
+                                    {% if div.close_price %}
+                                    <span class="text-muted extra-small d-block" style="font-size: 0.70rem;">at ₹{{ div.close_price|floatformat:2 }}</span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted num-mono">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <!-- Graceful Empty State for Non-Dividend Paying Stocks -->
+            <div class="p-5 text-center bg-body-tertiary rounded-3 border border-dashed border-secondary border-opacity-25 my-3">
+                <div class="d-inline-flex p-3 rounded-circle bg-warning bg-opacity-10 text-warning mb-3">
+                    <i class="bi bi-cash-coin fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-body mb-2">No Dividend Distributions Recorded (5Y)</h5>
+                <p class="text-muted small mx-auto mb-4" style="max-width: 480px;">
+                    <strong>{{ listing.symbol }}</strong> has not distributed cash dividends over the past 5 years. Growth-oriented companies frequently reinvest 100% of operational cash flows back into research, capital expenditures, or acquisitions.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="bootstrap.Tab.getOrCreateInstance(document.getElementById('fundamental-tab')).show();">
+                        <i class="bi bi-bar-chart-steps me-1"></i> View Fundamental Valuation
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="bootstrap.Tab.getOrCreateInstance(document.getElementById('technical-tab')).show();">
+                        <i class="bi bi-activity me-1"></i> View Technical Signals
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 4. PEERS TAB -->
         <div class="tab-pane fade" id="peers-pane" role="tabpanel">
             <h4 class="h6 fw-bold mb-3">Peers in {{ listing.instrument.sector }}</h4>
             <div class="table-responsive">

@@ -1279,3 +1279,156 @@ body {
 [data-bs-theme="dark"] .workstation-table tbody td {
     border-bottom: 1px solid rgba(51, 65, 85, 0.5);
 }
+
+/* ==========================================================================
+   Financial Bull & Bear Trend Badges & Icons
+   ========================================================================== */
+.trend-animal-icon {
+    display: inline-block;
+    vertical-align: -0.15em;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.badge-bullish {
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #059669 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+[data-bs-theme="dark"] .badge-bullish {
+    background: rgba(16, 185, 129, 0.18) !important;
+    border-color: rgba(16, 185, 129, 0.45) !important;
+    color: #34d399 !important;
+}
+
+.badge-bearish {
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #dc2626 !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+[data-bs-theme="dark"] .badge-bearish {
+    background: rgba(239, 68, 68, 0.18) !important;
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    color: #f87171 !important;
+}
+
+.badge-neutral-trend {
+    background: rgba(100, 116, 139, 0.12) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid rgba(100, 116, 139, 0.3) !important;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* ==========================================================================
+   AI Stock Research Hub - TradingView Glassmorphism & Precision Styling
+   ========================================================================== */
+.ai-research-hero {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-glass-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.ai-glass-card:hover {
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.ai-exec-synthesis {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04) 0%, rgba(14, 165, 233, 0.02) 100%);
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    border-left: 4px solid var(--color-blue);
+    border-radius: 12px;
+}
+
+[data-bs-theme="dark"] .ai-exec-synthesis {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(15, 23, 42, 0.6) 100%);
+    border-color: rgba(37, 99, 235, 0.3);
+    border-left: 4px solid #60a5fa;
+}
+
+.ai-catalysts-box {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.01) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    border-radius: 12px;
+}
+
+[data-bs-theme="dark"] .ai-catalysts-box {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(17, 24, 39, 0.7) 100%);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ai-headwinds-box {
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.01) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.22);
+    border-radius: 12px;
+}
+
+[data-bs-theme="dark"] .ai-headwinds-box {
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, rgba(17, 24, 39, 0.7) 100%);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ai-stat-tile {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    transition: all 0.15s ease;
+}
+
+[data-bs-theme="dark"] .ai-stat-tile {
+    background: rgba(30, 41, 59, 0.45);
+    border-color: rgba(51, 65, 85, 0.7);
+}
+
+.ai-execution-card-entry {
+    background: var(--bg-surface);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-left: 4px solid var(--color-green);
+    border-radius: 12px;
+}
+
+.ai-execution-card-exit {
+    background: var(--bg-surface);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-left: 4px solid var(--color-red);
+    border-radius: 12px;
+}

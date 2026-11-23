@@ -719,9 +719,9 @@
                 <span class="small text-muted">
                     Calculation Engine: <code class="num-mono">{{ technical.calculation_version }}</code> &bull; Computed at: {{ technical.calculated_at|date:"Y-m-d H:i" }} UTC
                 </span>
-                <span class="badge {% if technical.trend_signal == 'BULLISH' %}bg-success{% elif technical.trend_signal == 'BEARISH' %}bg-danger{% else %}bg-secondary{% endif %} px-3 py-1">
-                    Trend: {{ technical.trend_signal }}
-                </span>
+                <div>
+                    {% trend_badge technical.trend_signal size=14 css_class="px-3 py-1" %}
+                </div>
             </div>
 
             <div class="row g-3 mb-4">
@@ -780,9 +780,7 @@
                         </div>
                         <div class="d-flex justify-content-between small py-1">
                             <span class="text-muted">MACD Cross</span>
-                            <span class="badge {% if technical.macd_signal_type == 'BULLISH_CROSS' %}bg-success{% elif technical.macd_signal_type == 'BEARISH_CROSS' %}bg-danger{% else %}bg-secondary-subtle text-muted{% endif %}">
-                                {{ technical.macd_signal_type }}
-                            </span>
+                            {% trend_badge technical.macd_signal_type size=12 %}
                         </div>
                     </div>
                 </div>

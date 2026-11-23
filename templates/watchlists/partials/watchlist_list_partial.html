@@ -1,4 +1,5 @@
 <!-- Watchlists Header -->
+{% load core_tags %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
         <nav aria-label="breadcrumb">
@@ -149,9 +150,7 @@
                         </td>
                         <td>
                             {% if item.tech %}
-                            <span class="badge {% if item.tech.trend_signal == 'BULLISH' %}bg-success-subtle text-success border border-success-subtle{% elif item.tech.trend_signal == 'BEARISH' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %}">
-                                {{ item.tech.trend_signal }}
-                            </span>
+                            {% trend_badge item.tech.trend_signal size=12 %}
                             {% if item.tech.rsi_14 %}
                             <div class="small text-muted mt-1" style="font-size: 0.72rem;">RSI: {{ item.tech.rsi_14|floatformat:1 }}</div>
                             {% endif %}

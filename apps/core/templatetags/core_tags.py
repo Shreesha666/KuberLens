@@ -173,3 +173,42 @@ def safe_markdown(value):
     return mark_safe(rendered)
 
 
+@register.simple_tag
+def bull_icon(size=14, css_class=""):
+    """Renders a precision financial charging bull SVG icon."""
+    classes = f"trend-animal-icon trend-bull-icon {css_class}".strip()
+    return mark_safe(
+        f'<svg class="{classes}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align: -0.15em; display: inline-block;">'
+        f'<path d="M20.67 4.28c-.62-.05-1.29.3-1.8 1.02-.75 1.05-1.6 1.83-2.6 2.25C15.02 7.2 13.56 7 12 7s-3.02.2-4.27.55c-1-.42-1.85-1.2-2.6-2.25-.51-.72-1.18-1.07-1.8-1.02-.85.07-1.52.8-1.59 1.76-.08 1.09.58 2.15 1.57 2.65.17 1.5.76 2.89 1.71 4.02 1.34 1.58 3.19 2.59 5.24 2.85v3.44c0 .55.45 1 1 1s1-.45 1-1v-3.44c2.05-.26 3.9-1.27 5.24-2.85.95-1.13 1.54-2.52 1.71-4.02.99-.5 1.65-1.56 1.57-2.65-.07-.96-.74-1.69-1.59-1.76zM12 16.5c-2.48 0-4.5-1.34-4.5-3 0-.55.45-1 1-1h7c.55 0 1 .45 1 1 0 1.66-2.02 3-4.5 3z"/>'
+        f'</svg>'
+    )
+
+
+@register.simple_tag
+def bear_icon(size=14, css_class=""):
+    """Renders a precision financial prowling bear SVG icon."""
+    classes = f"trend-animal-icon trend-bear-icon {css_class}".strip()
+    return mark_safe(
+        f'<svg class="{classes}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align: -0.15em; display: inline-block;">'
+        f'<path d="M19.5 4.5c-1.38 0-2.5 1.12-2.5 2.5 0 .28.05.54.14.79-1.44-.81-3.14-1.29-4.96-1.29s-3.52.48-4.96 1.29c.09-.25.14-.51.14-.79 0-1.38-1.12-2.5-2.5-2.5S2.36 5.62 2.36 7c0 1.19.83 2.18 1.95 2.43-.27.82-.43 1.7-.43 2.61 0 4.42 3.63 8 8.12 8s8.12-3.58 8.12-8c0-.91-.16-1.79-.43-2.61 1.12-.25 1.95-1.24 1.95-2.43 0-1.38-1.14-2.5-2.64-2.5zM12 18c-3.31 0-6-2.24-6-5 0-.55.45-1 1-1h10c.55 0 1 .45 1 1 0 2.76-2.69 5-6 5zm-3.5-5.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm7 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>'
+        f'</svg>'
+    )
+
+
+@register.simple_tag
+def trend_badge(signal, size=14, css_class=""):
+    """Renders a glowing trend signal badge with accompanying bull or bear icon."""
+    sig = str(signal).strip().upper() if signal else "NEUTRAL"
+    if "BULL" in sig:
+        b_icon = bull_icon(size=size)
+        label = "BULLISH" if sig in ("BULLISH", "BULLISH_CROSS") else sig.replace("_", " ")
+        return mark_safe(f'<span class="badge badge-bullish {css_class}">{b_icon}<span>{label}</span></span>')
+    elif "BEAR" in sig:
+        b_icon = bear_icon(size=size)
+        label = "BEARISH" if sig in ("BEARISH", "BEARISH_CROSS") else sig.replace("_", " ")
+        return mark_safe(f'<span class="badge badge-bearish {css_class}">{b_icon}<span>{label}</span></span>')
+    else:
+        label = "NEUTRAL" if sig == "NEUTRAL" else sig.replace("_", " ")
+        return mark_safe(f'<span class="badge badge-neutral-trend {css_class}"><span>{label}</span></span>')
+
+

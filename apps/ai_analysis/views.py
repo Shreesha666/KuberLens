@@ -19,6 +19,7 @@ from services.ai.researcher import AIResearchService
 from services.recommendations.evaluator import RecommendationEvaluator
 
 POPULAR_RESEARCH_SYMBOLS = [
+    "SWSOLAR",
     "RELIANCE",
     "TCS",
     "HDFCBANK",

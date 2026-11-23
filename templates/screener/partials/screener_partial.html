@@ -1,3 +1,4 @@
+{% load core_tags %}
 <!-- Screener Header -->
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
@@ -386,9 +387,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge {% if r.trend_signal == 'BULLISH' %}bg-success-subtle text-success border border-success-subtle{% elif r.trend_signal == 'BEARISH' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %}">
-                                {{ r.trend_signal }}
-                            </span>
+                            {% trend_badge r.trend_signal size=12 %}
                         </td>
                         <td class="text-end num-mono">
                             {% if r.rsi %}

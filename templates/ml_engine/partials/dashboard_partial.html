@@ -1,3 +1,4 @@
+{% load core_tags %}
 <!-- Machine Learning & Market Regime Dashboard Partial -->
 <div class="container-fluid px-0">
     <!-- Breadcrumb & Header -->
@@ -166,8 +167,8 @@
                         </td>
                         <td>
                             {% if p.prediction_label == 'BULLISH_EXPANSION' %}
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 text-nowrap">
-                                <i class="bi bi-arrow-up-right me-1"></i>Bullish Expansion
+                            <span class="badge badge-bullish text-nowrap">
+                                {% bull_icon size=12 %}Bullish Expansion
                             </span>
                             {% elif p.prediction_label == 'BREAKOUT_CANDIDATE' %}
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 text-nowrap">
@@ -178,8 +179,8 @@
                                 <i class="bi bi-arrows-expand me-1"></i>Consolidation
                             </span>
                             {% else %}
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-nowrap">
-                                <i class="bi bi-arrow-down-right me-1"></i>Bearish Contraction
+                            <span class="badge badge-bearish text-nowrap">
+                                {% bear_icon size=12 %}Bearish Contraction
                             </span>
                             {% endif %}
                         </td>

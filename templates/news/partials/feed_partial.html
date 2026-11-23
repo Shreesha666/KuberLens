@@ -1,3 +1,4 @@
+{% load core_tags %}
 <!-- News Feed Partial -->
 <div class="container-fluid px-0">
     <!-- Header -->
@@ -92,9 +93,9 @@
                             <span class="badge bg-light text-dark border">{{ article.get_category_display }}</span>
 
                             {% if article.sentiment == 'BULLISH' %}
-                            <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-arrow-up-circle me-1"></i>Bullish</span>
+                            <span class="badge badge-bullish">{% bull_icon size=13 %} Bullish</span>
                             {% elif article.sentiment == 'BEARISH' %}
-                            <span class="badge bg-danger-subtle text-danger-emphasis"><i class="bi bi-arrow-down-circle me-1"></i>Bearish</span>
+                            <span class="badge badge-bearish">{% bear_icon size=13 %} Bearish</span>
                             {% else %}
                             <span class="badge bg-light text-muted border">Neutral</span>
                             {% endif %}

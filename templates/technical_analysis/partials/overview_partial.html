@@ -1,3 +1,4 @@
+{% load core_tags %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
         <h2 class="h4 fw-bold mb-1">Technical Analysis Intelligence</h2>
@@ -28,7 +29,7 @@
                         </a>
                         <div class="text-end">
                             <span class="num-mono fw-semibold">RSI: {{ item.rsi_14|floatformat:1 }}</span>
-                            <span class="badge bg-success ms-1">BULLISH</span>
+                            <span class="badge badge-bullish ms-1">{% bull_icon size=12 %} BULLISH</span>
                         </div>
                     </li>
                     {% empty %}

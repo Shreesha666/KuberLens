@@ -1,25 +1,31 @@
+{% load core_tags %}
 <!-- AI Research Hub Partial -->
 <div class="container-fluid px-0">
     <!-- Header -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary text-white"><i class="bi bi-robot"></i> Phase 7</span>
-                <h1 class="h3 fw-bold mb-0 text-dark">AI Stock Research Engine</h1>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1">
+                    <i class="bi bi-robot me-1"></i> AI Intelligence Desk
+                </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="bi bi-check-circle-fill me-1"></i> Zero Hallucination
+                </span>
             </div>
-            <p class="text-muted small mb-0">
+            <h1 class="h3 fw-bold mb-1 text-body">AI Stock Research Engine</h1>
+            <p class="text-secondary small mb-0">
                 Multi-persona quantitative equity intelligence grounded strictly in verified market data without hallucinations.
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-dark border">
-                Provider: <strong>{{ analysis.model_name|default:"Configured AI" }}</strong>
+            <span class="badge bg-body-tertiary text-secondary border px-3 py-2">
+                <i class="bi bi-cpu me-1 text-primary"></i> Provider: <strong class="text-body ms-1">{{ analysis.model_name|default:"Gemini 1.5 Pro" }}</strong>
             </span>
         </div>
     </div>
 
     <!-- Search & Quick Selection Bar -->
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--bg-surface); border: 1px solid var(--border-color) !important; border-radius: 14px;">
         <div class="card-body p-3">
             <form method="get" action="{% url 'ai_analysis:hub' %}"
                   hx-get="{% url 'ai_analysis:hub' %}"
@@ -29,28 +35,35 @@
                 <input type="hidden" name="role" value="{{ selected_role }}">
                 <div class="col-12 col-md-4">
                     <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <span class="input-group-text bg-body-tertiary border-end-0 text-muted"><i class="bi bi-search"></i></span>
                         <input type="text"
                                name="symbol"
-                               class="form-control text-uppercase"
-                               placeholder="Enter NSE Symbol (e.g. RELIANCE, TCS)..."
+                               class="form-control text-uppercase fw-semibold"
+                               placeholder="Enter NSE Symbol (e.g. SWSOLAR, RELIANCE)..."
                                value="{{ symbol }}">
                     </div>
                 </div>
                 <div class="col-12 col-md-3">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-cpu me-1"></i> Research Stock
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-cpu"></i> Research Stock
                     </button>
                 </div>
                 <div class="col-12 col-md-5">
-                    <div class="d-flex flex-wrap align-items-center gap-1 justify-content-md-end">
-                        <span class="small text-muted me-1">Popular:</span>
+                    <div class="d-flex flex-wrap align-items-center gap-1.5 justify-content-md-end">
+                        <span class="small text-muted me-1 fw-medium">Popular:</span>
+                        <a href="{% url 'ai_analysis:hub' %}?symbol=SWSOLAR&role={{ selected_role }}&force=true"
+                           hx-get="{% url 'ai_analysis:hub' %}?symbol=SWSOLAR&role={{ selected_role }}&force=true"
+                           hx-target="#main-content"
+                           hx-push-url="true"
+                           class="badge {% if symbol == 'SWSOLAR' %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2.5 py-1.5 rounded-pill">
+                            SWSOLAR
+                        </a>
                         {% for sym in popular_symbols %}
                         <a href="{% url 'ai_analysis:hub' %}?symbol={{ sym }}&role={{ selected_role }}"
                            hx-get="{% url 'ai_analysis:hub' %}?symbol={{ sym }}&role={{ selected_role }}"
                            hx-target="#main-content"
                            hx-push-url="true"
-                           class="badge {% if sym == symbol %}bg-primary text-white{% else %}bg-light text-dark border{% endif %} text-decoration-none px-2 py-1">
+                           class="badge {% if sym == symbol %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2.5 py-1.5 rounded-pill">
                             {{ sym }}
                         </a>
                         {% endfor %}
@@ -60,32 +73,32 @@
         </div>
     </div>
 
-    <!-- AI Persona Switcher Tabs -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-transparent border-bottom p-0">
-            <ul class="nav nav-tabs border-0 px-3 pt-2" role="tablist">
-                {% for role_code, role_label in roles %}
-                <li class="nav-item" role="presentation">
-                    <a href="{% url 'ai_analysis:hub' %}?symbol={{ symbol }}&role={{ role_code }}"
-                       hx-get="{% url 'ai_analysis:hub' %}?symbol={{ symbol }}&role={{ role_code }}"
-                       hx-target="#main-content"
-                       hx-push-url="true"
-                       class="nav-link {% if selected_role == role_code %}active fw-bold text-primary border-primary border-bottom-0{% else %}text-muted{% endif %}">
-                        {% if role_code == 'INVESTOR' %}
-                            <i class="bi bi-briefcase me-1"></i> Investor AI (Long-Term)
-                        {% elif role_code == 'SWING_TRADER' %}
-                            <i class="bi bi-lightning-charge me-1"></i> Swing Trader AI (Short-Term)
-                        {% else %}
-                            <i class="bi bi-shield-check me-1"></i> Portfolio Risk Manager
-                        {% endif %}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
+    <!-- AI Persona Switcher (TradingView Segmented Capsule Control) -->
+    <div class="d-flex justify-content-start mb-4 overflow-x-auto pb-1">
+        <div class="segmented-control-track shadow-sm p-1">
+            {% for role_code, role_label in roles %}
+            <a href="{% url 'ai_analysis:hub' %}?symbol={{ symbol }}&role={{ role_code }}"
+               hx-get="{% url 'ai_analysis:hub' %}?symbol={{ symbol }}&role={{ role_code }}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="segmented-tab-btn {% if selected_role == role_code %}active{% endif %}">
+                {% if role_code == 'INVESTOR' %}
+                    <i class="bi bi-briefcase-fill text-primary"></i>
+                    <span>Investor AI <span class="d-none d-sm-inline fw-normal text-muted">(Long-Term)</span></span>
+                {% elif role_code == 'SWING_TRADER' %}
+                    <i class="bi bi-lightning-charge-fill text-warning"></i>
+                    <span>Swing Trader AI <span class="d-none d-sm-inline fw-normal text-muted">(Short-Term)</span></span>
+                {% else %}
+                    <i class="bi bi-shield-check text-info"></i>
+                    <span>Portfolio Risk Manager</span>
+                {% endif %}
+            </a>
+            {% endfor %}
         </div>
     </div>
 
     <!-- AI Analysis Card -->
     {% include "ai_analysis/partials/analysis_card.html" %}
 </div>
+
 

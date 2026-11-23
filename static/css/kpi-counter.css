@@ -200,7 +200,50 @@
     transform: none !important;
   }
   .kpi-value-text,
-  .kpi-counter-css {
+  .kpi-counter-css,
+  .odo-strip {
     animation: none !important;
+    transition: none !important;
   }
+}
+
+/* 6. Mechanical Rolling Odometer Engine (CodeFronts effect on background updates) */
+.odo-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: baseline;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: inherit;
+}
+
+.odo-cell {
+  position: relative;
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.odo-strip {
+  display: block;
+  transform: translateY(var(--odo-y, 0%));
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.odo-strip i {
+  display: block;
+  height: 1.15em;
+  line-height: 1.15em;
+  min-width: 0.6em;
+  font-style: normal;
+  text-align: center;
+}
+
+.odo-char {
+  display: inline-block;
+  line-height: 1.15em;
+  vertical-align: bottom;
 }

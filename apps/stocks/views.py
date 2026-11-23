@@ -167,6 +167,8 @@ class StockDetailView(HTMXResponseMixin, DetailView):
         except Exception as e:
             logger.warning("Could not fetch quote for %s: %s", listing.symbol, e)
             quote = None
+        if not quote:
+            quote = MarketQuote.objects.filter(listing=listing).order_by("-retrieved_at").first()
         context["quote"] = quote
 
         # 2. Historical 52-Week Range & Candles

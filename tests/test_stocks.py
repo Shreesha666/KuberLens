@@ -240,7 +240,20 @@ class TestStockViews:
         assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
         assert "RELIANCE" in resp_htmx.content.decode()
 
-    def test_stock_detail_full_and_htmx(self, seeded_stocks):
+    def test_stock_detail_full_and_htmx(self, seeded_stocks, monkeypatch):
+        # Isolate from external network calls during unit test
+        from services.market_data.service import MarketDataService
+        from services.fundamentals.analyzer import FundamentalAnalyzer
+        monkeypatch.setattr(
+            MarketDataService,
+            "get_quote",
+            lambda listing: MarketQuote.objects.filter(listing=listing).order_by("-retrieved_at").first(),
+        )
+        monkeypatch.setattr(
+            FundamentalAnalyzer,
+            "sync_dividend_from_yahoo",
+            lambda *args, **kwargs: (None, None),
+        )
         client = Client()
         url = reverse("stocks:stock_detail", kwargs={"symbol": "RELIANCE"})
 

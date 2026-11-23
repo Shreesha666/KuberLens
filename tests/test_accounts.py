@@ -227,7 +227,7 @@ def test_signup_view_flow():
     # GET signup page
     res_get = client.get(signup_url)
     assert res_get.status_code == 200
-    assert "Create Investor Account" in res_get.content.decode()
+    assert "Create your Account" in res_get.content.decode()
 
     # POST new registration
     res_post = client.post(

@@ -324,6 +324,8 @@ class TestStockViews:
 
     def test_stock_quote_partial_endpoint(self, seeded_stocks, monkeypatch):
         from services.market_data.service import MarketDataService
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        monkeypatch.setattr(ExchangeCalendar, "is_market_open", lambda exchange_code="NSE": True)
         monkeypatch.setattr(
             MarketDataService,
             "get_quote",

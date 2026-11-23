@@ -1290,6 +1290,27 @@ body {
     transition: transform 0.15s ease;
 }
 
+.trend-bull-icon {
+    color: #059669;
+}
+
+[data-bs-theme="dark"] .trend-bull-icon {
+    color: #34d399;
+}
+
+.trend-bear-icon {
+    color: #c12031;
+}
+
+[data-bs-theme="dark"] .trend-bear-icon {
+    color: #f87171;
+}
+
+.badge-bullish .trend-bull-icon,
+.badge-bearish .trend-bear-icon {
+    color: inherit;
+}
+
 .badge-bullish {
     background: rgba(16, 185, 129, 0.12) !important;
     color: #059669 !important;

@@ -1,6 +1,9 @@
+import re
 from decimal import Decimal
+from pathlib import Path
 
 from django import template
+from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -173,28 +176,59 @@ def safe_markdown(value):
     return mark_safe(rendered)
 
 
+_ICON_PATHS_CACHE = {}
+
+
+def _get_icon_inner(filename: str, fallback_inner: str = "") -> str:
+    """
+    Loads and caches inner SVG elements from static/branding/icons/<filename>,
+    converting styles to fill='currentColor' for responsive theme badge styling.
+    """
+    if filename in _ICON_PATHS_CACHE:
+        return _ICON_PATHS_CACHE[filename]
+
+    inner = ""
+    try:
+        icon_file = Path(settings.BASE_DIR) / "static" / "branding" / "icons" / filename
+        if icon_file.exists():
+            content = icon_file.read_text(encoding="utf-8")
+            match = re.search(r"<svg[^>]*>(.*?)</svg>", content, re.DOTALL)
+            if match:
+                raw_inner = match.group(1).strip()
+                raw_inner = re.sub(r"<defs>.*?</defs>", "", raw_inner, flags=re.DOTALL)
+                raw_inner = re.sub(r'class="cls-1"', 'fill="currentColor"', raw_inner)
+                raw_inner = re.sub(r"<!--.*?-->", "", raw_inner, flags=re.DOTALL)
+                inner = "\n".join([line for line in raw_inner.splitlines() if line.strip()])
+    except Exception:
+        pass
+
+    if not inner:
+        inner = fallback_inner
+
+    _ICON_PATHS_CACHE[filename] = inner
+    return inner
+
+
 @register.simple_tag
 def bull_icon(size=14, css_class=""):
-    """Renders a sleek Wall Street Bull icon with upward-thrusting horns."""
+    """Renders the custom KuberLens Bull SVG icon from static/branding/icons/bull.svg."""
     classes = f"trend-animal-icon trend-bull-icon {css_class}".strip()
+    inner = _get_icon_inner("bull.svg")
     return mark_safe(
         f'<svg class="{classes}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align: -0.15em; display: inline-block;">'
-        f'<path d="M21.5 3.5c-.3 0-.6.1-.8.4L18 7.2C16.3 6.4 14.2 6 12 6s-4.3.4-6 1.2L3.3 3.9c-.4-.4-1-.5-1.4-.2-.5.4-.6 1-.2 1.5l2.2 3.8C3.3 10 3 11.2 3 12.5c0 3.6 3.1 6.7 7 7.4V21c0 .6.4 1 1 1s1-.4 1-1v-1.1c3.9-.7 7-3.8 7-7.4 0-1.3-.3-2.5-.9-3.5l2.2-3.8c.4-.5.3-1.1-.2-1.5-.2-.1-.4-.2-.6-.2z"/>'
+        f'{inner}'
         f'</svg>'
     )
 
 
 @register.simple_tag
 def bear_icon(size=14, css_class=""):
-    """Renders a sleek Wall Street Bear Paw icon with sharp claw pads."""
+    """Renders the custom KuberLens Bear SVG icon from static/branding/icons/bear.svg."""
     classes = f"trend-animal-icon trend-bear-icon {css_class}".strip()
+    inner = _get_icon_inner("bear.svg")
     return mark_safe(
         f'<svg class="{classes}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align: -0.15em; display: inline-block;">'
-        f'<path d="M12 11.5c-3 0-5.5 2.2-5.5 5 0 1.9 1.5 3.5 3.5 3.5h4c2 0 3.5-1.6 3.5-3.5 0-2.8-2.5-5-5.5-5z"/>'
-        f'<circle cx="5.5" cy="9" r="1.8"/>'
-        f'<circle cx="9.5" cy="6.2" r="1.8"/>'
-        f'<circle cx="14.5" cy="6.2" r="1.8"/>'
-        f'<circle cx="18.5" cy="9" r="1.8"/>'
+        f'{inner}'
         f'</svg>'
     )
 

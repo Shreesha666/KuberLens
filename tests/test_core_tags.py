@@ -12,6 +12,8 @@ def test_bull_icon_renders_svg():
     assert "custom-class" in result
     assert 'width="14"' in result
     assert 'height="14"' in result
+    assert 'viewBox="0 0 24 24"' in result
+    assert "Layer_1" in result
     assert "</svg>" in result
 
 
@@ -22,6 +24,8 @@ def test_bear_icon_renders_svg():
     assert "my-bear" in result
     assert 'width="16"' in result
     assert 'height="16"' in result
+    assert 'viewBox="0 0 24 24"' in result
+    assert "Layer_1" in result
     assert "</svg>" in result
 
 

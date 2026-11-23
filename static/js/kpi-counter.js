@@ -105,6 +105,12 @@
     // Cancel existing animation on this element if any
     if (el._animationFrameId) {
       cancelAnimationFrame(el._animationFrameId);
+      el._animationFrameId = null;
+    }
+
+    // Clean up any odometer DOM wrapper if present
+    if (el.querySelector(".odo-wrap")) {
+      el.innerHTML = "";
     }
 
     const startTime = performance.now();
@@ -262,6 +268,12 @@
   function animateOdometerCounter(el, kpiId) {
     if (!el) return;
 
+    // Cancel any active smooth text counter animation frame
+    if (el._animationFrameId) {
+      cancelAnimationFrame(el._animationFrameId);
+      el._animationFrameId = null;
+    }
+
     const rawTarget = el.getAttribute("data-target");
     if (rawTarget === null || rawTarget === undefined || rawTarget.trim() === "") {
       return;
@@ -291,64 +303,47 @@
   }
 
   // Initialize all KPI counters inside a target container
-  function initKpiCounters(container) {
+  // animMode: "counter" (smooth text count-up, default for manual load/refresh) or "odometer" (15s rolling digits)
+  function initKpiCounters(container, animMode) {
     const root = container || document;
-
-    // Reset dashboard flag when dashboard root is no longer in DOM
-    const dashboardRoot = document.getElementById("dashboard-root") || document.querySelector("[data-dashboard-root]");
-    if (!dashboardRoot) {
-      window._dashboardFirstLoadDone = false;
-      window._dashboardKpiState = {};
-    }
+    const mode = animMode || "counter";
 
     const counters = root.querySelectorAll("[data-kpi-counter]");
     if (!counters.length) return;
 
-    let hasDashboardCounters = false;
-
     counters.forEach(function (counterEl, idx) {
       const onDashboard = isDashboardElement(counterEl);
-      if (onDashboard) hasDashboardCounters = true;
-
       const kpiId = counterEl.getAttribute("data-kpi-id") || ("kpi-" + idx);
 
-      if (onDashboard) {
-        if (!window._dashboardFirstLoadDone) {
-          // First load of Dashboard: Smooth text count-up animation
-          animateCounter(counterEl);
-          // Seed initial target state for upcoming 15s refresh
-          const rawTarget = counterEl.getAttribute("data-target");
-          if (rawTarget !== null) {
-            const targetVal = parseFloat(rawTarget);
-            if (!isNaN(targetVal)) {
-              const format = counterEl.getAttribute("data-format") || "standard";
-              const rawDecimals = counterEl.getAttribute("data-decimals");
-              const decimals = rawDecimals !== null ? parseInt(rawDecimals, 10) : (Number.isInteger(targetVal) ? 0 : 2);
-              const prefix = counterEl.getAttribute("data-prefix") || "";
-              const suffix = counterEl.getAttribute("data-suffix") || "";
-              const showSign = counterEl.getAttribute("data-show-sign") === "true";
-              const options = { format, decimals, prefix, suffix, showSign };
-              window._dashboardKpiState[kpiId] = {
-                num: targetVal,
-                str: formatNumber(targetVal, options)
-              };
-            }
-          }
-        } else {
-          // Subsequent 15-second background refresh on Dashboard: CodeFronts mechanical rolling odometer effect
-          animateOdometerCounter(counterEl, kpiId);
+      // Record baseline target for future odometer transitions
+      const rawTarget = counterEl.getAttribute("data-target");
+      if (rawTarget !== null) {
+        const targetVal = parseFloat(rawTarget) || 0;
+        const format = counterEl.getAttribute("data-format") || "standard";
+        const rawDecimals = counterEl.getAttribute("data-decimals");
+        const decimals = rawDecimals !== null ? parseInt(rawDecimals, 10) : (Number.isInteger(targetVal) ? 0 : 2);
+        const prefix = counterEl.getAttribute("data-prefix") || "";
+        const suffix = counterEl.getAttribute("data-suffix") || "";
+        const showSign = counterEl.getAttribute("data-show-sign") === "true";
+        const options = { format, decimals, prefix, suffix, showSign };
+
+        window._dashboardKpiState = window._dashboardKpiState || {};
+        if (!window._dashboardKpiState[kpiId]) {
+          window._dashboardKpiState[kpiId] = {
+            num: targetVal,
+            str: formatNumber(targetVal, options)
+          };
         }
+      }
+
+      if (onDashboard && mode === "odometer") {
+        // EXCLUSIVELY run mechanical rolling odometer on Dashboard 15-second background refresh
+        animateOdometerCounter(counterEl, kpiId);
       } else {
-        // Outside dashboard: Standard number counter
+        // EXCLUSIVELY run smooth text count-up on manual refresh, initial load, or non-dashboard pages
         animateCounter(counterEl);
       }
     });
-
-    if (hasDashboardCounters && !window._dashboardFirstLoadDone) {
-      setTimeout(function () {
-        window._dashboardFirstLoadDone = true;
-      }, 1400);
-    }
   }
 
   // Export globally for programmatic control & verification
@@ -369,29 +364,41 @@
     console.log("Rolled", kpiId, "to", testValue);
   };
 
-  // Auto-run on DOM ready
+  // 1. Initial Page Load / Manual Browser Refresh (F5 / Navigation) -> ALWAYS smooth text count-up
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
-      initKpiCounters(document);
-    });
+      initKpiCounters(document, "counter");
+    }, { once: true });
   } else {
-    initKpiCounters(document);
+    initKpiCounters(document, "counter");
   }
 
-  // Debounced handler for HTMX swaps to prevent dual execution between afterSwap and load
-  let _swapDebounceTimer = null;
-  function handleHtmxEvent(evt) {
-    if (_swapDebounceTimer) clearTimeout(_swapDebounceTimer);
-    const target = (evt.detail && (evt.detail.target || evt.detail.elt)) ? (evt.detail.target || evt.detail.elt) : document;
-    _swapDebounceTimer = setTimeout(function () {
-      initKpiCounters(target);
-    }, 20);
+  // 2. HTMX After Swap Event -> Detect 15s Background Poll vs Manual User Actions
+  function handleHtmxAfterSwap(evt) {
+    if (!evt || !evt.detail) return;
+    const target = evt.detail.target || evt.detail.elt || document;
+
+    // Detect if this HTMX swap came from the 15-second background refresh timer
+    const elt = evt.detail.elt;
+    const isSilentRefresh = elt && elt.hasAttribute && elt.hasAttribute("data-silent-refresh");
+    const reqPath = (evt.detail.pathInfo && evt.detail.pathInfo.requestPath) ? evt.detail.pathInfo.requestPath : "";
+    const xhrUrl = (evt.detail.xhr && evt.detail.xhr.responseURL) ? evt.detail.xhr.responseURL : "";
+    const is15sUrl = reqPath.includes("refresh=15s") || xhrUrl.includes("refresh=15s");
+
+    const is15sBackgroundRefresh = Boolean(isSilentRefresh || is15sUrl);
+
+    if (is15sBackgroundRefresh) {
+      // 15-second background refresh: RUN ONLY ROLLING ODOMETER
+      initKpiCounters(target, "odometer");
+    } else {
+      // Manual action (clicking 'Refresh Overview', navigation tabs): RUN ONLY SMOOTH TEXT COUNTER
+      initKpiCounters(target, "counter");
+    }
   }
 
-  // Auto-run on HTMX swaps and dynamic partial loads
+  // Register exclusively on htmx:afterSwap to prevent duplicate execution from htmx:load
   if (typeof document !== "undefined") {
-    document.body.addEventListener("htmx:afterSwap", handleHtmxEvent);
-    document.body.addEventListener("htmx:load", handleHtmxEvent);
+    document.body.addEventListener("htmx:afterSwap", handleHtmxAfterSwap);
   }
 })();
 

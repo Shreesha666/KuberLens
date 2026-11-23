@@ -71,7 +71,7 @@
                 <div class="h2 fw-bold num-mono text-body mb-0">{{ ipo.price_band_display }}</div>
                 <div class="text-muted small mt-1">
                     Lot Size: <strong class="num-mono text-body">{{ ipo.effective_lot_size }} shares</strong> &bull;
-                    Min Outlay: <strong class="num-mono text-body">₹{{ ipo.calculated_min_investment|floatformat:0 }}</strong>
+                    Min Outlay: <strong class="num-mono text-body">₹{{ ipo.calculated_min_investment|floatformat:0|intcomma }}</strong>
                 </div>
             </div>
         </div>
@@ -140,21 +140,21 @@
     <div class="col-6 col-lg-3">
         <div class="stat-card-elevated border-accent-primary h-100">
             <span class="kpi-label">Total Issue Size</span>
-            <div class="kpi-value text-body">{% if ipo.total_issue_size_cr %}₹{{ ipo.total_issue_size_cr|floatformat:1 }} Cr{% else %}TBA{% endif %}</div>
+            <div class="kpi-value text-body">{% if ipo.total_issue_size_cr %}₹{{ ipo.total_issue_size_cr|floatformat:0|intcomma }} Cr{% else %}TBA{% endif %}</div>
             <div class="kpi-subtext">Total capital mobilized</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
         <div class="stat-card-elevated border-accent-info h-100">
             <span class="kpi-label">Fresh Issue / OFS</span>
-            <div class="kpi-value text-body">{% if ipo.fresh_issue_cr %}₹{{ ipo.fresh_issue_cr|floatformat:0 }} Cr{% else %}TBA{% endif %}</div>
-            <div class="kpi-subtext">OFS: <strong class="num-mono text-body">{% if ipo.offer_for_sale_cr %}₹{{ ipo.offer_for_sale_cr|floatformat:0 }} Cr{% else %}TBA{% endif %}</strong></div>
+            <div class="kpi-value text-body">{% if ipo.fresh_issue_cr is not None %}₹{{ ipo.fresh_issue_cr|floatformat:0|intcomma }} Cr{% else %}TBA{% endif %}</div>
+            <div class="kpi-subtext">OFS: <strong class="num-mono text-body">{% if ipo.offer_for_sale_cr is not None %}₹{{ ipo.offer_for_sale_cr|floatformat:0|intcomma }} Cr{% else %}TBA{% endif %}</strong></div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
         <div class="stat-card-elevated border-accent-success h-100">
             <span class="kpi-label">Min Retail Investment</span>
-            <div class="kpi-value text-body">{% if ipo.calculated_min_investment > 0 %}₹{{ ipo.calculated_min_investment|floatformat:0 }}{% else %}TBA{% endif %}</div>
+            <div class="kpi-value text-body">{% if ipo.calculated_min_investment > 0 %}₹{{ ipo.calculated_min_investment|floatformat:0|intcomma }}{% else %}TBA{% endif %}</div>
             <div class="kpi-subtext">{{ ipo.effective_lot_size }} shares @ Cap</div>
         </div>
     </div>

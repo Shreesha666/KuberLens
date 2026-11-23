@@ -35,4 +35,6 @@ htmlcov/
 .vscode/*
 !.vscode/settings.json
 *.swp
+Screenshot*.png
+*Screenshot*.png
 

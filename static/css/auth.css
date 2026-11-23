@@ -247,6 +247,82 @@
     background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
 }
 
+/* Dedicated Glowing Milestone Icons & Status Pills */
+.auth-milestone-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-milestone-icon.icon-green {
+    background: rgba(16, 185, 129, 0.16);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+}
+
+.auth-milestone-icon.icon-blue {
+    background: rgba(59, 130, 246, 0.16);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.25);
+}
+
+.auth-milestone-icon.icon-amber {
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+}
+
+.auth-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+}
+
+.auth-status-pill.pill-green {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.auth-status-pill.pill-blue {
+    background: rgba(59, 130, 246, 0.16);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.auth-status-pill.pill-indigo {
+    background: rgba(99, 102, 241, 0.18);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.auth-status-pill.pill-amber {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.auth-status-pill.pill-purple {
+    background: rgba(168, 85, 247, 0.16);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
 /* Candlestick SVG Chart */
 .candlestick-chart-svg {
     width: 100%;

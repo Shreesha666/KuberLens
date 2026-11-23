@@ -175,22 +175,26 @@ def safe_markdown(value):
 
 @register.simple_tag
 def bull_icon(size=14, css_class=""):
-    """Renders a precision financial charging bull SVG icon."""
+    """Renders a sleek Wall Street Bull icon with upward-thrusting horns."""
     classes = f"trend-animal-icon trend-bull-icon {css_class}".strip()
     return mark_safe(
         f'<svg class="{classes}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align: -0.15em; display: inline-block;">'
-        f'<path d="M20.67 4.28c-.62-.05-1.29.3-1.8 1.02-.75 1.05-1.6 1.83-2.6 2.25C15.02 7.2 13.56 7 12 7s-3.02.2-4.27.55c-1-.42-1.85-1.2-2.6-2.25-.51-.72-1.18-1.07-1.8-1.02-.85.07-1.52.8-1.59 1.76-.08 1.09.58 2.15 1.57 2.65.17 1.5.76 2.89 1.71 4.02 1.34 1.58 3.19 2.59 5.24 2.85v3.44c0 .55.45 1 1 1s1-.45 1-1v-3.44c2.05-.26 3.9-1.27 5.24-2.85.95-1.13 1.54-2.52 1.71-4.02.99-.5 1.65-1.56 1.57-2.65-.07-.96-.74-1.69-1.59-1.76zM12 16.5c-2.48 0-4.5-1.34-4.5-3 0-.55.45-1 1-1h7c.55 0 1 .45 1 1 0 1.66-2.02 3-4.5 3z"/>'
+        f'<path d="M21.5 3.5c-.3 0-.6.1-.8.4L18 7.2C16.3 6.4 14.2 6 12 6s-4.3.4-6 1.2L3.3 3.9c-.4-.4-1-.5-1.4-.2-.5.4-.6 1-.2 1.5l2.2 3.8C3.3 10 3 11.2 3 12.5c0 3.6 3.1 6.7 7 7.4V21c0 .6.4 1 1 1s1-.4 1-1v-1.1c3.9-.7 7-3.8 7-7.4 0-1.3-.3-2.5-.9-3.5l2.2-3.8c.4-.5.3-1.1-.2-1.5-.2-.1-.4-.2-.6-.2z"/>'
         f'</svg>'
     )
 
 
 @register.simple_tag
 def bear_icon(size=14, css_class=""):
-    """Renders a precision financial prowling bear SVG icon."""
+    """Renders a sleek Wall Street Bear Paw icon with sharp claw pads."""
     classes = f"trend-animal-icon trend-bear-icon {css_class}".strip()
     return mark_safe(
         f'<svg class="{classes}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align: -0.15em; display: inline-block;">'
-        f'<path d="M19.5 4.5c-1.38 0-2.5 1.12-2.5 2.5 0 .28.05.54.14.79-1.44-.81-3.14-1.29-4.96-1.29s-3.52.48-4.96 1.29c.09-.25.14-.51.14-.79 0-1.38-1.12-2.5-2.5-2.5S2.36 5.62 2.36 7c0 1.19.83 2.18 1.95 2.43-.27.82-.43 1.7-.43 2.61 0 4.42 3.63 8 8.12 8s8.12-3.58 8.12-8c0-.91-.16-1.79-.43-2.61 1.12-.25 1.95-1.24 1.95-2.43 0-1.38-1.14-2.5-2.64-2.5zM12 18c-3.31 0-6-2.24-6-5 0-.55.45-1 1-1h10c.55 0 1 .45 1 1 0 2.76-2.69 5-6 5zm-3.5-5.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm7 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>'
+        f'<path d="M12 11.5c-3 0-5.5 2.2-5.5 5 0 1.9 1.5 3.5 3.5 3.5h4c2 0 3.5-1.6 3.5-3.5 0-2.8-2.5-5-5.5-5z"/>'
+        f'<circle cx="5.5" cy="9" r="1.8"/>'
+        f'<circle cx="9.5" cy="6.2" r="1.8"/>'
+        f'<circle cx="14.5" cy="6.2" r="1.8"/>'
+        f'<circle cx="18.5" cy="9" r="1.8"/>'
         f'</svg>'
     )
 

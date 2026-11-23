@@ -408,7 +408,7 @@ class TradingViewStockChart {
                 this.rawCandles = json.candles || [];
                 this.levels = json.levels || null;
                 this.fibonacci = json.fibonacci || null;
-                this.markers = json.markers || [];
+                this.markers = [];
                 if (!this.symbol && json.symbol) {
                     this.symbol = json.symbol;
                     if (this.candlestickSeries) {
@@ -431,7 +431,7 @@ class TradingViewStockChart {
                 this.rawCandles = json.candles || [];
                 this.levels = json.levels || null;
                 this.fibonacci = json.fibonacci || null;
-                if (json.markers) this.markers = json.markers;
+                this.markers = [];
                 this.populateSeries();
             })
             .catch(err => {
@@ -656,14 +656,12 @@ class TradingViewStockChart {
         if (this.indicatorState.stoch) this.renderStochPane(stochKData, stochDData);
         if (this.indicatorState.atr) this.renderAtrPane(atrData);
 
-        // Corporate Action Markers ('D', '⚡', 'B', 'S')
-        if (this.markers && this.markers.length > 0) {
-            const activeSeries = (this.currentChartType === 'candlestick')
-                ? this.candlestickSeries
-                : (this.currentChartType === 'area' ? this.areaSeries : this.lineSeries);
-            if (activeSeries && typeof activeSeries.setMarkers === 'function') {
-                activeSeries.setMarkers(this.markers);
-            }
+        // Explicitly clear any series markers to keep the price chart clean
+        const activeSeries = (this.currentChartType === 'candlestick')
+            ? this.candlestickSeries
+            : (this.currentChartType === 'area' ? this.areaSeries : this.lineSeries);
+        if (activeSeries && typeof activeSeries.setMarkers === 'function') {
+            activeSeries.setMarkers([]);
         }
 
         if (this.rawCandles.length < 25) {
@@ -908,7 +906,7 @@ class TradingViewStockChart {
             if (this.lineSeries) this.lineSeries.applyOptions({ visible: false });
             this.candlestickSeries.applyOptions({ visible: true });
             this.candlestickSeries.setData(candleData);
-            if (this.markers && this.markers.length > 0) this.candlestickSeries.setMarkers(this.markers);
+            if (this.candlestickSeries && typeof this.candlestickSeries.setMarkers === 'function') this.candlestickSeries.setMarkers([]);
         } else if (type === 'area') {
             this.candlestickSeries.applyOptions({ visible: false });
             if (this.lineSeries) this.lineSeries.applyOptions({ visible: false });
@@ -925,7 +923,7 @@ class TradingViewStockChart {
             }
             this.areaSeries.applyOptions({ visible: true });
             this.areaSeries.setData(lineData);
-            if (this.markers && this.markers.length > 0) this.areaSeries.setMarkers(this.markers);
+            if (this.areaSeries && typeof this.areaSeries.setMarkers === 'function') this.areaSeries.setMarkers([]);
         } else if (type === 'line') {
             this.candlestickSeries.applyOptions({ visible: false });
             if (this.areaSeries) this.areaSeries.applyOptions({ visible: false });
@@ -940,7 +938,7 @@ class TradingViewStockChart {
             }
             this.lineSeries.applyOptions({ visible: true });
             this.lineSeries.setData(lineData);
-            if (this.markers && this.markers.length > 0) this.lineSeries.setMarkers(this.markers);
+            if (this.lineSeries && typeof this.lineSeries.setMarkers === 'function') this.lineSeries.setMarkers([]);
         }
     }
 

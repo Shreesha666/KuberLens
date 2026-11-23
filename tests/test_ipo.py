@@ -991,6 +991,7 @@ class TestIPOIntelligenceModule:
         fake_client = IPOSMarketsClient()
         monkeypatch.setattr(fake_client, "get_overview", lambda: mock_overview)
         monkeypatch.setattr(fake_client, "get_issue_detail", lambda slug: mock_detail)
+        monkeypatch.setattr(fake_client, "get_issues_index", lambda: [])
 
         stats = sync_ipos_markets(client=fake_client, live_only=False, detail_limit=5)
         assert stats["created"] == 1

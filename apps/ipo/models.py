@@ -187,6 +187,34 @@ class IPOMaster(AuditedModel):
         return self.status == IPOStatus.LIVE
 
     @property
+    def effective_status(self) -> str:
+        """
+        Dynamically calculates the live IPO lifecycle status based on current calendar date.
+        Prevents static database status columns from showing 'Upcoming' when bidding is already live.
+        """
+        today = timezone.now().date()
+        if self.status in [IPOStatus.WITHDRAWN, IPOStatus.POSTPONED, IPOStatus.CANCELLED]:
+            return self.status
+        if self.listing_date and today >= self.listing_date:
+            return IPOStatus.LISTED
+        if self.allotment_date and today >= self.allotment_date:
+            return IPOStatus.ALLOTMENT_FINALIZED
+        if self.close_date and today > self.close_date:
+            return IPOStatus.CLOSED
+        if self.open_date and self.close_date and self.open_date <= today <= self.close_date:
+            return IPOStatus.LIVE
+        if self.open_date and today < self.open_date:
+            return IPOStatus.UPCOMING
+        return self.status
+
+    @property
+    def effective_status_display(self) -> str:
+        for val, label in IPOStatus.choices:
+            if val == self.effective_status:
+                return label
+        return self.get_status_display()
+
+    @property
     def latest_subscription(self):
         return self.subscriptions.order_by("-day_number").first()
 

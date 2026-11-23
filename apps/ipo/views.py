@@ -335,7 +335,7 @@ class IPODetailView(HTMXResponseMixin, DetailView):
         context["page_title"] = f"{ipo.company_name} ({ipo.symbol}) - IPO Profile"
         context["active_nav"] = "ipo_issues"
         context["active_tab"] = active_tab
-        context["status_badge"] = get_status_badge_class(ipo.status)
+        context["status_badge"] = get_status_badge_class(ipo.effective_status)
         timeline_steps = get_timeline_milestones(ipo)
         context["timeline_steps"] = timeline_steps
         completed_count = sum(1 for s in timeline_steps if s["status"] == "COMPLETED")

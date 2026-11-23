@@ -37,9 +37,67 @@
             <!-- Animated Ambient Luminous Orbs -->
             <div class="auth-ambient-orb auth-orb-1"></div>
             <div class="auth-ambient-orb auth-orb-2"></div>
+            <div class="auth-ambient-orb auth-orb-3"></div>
 
-            <!-- Top Header in Left Pane -->
+            <!-- Top Header & Live Marquee Ticker -->
             <div class="auth-hero-content">
+                <!-- Live Marquee Ticker -->
+                <div class="auth-ticker-wrapper">
+                    <div class="auth-ticker-track">
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">NIFTY 50</span>
+                            <span class="text-white">24,180.50</span>
+                            <span class="text-success text-micro">+0.65% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">SENSEX</span>
+                            <span class="text-white">79,486.30</span>
+                            <span class="text-success text-micro">+0.52% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">RELIANCE</span>
+                            <span class="text-white">₹1,274.50</span>
+                            <span class="text-success text-micro">+2.40% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">TCS</span>
+                            <span class="text-white">₹4,120.00</span>
+                            <span class="text-success text-micro">+1.85% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">HDFCBANK</span>
+                            <span class="text-white">₹1,745.20</span>
+                            <span class="text-success text-micro">+0.95% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">TATAMOTORS</span>
+                            <span class="text-white">₹980.40</span>
+                            <span class="text-success text-micro">+3.10% ▲</span>
+                        </div>
+                        <!-- Repeat for seamless continuous loop -->
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">NIFTY 50</span>
+                            <span class="text-white">24,180.50</span>
+                            <span class="text-success text-micro">+0.65% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">SENSEX</span>
+                            <span class="text-white">79,486.30</span>
+                            <span class="text-success text-micro">+0.52% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">RELIANCE</span>
+                            <span class="text-white">₹1,274.50</span>
+                            <span class="text-success text-micro">+2.40% ▲</span>
+                        </div>
+                        <div class="auth-ticker-pill">
+                            <span class="text-white-50">TCS</span>
+                            <span class="text-white">₹4,120.00</span>
+                            <span class="text-success text-micro">+1.85% ▲</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <img src="{% static 'branding/logo/kuberlens-primary-logo.png' %}"
                          alt="KuberLens Logo"
@@ -54,57 +112,132 @@
                     Institutional Indian Equity Intelligence
                 </h2>
                 <p class="text-white-50 lead fs-6 mb-0" style="max-width: 480px;">
-                    Multi-persona AI research, real-time technical structures, and virtual simulated paper trading for NSE &amp; BSE.
+                    Multi-persona quantitative AI, real-time technical structures, and virtual simulated paper trading for NSE &amp; BSE.
                 </p>
             </div>
 
-            <!-- Middle Market Ticker Card (Floating Animation) -->
-            <div class="auth-hero-content my-4">
-                <div class="auth-market-card mb-3">
-                    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-white border-opacity-10 pb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 text-micro">
-                                <i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i> Live Market Feed
-                            </span>
-                            <span class="text-white-50 small text-micro">NSE Telemetry</span>
+            <!-- Middle Stage: Multi-Layered Terminal Card with Glowing Candlestick Wave -->
+            <div class="auth-hero-content my-3">
+                <div class="auth-terminal-stage">
+                    <!-- Floating Accent Badge 1: Top Right AI Signal -->
+                    <div class="floating-accent-badge badge-top-right">
+                        <div class="p-1 rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">
+                            <i class="bi bi-lightning-charge-fill" style="font-size: 0.85rem;"></i>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-success small d-flex align-items-center gap-1">
-                                {% bull_icon size=16 %} Bullish Bias
-                            </span>
+                        <div>
+                            <div class="text-white text-micro fw-bold">AI Breakout Thesis</div>
+                            <div class="text-success text-micro">RELIANCE &bull; 94% Conviction</div>
                         </div>
                     </div>
 
-                    <!-- Simulated Quotes Ticker Row -->
-                    <div class="row g-2 text-white">
-                        <div class="col-4 border-end border-white border-opacity-10 pe-2">
-                            <div class="text-white-50 text-micro text-uppercase fw-semibold">NIFTY 50</div>
-                            <div class="fw-bold num-mono text-body-white fs-6">24,180.50</div>
-                            <span class="text-success text-micro fw-semibold">+0.65% ▲</span>
+                    <!-- Main Terminal Card -->
+                    <div class="auth-terminal-card">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-white border-opacity-10 pb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 text-micro">
+                                    <i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i> NSE Telemetry
+                                </span>
+                                <span class="text-white-50 small text-micro">Live Candlestick Stream</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-success small fw-semibold d-flex align-items-center gap-1">
+                                    {% bull_icon size=16 %} Secular Bullish
+                                </span>
+                            </div>
                         </div>
-                        <div class="col-4 border-end border-white border-opacity-10 px-2">
-                            <div class="text-white-50 text-micro text-uppercase fw-semibold">RELIANCE</div>
-                            <div class="fw-bold num-mono text-body-white fs-6">₹1,274.50</div>
-                            <span class="text-success text-micro fw-semibold">+2.40% ▲</span>
+
+                        <!-- Candlestick SVG Breakout Visualization -->
+                        <div class="candlestick-chart-svg mb-3">
+                            <svg viewBox="0 0 460 110" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                                <defs>
+                                    <linearGradient id="chartGlowArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#10B981" stop-opacity="0.32" />
+                                        <stop offset="100%" stop-color="#10B981" stop-opacity="0.0" />
+                                    </linearGradient>
+                                </defs>
+                                <!-- Gradient Area Under Trend -->
+                                <path d="M 10,95 L 45,82 L 80,88 L 115,70 L 150,75 L 185,55 L 220,62 L 255,42 L 290,48 L 325,30 L 360,35 L 395,20 L 430,12 L 430,105 L 10,105 Z" fill="url(#chartGlowArea)" />
+
+                                <!-- EMA 20 Dynamic Line -->
+                                <path d="M 10,95 L 45,82 L 80,88 L 115,70 L 150,75 L 185,55 L 220,62 L 255,42 L 290,48 L 325,30 L 360,35 L 395,20 L 430,12"
+                                      fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                                <!-- Candlestick 1 (Green) -->
+                                <line x1="45" y1="72" x2="45" y2="94" class="candle-line candle-green" />
+                                <rect x="39" y="78" width="12" height="10" class="candle-body candle-green" />
+
+                                <!-- Candlestick 2 (Red retracement) -->
+                                <line x1="80" y1="76" x2="80" y2="96" class="candle-line candle-red" />
+                                <rect x="74" y="80" width="12" height="9" class="candle-body candle-red" />
+
+                                <!-- Candlestick 3 (Green) -->
+                                <line x1="115" y1="60" x2="115" y2="82" class="candle-line candle-green" />
+                                <rect x="109" y="66" width="12" height="11" class="candle-body candle-green" />
+
+                                <!-- Candlestick 4 (Green) -->
+                                <line x1="185" y1="46" x2="185" y2="68" class="candle-line candle-green" />
+                                <rect x="179" y="50" width="12" height="12" class="candle-body candle-green" />
+
+                                <!-- Candlestick 5 (Green Breakout) -->
+                                <line x1="255" y1="32" x2="255" y2="54" class="candle-line candle-green" />
+                                <rect x="249" y="36" width="12" height="13" class="candle-body candle-green" />
+
+                                <!-- Candlestick 6 (Green) -->
+                                <line x1="325" y1="20" x2="325" y2="42" class="candle-line candle-green" />
+                                <rect x="319" y="24" width="12" height="12" class="candle-body candle-green" />
+
+                                <!-- Candlestick 7 (Peak candle) -->
+                                <line x1="395" y1="12" x2="395" y2="34" class="candle-line candle-green" />
+                                <rect x="389" y="16" width="12" height="11" class="candle-body candle-green" />
+
+                                <!-- Live Price Beacon Pulse -->
+                                <circle cx="430" cy="12" r="6" class="price-pulse-circle" />
+                                <circle cx="430" cy="12" r="3" fill="#ffffff" />
+                            </svg>
                         </div>
-                        <div class="col-4 ps-2">
-                            <div class="text-white-50 text-micro text-uppercase fw-semibold">TCS</div>
-                            <div class="fw-bold num-mono text-body-white fs-6">₹4,120.00</div>
-                            <span class="text-success text-micro fw-semibold">+1.85% ▲</span>
+
+                        <!-- Ticker Metric Strip -->
+                        <div class="row g-2 text-white">
+                            <div class="col-4 border-end border-white border-opacity-10 pe-2">
+                                <div class="text-white-50 text-micro text-uppercase fw-semibold">NIFTY 50</div>
+                                <div class="fw-bold num-mono fs-6">24,180.50</div>
+                                <span class="text-success text-micro fw-semibold">+0.65% ▲</span>
+                            </div>
+                            <div class="col-4 border-end border-white border-opacity-10 px-2">
+                                <div class="text-white-50 text-micro text-uppercase fw-semibold">200-DAY SMA</div>
+                                <div class="fw-bold num-mono fs-6">23,240.10</div>
+                                <span class="text-info text-micro fw-semibold">Above +4.0%</span>
+                            </div>
+                            <div class="col-4 ps-2">
+                                <div class="text-white-50 text-micro text-uppercase fw-semibold">14-PERIOD RSI</div>
+                                <div class="fw-bold num-mono fs-6">62.4</div>
+                                <span class="text-success text-micro fw-semibold">Strong Momentum</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Accent Badge 2: Bottom Left Paper Wallet -->
+                    <div class="floating-accent-badge badge-bottom-left">
+                        <div class="p-1 rounded-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;">
+                            <i class="bi bi-wallet2" style="font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <div class="text-white text-micro fw-bold">₹10,00,000 Liquid Margin</div>
+                            <div class="text-white-50 text-micro">Zero Risk Paper Trading</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Feature Badges -->
-                <div class="d-flex flex-wrap gap-2">
+                <!-- Glass Feature Badges -->
+                <div class="d-flex flex-wrap gap-2 pt-2">
                     <div class="auth-glass-pill">
-                        <i class="bi bi-cpu text-info"></i> Zero-Hallucination AI Desk
+                        <i class="bi bi-cpu text-info"></i> Zero-Hallucination AI
                     </div>
                     <div class="auth-glass-pill">
                         <i class="bi bi-shield-check text-success"></i> AES-256 Symmetric Safety
                     </div>
                     <div class="auth-glass-pill">
-                        <i class="bi bi-wallet2 text-warning"></i> ₹10L Paper Trading Capital
+                        <i class="bi bi-lightning-charge text-warning"></i> Sub-Second NSE Telemetry
                     </div>
                 </div>
             </div>
@@ -115,7 +248,7 @@
             </div>
         </div>
 
-        <!-- RIGHT PANE: Modern Clean Authentication Form -->
+        <!-- RIGHT PANE: Modern Clean Authentication Form Card -->
         <div class="auth-form-pane">
             <div class="auth-card-enter">
                 <!-- Mobile Logo Header (Hidden on lg+) -->
@@ -147,7 +280,7 @@
                 </div>
                 {% endif %}
 
-                <!-- Quick-Fill Demo Pill for Local Testing -->
+                <!-- Quick-Fill Demo Pill for Fast Local Testing -->
                 <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded-3 bg-body-tertiary border">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-key-fill text-primary"></i>
@@ -188,7 +321,7 @@
                     <div class="mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <label for="id_password" class="form-label text-secondary small fw-medium mb-0">Password</label>
-                            <span class="text-secondary text-micro">Secure AES</span>
+                            <span class="text-secondary text-micro">AES-256</span>
                         </div>
                         <div class="auth-input-group">
                             <i class="bi bi-lock auth-input-icon"></i>
@@ -266,7 +399,6 @@
         const themeIcon = document.getElementById('themeIcon');
         const html = document.documentElement;
 
-        // Load saved theme or system preference
         const savedTheme = localStorage.getItem('kuberlens-theme') || 'light';
         html.setAttribute('data-bs-theme', savedTheme);
         updateThemeIcon(savedTheme);

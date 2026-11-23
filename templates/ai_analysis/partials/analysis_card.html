@@ -5,9 +5,7 @@
     <!-- Header with Badges and Actions -->
     <div class="card-header bg-transparent py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-3">
-            <div class="stock-avatar-squircle shadow-sm">
-                {% stock_logo analysis.listing.symbol size=38 %}
-            </div>
+            {% stock_logo analysis.listing.symbol size=44 css_class="p-1 rounded-3 shadow-xs bg-body" %}
             <div>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                     <h3 class="h5 fw-bold mb-0 text-body">{{ analysis.listing.symbol }}</h3>

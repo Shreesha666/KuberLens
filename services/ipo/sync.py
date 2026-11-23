@@ -259,6 +259,21 @@ def sync_ipos_markets(
             sector = detail.get("sector") or item.get("sector") or ""
             desc = detail.get("issue_size_desc") or f"{company_name} public issue on {board.upper()}."
 
+            # Guard against overwriting enriched or prospectus data with empty DRHP overview stubs
+            existing_ipo = IPOMaster.objects.filter(symbol=symbol).first()
+            if existing_ipo:
+                if min_p is None and existing_ipo.price_band_min is not None:
+                    min_p = existing_ipo.price_band_min
+                    max_p = existing_ipo.price_band_max
+                    issue_price = existing_ipo.issue_price
+                if (lot_size == 1 or lot_size is None) and existing_ipo.lot_size > 1:
+                    lot_size = existing_ipo.lot_size
+                    min_investment = existing_ipo.min_investment
+                if size_cr is None and existing_ipo.total_issue_size_cr is not None:
+                    size_cr = existing_ipo.total_issue_size_cr
+                    fresh_cr = existing_ipo.fresh_issue_cr
+                    ofs_cr = existing_ipo.offer_for_sale_cr
+
             with transaction.atomic():
                 ipo_obj, created = IPOMaster.objects.update_or_create(
                     symbol=symbol,

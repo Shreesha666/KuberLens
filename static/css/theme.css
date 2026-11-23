@@ -1496,17 +1496,17 @@ body {
    Account & Profile Management Experience
    ========================================================================== */
 .profile-avatar-circle {
-    width: 68px;
-    height: 68px;
+    width: 76px;
+    height: 76px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    background: linear-gradient(135deg, #FF6F00 0%, #F4511E 100%);
     color: #ffffff;
-    font-size: 1.65rem;
+    font-size: 1.85rem;
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 8px 24px rgba(244, 81, 30, 0.28);
     flex-shrink: 0;
     position: relative;
     letter-spacing: -0.02em;
@@ -1516,29 +1516,180 @@ body {
     position: absolute;
     bottom: -2px;
     right: -2px;
-    background: #10b981;
-    color: #ffffff;
-    border: 2px solid var(--bg-surface, #ffffff);
+    background: var(--bg-surface, #ffffff);
+    color: var(--text-secondary, #64748b);
+    border: 2px solid var(--border-color);
     border-radius: 50%;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.profile-avatar-badge.verified {
+    background: #10b981;
+    color: #ffffff;
+    border-color: var(--bg-surface, #ffffff);
 }
 
 .account-kpi-card {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem 1.15rem;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .account-kpi-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.metric-squircle {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.metric-squircle.orange {
+    background: rgba(255, 111, 0, 0.12);
+    color: #FF6F00;
+}
+
+.metric-squircle.green {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10B981;
+}
+
+.metric-squircle.blue {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3B82F6;
+}
+
+.metric-squircle.purple {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8B5CF6;
+}
+
+/* Rank Progress Bar */
+.rank-progress-bar-bg {
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--bg-tertiary, rgba(0, 0, 0, 0.06));
+    overflow: hidden;
+    position: relative;
+}
+
+.rank-progress-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Trader Milestones Shelf */
+.milestone-badge-item {
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.milestone-badge-item.unlocked {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.03);
+}
+
+.milestone-badge-item.unlocked .milestone-icon {
+    background: rgba(16, 185, 129, 0.14);
+    color: #10B981;
+}
+
+.milestone-badge-item.locked {
+    opacity: 0.55;
+    background: var(--bg-tertiary, rgba(0, 0, 0, 0.02));
+}
+
+.milestone-badge-item.locked .milestone-icon {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94A3B8;
+}
+
+.milestone-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* Segmented Pill Control */
+.segmented-pill-control {
+    display: inline-flex;
+    background: var(--bg-tertiary, #f1f5f9);
+    padding: 3px;
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
+}
+
+.segmented-pill-btn {
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.95rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.segmented-pill-btn:hover {
+    color: var(--text-primary);
+}
+
+.segmented-pill-btn.active {
+    background: #FF5722;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
+}
+
+/* Interactive Settings Action Row */
+.settings-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.settings-nav-row:hover {
+    background-color: var(--bg-card-hover, rgba(0, 0, 0, 0.03));
+    color: inherit;
 }
 
 .danger-zone-card {

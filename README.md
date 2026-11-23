@@ -275,6 +275,11 @@ python manage.py create_dev_user
 - **Username:** `admin`
 - **Password:** `Admin@12345`
 
+*Resetting Password (if forgotten or to change without old password):*
+```bash
+.venv/bin/python manage.py changepassword admin
+```
+
 ### 5. Seed Demonstration & Market Universe Data
 Run the following idempotent management commands in order:
 ```bash

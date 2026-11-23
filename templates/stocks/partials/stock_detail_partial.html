@@ -92,19 +92,20 @@
 <!-- Dual Recommendation Framework (Existing Holder vs New Investor) -->
 {% if recommendations %}
 <div class="row g-4 mb-4">
-    <!-- 1. Existing Holder Guidance -->
-    <div class="col-12 col-lg-6">
-        <div class="card border-0 shadow-sm h-100 border-top border-4 border-primary">
+    <!-- 1. Existing Holder Guidance (Only shown if user has active holdings in this stock) -->
+    {% if holding %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-top border-4 border-primary">
             <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-person-check text-primary fs-5"></i>
                     <h5 class="fw-bold mb-0 text-body">Existing Holder Strategy</h5>
                 </div>
                 <span class="badge {% if recommendations.existing_holder.action == 'ADD / ACCUMULATE' %}bg-success text-white{% elif recommendations.existing_holder.action == 'PARTIAL PROFIT BOOKING' %}bg-warning text-dark{% elif recommendations.existing_holder.action == 'REDUCE EXPOSURE' or recommendations.existing_holder.action == 'EXIT' %}bg-danger text-white{% elif recommendations.existing_holder.action == 'HOLD / TIGHTEN STOP' %}bg-info text-white{% elif recommendations.existing_holder.action == 'HOLD' %}bg-secondary text-white{% else %}bg-secondary-subtle text-secondary border{% endif %}">
-                    {% if recommendations.existing_holder.is_holder %}{{ recommendations.existing_holder.action }}{% else %}NOT HELD IN PORTFOLIO{% endif %}
+                    {{ recommendations.existing_holder.action }}
                 </span>
             </div>
-            <div class="card-body px-4 py-2">
+            <div class="card-body px-4 py-3">
                 {% if recommendations.existing_holder.warning %}
                 <div class="alert alert-danger py-2 px-3 small fw-bold mb-3 d-flex align-items-center gap-2">
                     <i class="bi bi-shield-x fs-5"></i>
@@ -117,51 +118,47 @@
                     <p class="text-body mb-0 small">{{ recommendations.existing_holder.reasoning }}</p>
                 </div>
 
-                <div class="row g-2 mb-3 small pt-2 border-top">
-                    <div class="col-6">
+                <div class="row g-3 mb-3 small pt-2 border-top">
+                    <div class="col-12 col-sm-6 col-md-3">
                         <span class="text-muted d-block">Portfolio Allocation</span>
                         <span class="fw-bold num-mono text-body">
-                            {% if recommendations.existing_holder.is_holder %}
-                                {{ recommendations.existing_holder.allocation_pct }}%
-                                {% if holding %}<span class="text-muted fw-normal">({{ holding.total_quantity }} shares)</span>{% endif %}
-                            {% else %}
-                                0.0% <span class="text-muted fw-normal">(No open lots)</span>
-                            {% endif %}
+                            {{ recommendations.existing_holder.allocation_pct }}%
+                            <span class="text-muted fw-normal">({{ holding.total_quantity }} shares)</span>
                         </span>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-sm-6 col-md-3">
                         <span class="text-muted d-block">Avg Position Cost</span>
                         <span class="fw-bold num-mono text-body">
-                            {% if recommendations.existing_holder.is_holder and recommendations.existing_holder.existing_avg_price %}
+                            {% if recommendations.existing_holder.existing_avg_price %}
                                 ₹{{ recommendations.existing_holder.existing_avg_price|floatformat:2 }}
                             {% else %}
                                 —
                             {% endif %}
                         </span>
                     </div>
+                    <div class="col-12 col-md-6">
+                        <div class="p-2 rounded bg-light border small h-100">
+                            <span class="text-muted fw-semibold d-block text-uppercase" style="font-size: 0.75rem;">Invalidation Trigger</span>
+                            <span class="text-body">{{ recommendations.existing_holder.invalidation_condition }}</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="p-2 rounded bg-light border small">
-                    <span class="text-muted fw-semibold d-block text-uppercase" style="font-size: 0.75rem;">Invalidation Trigger</span>
-                    <span class="text-body">{{ recommendations.existing_holder.invalidation_condition }}</span>
-                </div>
-
-                {% if holding %}
-                <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                <div class="pt-2 border-top d-flex justify-content-between align-items-center">
                     <span class="text-muted extra-small">Active holding in your portfolio</span>
                     <a href="{% url 'holdings:detail' listing.symbol %}" class="btn btn-sm btn-outline-primary"
                        hx-get="{% url 'holdings:detail' listing.symbol %}" hx-target="#main-content" hx-push-url="true">
                         <i class="bi bi-wallet2"></i> View In Holdings
                     </a>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
+    {% endif %}
 
-    <!-- 2. New Prospective Investor Guidance -->
-    <div class="col-12 col-lg-6">
-        <div class="card border-0 shadow-sm h-100 border-top border-4 border-info">
+    <!-- 2. New Prospective Investor Guidance (Full Width) -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-top border-4 border-info">
             <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-lightbulb text-info fs-5"></i>
@@ -176,21 +173,21 @@
                     </span>
                 </div>
             </div>
-            <div class="card-body px-4 py-2">
+            <div class="card-body px-4 py-3">
                 <!-- 1. Key Trade Execution Metrics (3-Column Spacious Grid) -->
                 <div class="row g-3 mb-3 small pt-1">
-                    <div class="col-4">
+                    <div class="col-12 col-md-4">
                         <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Optimal Entry Zone</span>
                         <span class="fw-bold num-mono text-body text-nowrap" style="font-size: 0.88rem;">{{ recommendations.new_investor.entry_zone }}</span>
                     </div>
-                    <div class="col-4">
+                    <div class="col-12 col-md-4">
                         <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Stop Loss (ATR)</span>
                         <span class="fw-bold num-mono text-loss text-nowrap" style="font-size: 0.88rem;">{{ recommendations.new_investor.stop_loss }}</span>
                         {% if recommendations.new_investor.stop_loss_rationale %}
                         <div class="text-muted text-truncate" style="font-size: 0.68rem;" title="{{ recommendations.new_investor.stop_loss_rationale }}">1.5× ATR Buffer</div>
                         {% endif %}
                     </div>
-                    <div class="col-4">
+                    <div class="col-12 col-md-4">
                         <span class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Risk / Reward</span>
                         <span class="badge bg-light text-body border num-mono fw-bold px-2 py-1" style="font-size: 0.82rem;">{{ recommendations.new_investor.risk_reward }}</span>
                     </div>
@@ -256,7 +253,7 @@
                     <span class="text-muted small d-block mb-1.5 fw-semibold text-uppercase">Institutional Confluence Verification</span>
                     <div class="row g-2">
                         {% for check in recommendations.new_investor.confluence_checks %}
-                        <div class="col-12 col-sm-6">
+                        <div class="col-12 col-sm-6 col-lg-3">
                             <div class="p-2 rounded bg-light border d-flex align-items-start gap-2 h-100">
                                 {% if check.passed %}
                                 <i class="bi bi-check-circle-fill text-success flex-shrink-0 mt-0.5"></i>

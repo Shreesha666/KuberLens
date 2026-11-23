@@ -265,7 +265,7 @@ class TestStockViews:
         assert "tech-v2.0.0" in content
         assert "fund-v2.0.0" in content
         assert "stock-chart-canvas" in content
-        assert "Existing Holder Strategy" in content
+        assert "Existing Holder Strategy" not in content  # Hidden when user has no open holding
         assert "New Prospective Investor" in content
         assert "Optimal Entry Zone" in content
         assert "68.40" in content  # ₹68.40 (2.40%) dividend amount per share
@@ -279,7 +279,7 @@ class TestStockViews:
         assert "<!DOCTYPE html>" not in resp_htmx.content.decode()
         assert "Reliance Industries Limited" in resp_htmx.content.decode()
         assert "Dividend History (5Y)" in resp_htmx.content.decode()
-        assert "Existing Holder Strategy" in resp_htmx.content.decode()
+        assert "Existing Holder Strategy" not in resp_htmx.content.decode()  # Hidden when user has no open holding
         assert "New Prospective Investor" in resp_htmx.content.decode()
 
     def test_stock_detail_with_active_holding(self, seeded_stocks):

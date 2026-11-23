@@ -355,7 +355,9 @@ class TestMarketDataService:
         assert DataQualityIssue.objects.filter(listing=listing, issue_type="PROVIDER_DISCREPANCY").exists()
 
     @patch("integrations.market_data.providers.yahoo.adapter.YahooFinanceProvider.get_historical_candles")
-    def test_get_historical_candles_and_backfill(self, mock_yahoo_hist, sample_instruments):
+    @patch("integrations.market_data.providers.jugaad.adapter.JugaadDataProvider.get_historical_candles")
+    def test_get_historical_candles_and_backfill(self, mock_jugaad_hist, mock_yahoo_hist, sample_instruments):
+        mock_jugaad_hist.side_effect = ProviderConnectionError("NSE API Unavailable")
         listing = sample_instruments["nse"]
         start_date = date(2024, 2, 1)
         end_date = date(2024, 2, 3)

@@ -215,3 +215,59 @@ def test_reset_paper_account_action():
     assert paper_acc.realized_pnl == Decimal("0.00")
     assert "Virtual trading account has been reset" in res.content.decode()
 
+
+@pytest.mark.django_db
+def test_signup_view_flow():
+    from decimal import Decimal
+    from apps.paper_trading.models import PaperAccount
+
+    client = Client()
+    signup_url = reverse("accounts:signup")
+
+    # GET signup page
+    res_get = client.get(signup_url)
+    assert res_get.status_code == 200
+    assert "Create Investor Account" in res_get.content.decode()
+
+    # POST new registration
+    res_post = client.post(
+        signup_url,
+        {
+            "username": "newinvestor",
+            "first_name": "Arun",
+            "last_name": "Kumar",
+            "email": "arun.kumar@example.com",
+            "password1": "SecurePass123!",
+            "password2": "SecurePass123!",
+        }
+    )
+    assert res_post.status_code == 302
+    assert res_post.url == reverse("dashboard:index")
+
+    # Verify user created and auto-logged in
+    user = User.objects.get(username="newinvestor")
+    assert user.first_name == "Arun"
+    assert user.last_name == "Kumar"
+    assert user.email == "arun.kumar@example.com"
+
+    # Verify preferences and paper account initialized
+    assert hasattr(user, "preference")
+    paper_acc = PaperAccount.objects.get(user=user)
+    assert paper_acc.cash_balance == Decimal("1000000.00")
+
+    # Verify session is authenticated
+    res_dashboard = client.get(reverse("dashboard:index"))
+    assert res_dashboard.status_code == 200
+    assert user.username in res_dashboard.content.decode()
+
+
+@pytest.mark.django_db
+def test_login_page_renders_signup_link_and_no_guest_link():
+    client = Client()
+    res = client.get(reverse("accounts:login"))
+    assert res.status_code == 200
+    content = res.content.decode()
+    assert "Continue to Dashboard as Guest" not in content
+    assert reverse("accounts:signup") in content
+
+

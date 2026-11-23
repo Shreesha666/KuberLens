@@ -49,8 +49,9 @@
                 </div>
 
                 <div class="text-center mt-4">
-                    <a href="{% url 'dashboard:index' %}" class="text-muted small text-decoration-none">
-                        <i class="bi bi-arrow-left"></i> Continue to Dashboard as Guest
+                    <span class="text-secondary small">Don't have an account?</span>
+                    <a href="{% url 'accounts:signup' %}" class="fw-semibold text-primary small text-decoration-none ms-1">
+                        Sign up for free
                     </a>
                 </div>
             </div>

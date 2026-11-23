@@ -1,16 +1,22 @@
 from decimal import Decimal
 
-from django.contrib.auth import logout, update_session_auth_hash
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import TemplateView
+from django.views.generic import CreateView, TemplateView
 
 from apps.core.mixins import HTMXResponseMixin
 
-from .forms import CustomLoginForm, CustomPasswordChangeForm, UserPreferenceForm, UserProfileForm
+from .forms import (
+    CustomLoginForm,
+    CustomPasswordChangeForm,
+    CustomUserCreationForm,
+    UserPreferenceForm,
+    UserProfileForm,
+)
 
 
 class LoginView(DjangoLoginView):
@@ -20,6 +26,25 @@ class LoginView(DjangoLoginView):
 
     def get_success_url(self):
         return reverse_lazy("dashboard:index")
+
+
+class SignUpView(CreateView):
+    form_class = CustomUserCreationForm
+    template_name = "accounts/signup.html"
+    success_url = reverse_lazy("dashboard:index")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect("dashboard:index")
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        user = form.save()
+        user.get_preference()
+        from apps.paper_trading.models import PaperAccount
+        PaperAccount.objects.get_or_create(user=user)
+        login(self.request, user)
+        return redirect(self.success_url)
 
 
 class LogoutView(View):

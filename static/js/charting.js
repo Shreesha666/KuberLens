@@ -666,8 +666,17 @@ class TradingViewStockChart {
             }
         }
 
-        this.chart.timeScale().fitContent();
-        this.chart.timeScale().applyOptions({ rightOffset: 8 });
+        if (this.rawCandles.length < 25) {
+            // Keep clean, natural bar spacing instead of stretching 1-5 bars across the whole screen
+            this.chart.timeScale().applyOptions({
+                barSpacing: 18,
+                rightOffset: 8,
+            });
+            this.chart.timeScale().scrollToPosition(0, false);
+        } else {
+            this.chart.timeScale().fitContent();
+            this.chart.timeScale().applyOptions({ rightOffset: 8 });
+        }
 
         if (this.rawCandles.length > 0) {
             this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);

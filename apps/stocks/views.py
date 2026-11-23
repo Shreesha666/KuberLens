@@ -379,8 +379,10 @@ class StockChartDataView(View):
 
         query = HistoricalCandle.objects.filter(listing=listing, interval=interval)
         if 0 < days < 1800:
+            latest_c = query.order_by("-timestamp").first()
+            ref_now = latest_c.timestamp if latest_c else timezone.now()
             effective_days = max(days, 14) if days <= 7 else days
-            start_date = timezone.now() - timedelta(days=effective_days)
+            start_date = ref_now - timedelta(days=effective_days)
             query = query.filter(timestamp__gte=start_date)
         else:
             start_date = None

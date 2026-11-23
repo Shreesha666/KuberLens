@@ -5,6 +5,8 @@
      data-stock-quote-widget="true"
      data-symbol="{{ listing.symbol }}"
      data-price="{{ quote.price|default:'' }}"
+     data-change="{{ quote.change|default:'' }}"
+     data-change-percent="{{ quote.change_percent|default:'' }}"
      data-open="{{ quote.open|default:'' }}"
      data-high="{{ quote.high|default:'' }}"
      data-low="{{ quote.low|default:'' }}"

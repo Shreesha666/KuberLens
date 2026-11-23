@@ -1302,14 +1302,45 @@ document.addEventListener('htmx:beforeSwap', function(evt) {
     }
 });
 
-// Sync live price updates directly into TradingView Lightweight Chart
+// Sync live price updates directly into TradingView Lightweight Chart & Chart Toolbar Header
 document.addEventListener('htmx:afterSwap', function(evt) {
     const quoteEl = document.getElementById('stock-quote-container');
     if (quoteEl && quoteEl.dataset.price) {
+        const symbol = quoteEl.dataset.symbol || '';
+        const price = quoteEl.dataset.price;
+        const change = quoteEl.dataset.change;
+        const changePct = quoteEl.dataset.changePercent;
+
+        // 1. Update Chart Toolbar Header Live Price
+        const headingPriceEl = document.getElementById('chart-heading-price');
+        if (headingPriceEl) {
+            const counterEl = headingPriceEl.querySelector('[data-kpi-counter]') || headingPriceEl;
+            counterEl.setAttribute('data-target', price);
+            if (typeof window.animateOdometerCounter === 'function') {
+                window.animateOdometerCounter(counterEl, 'chart_price_' + symbol);
+            } else {
+                counterEl.textContent = '₹' + Number(price).toFixed(2);
+            }
+        }
+
+        // 2. Update Chart Toolbar Header Change Badge
+        const headingChangeEl = document.getElementById('chart-heading-change');
+        if (headingChangeEl && change !== undefined && change !== '') {
+            const chgNum = parseFloat(change);
+            const chgPctNum = parseFloat(changePct);
+            if (!isNaN(chgNum) && !isNaN(chgPctNum)) {
+                const isUp = chgNum >= 0;
+                const sign = isUp ? '+' : '';
+                headingChangeEl.className = `badge ${isUp ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} fw-semibold`;
+                headingChangeEl.textContent = `${sign}${chgNum.toFixed(2)} (${chgPctNum.toFixed(2)}%)`;
+            }
+        }
+
+        // 3. Update Chart Intraday Candle & Price Scale Line
         const chartContainer = document.getElementById('tradingview-chart-container');
         if (chartContainer && chartContainer._stockChartInstance && typeof chartContainer._stockChartInstance.updateLiveBar === 'function') {
             chartContainer._stockChartInstance.updateLiveBar({
-                price: quoteEl.dataset.price,
+                price: price,
                 open: quoteEl.dataset.open,
                 high: quoteEl.dataset.high,
                 low: quoteEl.dataset.low,

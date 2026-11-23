@@ -304,8 +304,10 @@
                 <span class="badge bg-secondary-subtle text-secondary fw-bold px-2 py-1">{{ listing.exchange.code }}</span>
                 <span class="h6 fw-bold mb-0 text-body">{{ listing.symbol }}</span>
                 {% if quote %}
-                <span class="fs-6 fw-bold num-mono text-body mb-0">₹{{ quote.price|floatformat:2 }}</span>
-                <span class="badge {% if quote.change >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} fw-semibold">
+                <span class="fs-6 fw-bold num-mono text-body mb-0" id="chart-heading-price">
+                    <span data-kpi-counter data-kpi-id="chart_price_{{ listing.symbol }}" data-target="{{ quote.price }}" data-format="inr" data-decimals="2">₹{{ quote.price|floatformat:2 }}</span>
+                </span>
+                <span class="badge {% if quote.change >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} fw-semibold" id="chart-heading-change">
                     {% if quote.change >= 0 %}+{% endif %}{{ quote.change|floatformat:2 }} ({{ quote.change_percent|floatformat:2 }}%)
                 </span>
                 {% if is_market_open %}

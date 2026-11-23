@@ -34,7 +34,11 @@ class StockSearchView(View):
     Supports search by NSE/BSE symbol, company name, display name, or ISIN.
     """
     def get(self, request, *args, **kwargs):
-        query = request.GET.get("q", "").strip()
+        query = request.GET.get("q", "").strip() or request.GET.get("symbol", "").strip()
+        context_mode = request.GET.get("context", "").strip()
+        role = request.GET.get("role", "INVESTOR").strip()
+        target_id = request.GET.get("target_id", "search-results").strip()
+
         if not query or len(query) < 1:
             if request.htmx:
                 return HttpResponse("")
@@ -58,7 +62,11 @@ class StockSearchView(View):
                 "isin": item.instrument.isin,
                 "sector": item.instrument.sector,
                 "cap": item.instrument.market_cap_category,
-                "url": f"/stocks/{item.symbol}/",
+                "url": (
+                    f"/research/ai/?symbol={item.symbol}&role={role}"
+                    if context_mode == "ai_hub"
+                    else f"/stocks/{item.symbol}/"
+                ),
                 "price": float(quotes_by_listing[item.id].price) if item.id in quotes_by_listing else None,
                 "change": float(quotes_by_listing[item.id].change) if item.id in quotes_by_listing else None,
                 "change_percent": float(quotes_by_listing[item.id].change_percent) if item.id in quotes_by_listing else None,
@@ -68,7 +76,16 @@ class StockSearchView(View):
 
         if request.htmx:
             from django.template.loader import render_to_string
-            html = render_to_string("stocks/partials/search_results_partial.html", {"results": results, "query": query}, request=request)
+            html = render_to_string(
+                "stocks/partials/search_results_partial.html",
+                {
+                    "results": results,
+                    "query": query,
+                    "target_id": target_id,
+                    "context_mode": context_mode,
+                },
+                request=request,
+            )
             return HttpResponse(html)
 
         return JsonResponse({"results": results})

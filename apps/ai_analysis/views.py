@@ -77,7 +77,27 @@ class AIResearchHubView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
         context["selected_role"] = role
         context["roles"] = AIRole.choices
         context["analysis"] = analysis
-        context["popular_symbols"] = POPULAR_RESEARCH_SYMBOLS
+
+        # Quick Picks: dynamically prioritize user's active holdings if available, then deduplicated liquid symbols
+        quick_symbols = []
+        if self.request.user.is_authenticated:
+            try:
+                user_holdings = list(
+                    Holding.objects.filter(portfolio__user=self.request.user)
+                    .values_list("listing__symbol", flat=True)
+                    .distinct()[:5]
+                )
+                quick_symbols.extend(user_holdings)
+            except Exception:
+                pass
+
+        for s in POPULAR_RESEARCH_SYMBOLS:
+            if s not in quick_symbols:
+                quick_symbols.append(s)
+            if len(quick_symbols) >= 8:
+                break
+
+        context["popular_symbols"] = quick_symbols
         return context
 
 

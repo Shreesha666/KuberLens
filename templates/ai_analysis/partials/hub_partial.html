@@ -33,31 +33,32 @@
                   hx-push-url="true"
                   class="row g-2 align-items-center">
                 <input type="hidden" name="role" value="{{ selected_role }}">
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-5 position-relative">
                     <div class="input-group">
                         <span class="input-group-text bg-body-tertiary border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text"
+                        <input type="search"
                                name="symbol"
+                               id="ai-hub-symbol-input"
                                class="form-control text-uppercase fw-semibold"
-                               placeholder="Enter NSE Symbol (e.g. SWSOLAR, RELIANCE)..."
-                               value="{{ symbol }}">
+                               placeholder="Search stock name, symbol or ISIN (e.g. SWSOLAR, TCS)..."
+                               value="{{ symbol }}"
+                               autocomplete="off"
+                               hx-get="{% url 'stocks:stock_search' %}?context=ai_hub&role={{ selected_role }}&target_id=ai-search-results"
+                               hx-trigger="keyup changed delay:250ms, search"
+                               hx-target="#ai-search-results">
                     </div>
+                    <!-- Live Search Suggestions Dropdown -->
+                    <div id="ai-search-results" class="position-absolute w-100 mt-1 shadow-lg rounded-3 z-3 bg-surface search-results-dropdown"
+                         style="top: 100%; left: 0; max-height: 380px; overflow-y: auto;"></div>
                 </div>
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-2">
                     <button type="submit" class="btn btn-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-2">
                         <i class="bi bi-cpu"></i> Research Stock
                     </button>
                 </div>
                 <div class="col-12 col-md-5">
-                    <div class="d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
-                        <span class="small text-muted me-1 fw-medium">Popular:</span>
-                        <a href="{% url 'ai_analysis:hub' %}?symbol=SWSOLAR&role={{ selected_role }}&force=true"
-                           hx-get="{% url 'ai_analysis:hub' %}?symbol=SWSOLAR&role={{ selected_role }}&force=true"
-                           hx-target="#main-content"
-                           hx-push-url="true"
-                           class="badge {% if symbol == 'SWSOLAR' %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2 py-1 rounded-pill">
-                            SWSOLAR
-                        </a>
+                    <div class="d-flex flex-wrap align-items-center gap-1.5 justify-content-md-end">
+                        <span class="small text-muted me-1 fw-medium">Quick Picks:</span>
                         {% for sym in popular_symbols %}
                         <a href="{% url 'ai_analysis:hub' %}?symbol={{ sym }}&role={{ selected_role }}"
                            hx-get="{% url 'ai_analysis:hub' %}?symbol={{ sym }}&role={{ selected_role }}"

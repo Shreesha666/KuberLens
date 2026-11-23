@@ -77,6 +77,22 @@ class TestAIViews:
         htmx_content = htmx_res.content.decode()
         assert "Swing Trader AI" in htmx_content
         assert "<!DOCTYPE html>" not in htmx_content
+        assert "ai-hub-symbol-input" in htmx_content
+        assert "ai-search-results" in htmx_content
+        assert "Quick Picks:" in htmx_content
+
+    def test_ai_hub_search_suggestions_with_context(self):
+        url = reverse("stocks:stock_search")
+        res = self.client.get(
+            url,
+            {"symbol": "INFY", "context": "ai_hub", "role": "SWING_TRADER", "target_id": "ai-search-results"},
+            HTTP_HX_REQUEST="true",
+        )
+        assert res.status_code == 200
+        content = res.content.decode()
+        assert "INFY" in content
+        assert "ai-search-results" in content
+        assert "/research/ai/?symbol=INFY&amp;role=SWING_TRADER" in content
 
     def test_ai_stock_detail_tab_partial_endpoint(self):
         url = reverse("ai_analysis:stock_tab_partial", kwargs={"symbol": "INFY"})

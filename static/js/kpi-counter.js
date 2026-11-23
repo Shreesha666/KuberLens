@@ -154,9 +154,14 @@
   window._dashboardFirstLoadDone = window._dashboardFirstLoadDone || false;
   window._dashboardKpiState = window._dashboardKpiState || {};
 
-  function isDashboardElement(el) {
+  function isOdometerEligible(el) {
     if (!el) return false;
-    return Boolean(el.closest("#dashboard-root") || el.closest("[data-dashboard-root]"));
+    return Boolean(
+      el.closest("#dashboard-root") ||
+      el.closest("[data-dashboard-root]") ||
+      el.closest("#stock-quote-container") ||
+      el.closest("[data-stock-quote-widget]")
+    );
   }
 
   // CodeFronts mechanical rolling odometer tumbler digit animation
@@ -312,7 +317,7 @@
     if (!counters.length) return;
 
     counters.forEach(function (counterEl, idx) {
-      const onDashboard = isDashboardElement(counterEl);
+      const isOdoEligible = isOdometerEligible(counterEl);
       const kpiId = counterEl.getAttribute("data-kpi-id") || ("kpi-" + idx);
 
       // Record baseline target for future odometer transitions
@@ -336,11 +341,11 @@
         }
       }
 
-      if (onDashboard && mode === "odometer") {
-        // EXCLUSIVELY run mechanical rolling odometer on Dashboard 15-second background refresh
+      if (isOdoEligible && mode === "odometer") {
+        // EXCLUSIVELY run mechanical rolling odometer on 15-second background refresh (Dashboard & Stock Quote Widget)
         animateOdometerCounter(counterEl, kpiId);
       } else {
-        // EXCLUSIVELY run smooth text count-up on manual refresh, initial load, or non-dashboard pages
+        // EXCLUSIVELY run smooth text count-up on manual refresh, initial load, or non-odometer pages
         animateCounter(counterEl);
       }
     });
@@ -380,10 +385,13 @@
 
     // Detect if this HTMX swap came from the 15-second background refresh timer
     const elt = evt.detail.elt;
-    const isSilentRefresh = elt && elt.hasAttribute && elt.hasAttribute("data-silent-refresh");
+    const isSilentRefresh = Boolean(
+      (elt && elt.hasAttribute && elt.hasAttribute("data-silent-refresh")) ||
+      (elt && elt.closest && elt.closest("[data-silent-refresh]"))
+    );
     const reqPath = (evt.detail.pathInfo && evt.detail.pathInfo.requestPath) ? evt.detail.pathInfo.requestPath : "";
     const xhrUrl = (evt.detail.xhr && evt.detail.xhr.responseURL) ? evt.detail.xhr.responseURL : "";
-    const is15sUrl = reqPath.includes("refresh=15s") || xhrUrl.includes("refresh=15s");
+    const is15sUrl = reqPath.includes("refresh=15s") || xhrUrl.includes("refresh=15s") || reqPath.includes("/quote/") || xhrUrl.includes("/quote/");
 
     const is15sBackgroundRefresh = Boolean(isSilentRefresh || is15sUrl);
 

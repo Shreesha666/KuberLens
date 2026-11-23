@@ -658,3 +658,44 @@ class StockLogoProxyView(View):
         response = HttpResponse(content, content_type=content_type)
         response["Cache-Control"] = "public, max-age=604800, stale-while-revalidate=86400"
         return response
+
+
+class StockQuotePartialView(View):
+    """
+    Dedicated lightweight endpoint for 15-second background auto-refresh of live market price.
+    Renders only the quote ticker banner to avoid reloading charts, indicators, or full page.
+    """
+    def get(self, request, symbol: str, *args, **kwargs):
+        symbol = symbol.upper()
+        listing = (
+            ExchangeListing.objects.filter(symbol=symbol, is_tradeable=True)
+            .select_related("instrument", "exchange")
+            .first()
+        )
+        if not listing:
+            from services.market_data.auto_ingest import AutoIngestionService
+            listing = AutoIngestionService.get_or_create_listing(symbol)
+
+        if not listing:
+            raise Http404(f"Listing '{symbol}' not found.")
+
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        is_market_open = ExchangeCalendar.is_market_open()
+
+        try:
+            quote = MarketDataService.get_quote(listing, force_refresh=True)
+        except Exception as e:
+            logger.warning("Could not fetch fresh quote for %s: %s", symbol, e)
+            quote = None
+        if not quote:
+            quote = MarketQuote.objects.filter(listing=listing).order_by("-retrieved_at").first()
+
+        context = {
+            "listing": listing,
+            "quote": quote,
+            "is_market_open": is_market_open,
+        }
+        from django.template.loader import render_to_string
+        return HttpResponse(
+            render_to_string("stocks/partials/stock_quote_partial.html", context, request=request)
+        )

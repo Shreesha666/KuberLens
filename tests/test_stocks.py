@@ -314,6 +314,24 @@ class TestStockViews:
         assert "New Prospective Investor" in content
         assert "data-kpi-counter" in content
 
+    def test_stock_quote_partial_endpoint(self, seeded_stocks, monkeypatch):
+        from services.market_data.service import MarketDataService
+        monkeypatch.setattr(
+            MarketDataService,
+            "get_quote",
+            lambda listing, force_refresh=False: MarketQuote.objects.filter(listing=listing).order_by("-retrieved_at").first(),
+        )
+        client = Client()
+        url = reverse("stocks:stock_quote_partial", kwargs={"symbol": "RELIANCE"})
+        res = client.get(url)
+        assert res.status_code == 200
+        content = res.content.decode()
+        assert "stock-quote-container" in content
+        assert "data-stock-quote-widget" in content
+        assert "data-silent-refresh" in content
+        assert "data-kpi-counter" in content
+        assert "RELIANCE" in content
+
     def test_stock_detail_nonexistent_returns_404(self):
         client = Client()
         url = reverse("stocks:stock_detail", kwargs={"symbol": "UNKNOWN123"})

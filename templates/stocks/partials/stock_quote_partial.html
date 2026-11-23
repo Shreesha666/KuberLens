@@ -1,0 +1,37 @@
+{% load core_tags humanize %}
+<!-- Live Stock Quote Ticker Widget with 15-Second Background Rolling Odometer -->
+<div class="text-md-end"
+     id="stock-quote-container"
+     data-stock-quote-widget="true"
+     {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'stocks:stock_quote_partial' listing.symbol %}" hx-swap="outerHTML" data-silent-refresh="true"{% endif %}>
+    {% if quote %}
+    <div class="d-flex align-items-baseline justify-content-md-end gap-2">
+        <span class="h2 fw-bold num-mono text-body mb-0">
+            <span data-kpi-counter data-kpi-id="stock_price_{{ listing.symbol }}" data-target="{{ quote.price }}" data-format="inr" data-decimals="2">₹{{ quote.price|floatformat:2 }}</span>
+        </span>
+        <span class="fs-5 num-mono {% if quote.change >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
+            {% if quote.change >= 0 %}&#9650; +{% else %}&#9660; {% endif %}<span data-kpi-counter data-kpi-id="stock_change_{{ listing.symbol }}" data-target="{{ quote.change }}" data-decimals="2">{{ quote.change|floatformat:2 }}</span> (<span data-kpi-counter data-kpi-id="stock_change_pct_{{ listing.symbol }}" data-target="{{ quote.change_percent }}" data-decimals="2">{{ quote.change_percent|floatformat:2 }}</span>%)
+        </span>
+    </div>
+    <div class="d-flex align-items-center justify-content-md-end gap-2 mt-1 flex-wrap">
+        <!-- 2D Market Data Provenance Badges -->
+        <span class="badge {% if quote.source_type == 'DIRECT' %}bg-success-subtle text-success border border-success-subtle{% elif quote.source_type == 'DELAYED' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} small">
+            <i class="bi bi-broadcast"></i> {{ quote.source_type }}
+            {% if quote.configured_delay_minutes > 0 %}({{ quote.configured_delay_minutes }}m delay){% endif %}
+        </span>
+        <span class="badge {% if quote.freshness_status == 'FRESH' %}bg-success text-white{% elif quote.freshness_status == 'CACHED' %}bg-info text-white{% elif quote.freshness_status == 'STALE' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %} small">
+            {{ quote.freshness_status }}
+        </span>
+        {% if is_market_open %}
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small d-inline-flex align-items-center gap-1" title="Live streaming price refresh active (every 15s)">
+            <span class="spinner-grow spinner-grow-sm text-success" style="width: 0.35rem; height: 0.35rem;" role="status"></span>15s
+        </span>
+        {% endif %}
+        <span class="text-muted small" style="font-size: 0.75rem;">
+            {{ quote.source_provider }} &bull; {{ quote.retrieved_at|date:"H:i:s" }} IST
+        </span>
+    </div>
+    {% else %}
+    <div class="text-muted small">Live quote currently offline</div>
+    {% endif %}
+</div>

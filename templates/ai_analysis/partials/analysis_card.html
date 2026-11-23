@@ -3,7 +3,7 @@
 {% if analysis %}
 <div class="ai-research-hero mb-4">
     <!-- Header with Badges and Actions -->
-    <div class="card-header bg-transparent py-3.5 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="card-header bg-transparent py-3 px-4 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-3">
             <div class="stock-avatar-squircle shadow-sm">
                 {% stock_logo analysis.listing.symbol size=38 %}
@@ -14,39 +14,39 @@
                     {% if analysis.listing.instrument.display_name %}
                     <span class="text-secondary small fw-medium">({{ analysis.listing.instrument.display_name }})</span>
                     {% endif %}
-                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-0.5 rounded-pill">{{ analysis.listing.instrument.sector|default:"Equity" }}</span>
+                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 rounded-pill">{{ analysis.listing.instrument.sector|default:"Equity" }}</span>
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-2 small">
-                    <span class="badge bg-primary-subtle text-primary fw-semibold px-2.5 py-1 rounded-pill">
+                    <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded-pill">
                         <i class="bi bi-robot me-1"></i>{{ analysis.get_role_display }}
                     </span>
                     {% if analysis.overall_view == 'BUY_CANDIDATE' %}
-                    <span class="badge badge-bullish px-2.5 py-1">
+                    <span class="badge badge-bullish px-2 py-1">
                         {% bull_icon size=13 %} BUY CANDIDATE
                     </span>
                     {% elif analysis.overall_view == 'EXIT' %}
-                    <span class="badge badge-bearish px-2.5 py-1">
+                    <span class="badge badge-bearish px-2 py-1">
                         {% bear_icon size=13 %} EXIT
                     </span>
                     {% elif analysis.overall_view == 'REDUCE' or analysis.overall_view == 'AVOID' %}
-                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-bold px-2.5 py-1 rounded-pill">
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-bold px-2 py-1 rounded-pill">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ analysis.get_overall_view_display }}
                     </span>
                     {% elif analysis.overall_view == 'HOLD' %}
-                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-bold px-2.5 py-1 rounded-pill">
+                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-bold px-2 py-1 rounded-pill">
                         <i class="bi bi-pause-circle-fill me-1"></i> HOLD
                     </span>
                     {% else %}
-                    <span class="badge bg-secondary-subtle text-secondary-emphasis border fw-bold px-2.5 py-1 rounded-pill">
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis border fw-bold px-2 py-1 rounded-pill">
                         <i class="bi bi-eye-fill me-1"></i> {{ analysis.get_overall_view_display }}
                     </span>
                     {% endif %}
 
-                    <span class="badge bg-body-tertiary text-secondary border px-2.5 py-1 rounded-pill">
+                    <span class="badge bg-body-tertiary text-secondary border px-2 py-1 rounded-pill">
                         Confidence: <strong class="text-body">{{ analysis.get_confidence_level_display }}</strong>
                     </span>
                     <span class="text-muted small">
-                        Freshness: <span class="badge bg-body-tertiary text-muted border px-2 py-0.5">{{ analysis.data_freshness|default:"EOD" }}</span>
+                        Freshness: <span class="badge bg-body-tertiary text-muted border px-2 py-1">{{ analysis.data_freshness|default:"EOD" }}</span>
                     </span>
                 </div>
             </div>
@@ -76,12 +76,12 @@
 
     <div class="card-body p-4">
         <!-- Executive Research Synthesis -->
-        <div class="ai-exec-synthesis p-3.5 mb-4 shadow-sm">
+        <div class="ai-exec-synthesis p-3 mb-4 shadow-sm">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2 fs-6">
                     <i class="bi bi-chat-left-quote-fill"></i> Executive Research Synthesis
                 </h6>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 rounded-pill small">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill small">
                     Verified Thesis
                 </span>
             </div>
@@ -91,19 +91,19 @@
         <!-- Positive Factors & Catalysts vs Headwinds & Negative Factors -->
         <div class="row g-3 mb-4">
             <div class="col-md-6">
-                <div class="ai-catalysts-box h-100 p-3.5 shadow-sm">
+                <div class="ai-catalysts-box h-100 p-3 shadow-sm">
                     <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-success-subtle">
                         <h6 class="fw-bold text-success mb-0 d-flex align-items-center gap-2 fs-6">
                             <i class="bi bi-graph-up-arrow"></i> Positive Factors & Catalysts
                         </h6>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 small">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
                             {{ analysis.positive_factors|length }} Catalysts
                         </span>
                     </div>
-                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2.5">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
                         {% for factor in analysis.positive_factors %}
-                        <li class="d-flex align-items-start gap-2.5 small text-body">
-                            <i class="bi bi-check-circle-fill text-success mt-0.5 flex-shrink-0"></i>
+                        <li class="d-flex align-items-start gap-2 small text-body">
+                            <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
                             <span class="lh-sm">{{ factor }}</span>
                         </li>
                         {% empty %}
@@ -113,19 +113,19 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="ai-headwinds-box h-100 p-3.5 shadow-sm">
+                <div class="ai-headwinds-box h-100 p-3 shadow-sm">
                     <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-danger-subtle">
                         <h6 class="fw-bold text-danger mb-0 d-flex align-items-center gap-2 fs-6">
                             <i class="bi bi-graph-down-arrow"></i> Headwinds & Negative Factors
                         </h6>
-                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 small">
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 small">
                             {{ analysis.negative_factors|length }} Headwinds
                         </span>
                     </div>
-                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2.5">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
                         {% for factor in analysis.negative_factors %}
-                        <li class="d-flex align-items-start gap-2.5 small text-body">
-                            <i class="bi bi-exclamation-triangle-fill text-danger mt-0.5 flex-shrink-0"></i>
+                        <li class="d-flex align-items-start gap-2 small text-body">
+                            <i class="bi bi-exclamation-triangle-fill text-danger mt-1 flex-shrink-0"></i>
                             <span class="lh-sm">{{ factor }}</span>
                         </li>
                         {% empty %}
@@ -140,15 +140,15 @@
         <div class="row g-3 mb-4">
             <!-- Technical Structure -->
             <div class="col-md-6">
-                <div class="ai-glass-card h-100 p-3.5 shadow-sm">
+                <div class="ai-glass-card h-100 p-3 shadow-sm">
                     <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                         <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 fs-6 text-body">
                             <i class="bi bi-activity text-primary"></i> TECHNICAL STRUCTURE
                         </h6>
-                        <span class="badge bg-body-tertiary text-secondary border px-2 py-0.5 rounded-pill small">Daily (1D)</span>
+                        <span class="badge bg-body-tertiary text-secondary border px-2 py-1 rounded-pill small">Daily (1D)</span>
                     </div>
 
-                    <div class="row g-2.5">
+                    <div class="row g-2">
                         <!-- Trend Signal -->
                         <div class="col-6">
                             <div class="ai-stat-tile h-100">
@@ -166,20 +166,20 @@
                                     <span class="text-muted d-block small mb-1 fw-medium">14-Period RSI</span>
                                     {% if analysis.technical_analysis.rsi_14 %}
                                         {% if analysis.technical_analysis.rsi_14 < 30 %}
-                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-1.5 py-0.5 small rounded-pill">Oversold</span>
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small rounded-pill">Oversold</span>
                                         {% elif analysis.technical_analysis.rsi_14 > 70 %}
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5 small rounded-pill">Overbought</span>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small rounded-pill">Overbought</span>
                                         {% elif analysis.technical_analysis.rsi_14 >= 50 %}
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 small rounded-pill">Bullish</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small rounded-pill">Bullish</span>
                                         {% else %}
-                                            <span class="badge bg-secondary-subtle text-secondary border px-1.5 py-0.5 small rounded-pill">Neutral</span>
+                                            <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 small rounded-pill">Neutral</span>
                                         {% endif %}
                                     {% endif %}
                                 </div>
                                 <div class="fw-bold num-mono fs-5 text-body">
                                     {{ analysis.technical_analysis.rsi_14|floatformat:1|default:"—" }}
                                 </div>
-                                <div class="progress mt-1.5" style="height: 4px; background: rgba(148,163,184,0.2);">
+                                <div class="progress mt-2" style="height: 4px; background: rgba(148,163,184,0.2);">
                                     <div class="progress-bar {% if analysis.technical_analysis.rsi_14 >= 50 %}bg-success{% elif analysis.technical_analysis.rsi_14 < 30 %}bg-warning{% else %}bg-danger{% endif %}"
                                          role="progressbar"
                                          style="width: {{ analysis.technical_analysis.rsi_14|default:50 }}%"></div>
@@ -190,19 +190,19 @@
                         <!-- Moving Averages Group -->
                         <div class="col-4">
                             <div class="ai-stat-tile text-center">
-                                <span class="text-muted d-block small mb-0.5 fw-medium">SMA 20</span>
+                                <span class="text-muted d-block small mb-1 fw-medium">SMA 20</span>
                                 <span class="num-mono fw-bold text-body fs-6">{{ analysis.technical_analysis.sma_20|floatformat:1|default:"—" }}</span>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="ai-stat-tile text-center">
-                                <span class="text-muted d-block small mb-0.5 fw-medium">SMA 50</span>
+                                <span class="text-muted d-block small mb-1 fw-medium">SMA 50</span>
                                 <span class="num-mono fw-bold text-body fs-6">{{ analysis.technical_analysis.sma_50|floatformat:1|default:"—" }}</span>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="ai-stat-tile text-center">
-                                <span class="text-muted d-block small mb-0.5 fw-medium">SMA 200</span>
+                                <span class="text-muted d-block small mb-1 fw-medium">SMA 200</span>
                                 <span class="num-mono fw-bold text-body fs-6">{{ analysis.technical_analysis.sma_200|floatformat:1|default:"—" }}</span>
                             </div>
                         </div>
@@ -212,32 +212,32 @@
 
             <!-- Fundamental Health & Valuation -->
             <div class="col-md-6">
-                <div class="ai-glass-card h-100 p-3.5 shadow-sm">
+                <div class="ai-glass-card h-100 p-3 shadow-sm">
                     <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                         <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 fs-6 text-body">
                             <i class="bi bi-bar-chart-steps text-success"></i> FUNDAMENTAL HEALTH & VALUATION
                         </h6>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill small">Solvency & Profitability</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small">Solvency & Profitability</span>
                     </div>
 
-                    <div class="row g-2.5">
+                    <div class="row g-2">
                         <!-- Fundamental Score -->
                         <div class="col-6">
                             <div class="ai-stat-tile h-100">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <span class="text-muted d-block small mb-1 fw-medium">Fundamental Score</span>
                                     {% if analysis.fundamental_analysis.overall_score >= 60 %}
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 small rounded-pill">Healthy</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small rounded-pill">Healthy</span>
                                     {% elif analysis.fundamental_analysis.overall_score >= 40 %}
-                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-1.5 py-0.5 small rounded-pill">Moderate</span>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small rounded-pill">Moderate</span>
                                     {% else %}
-                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-1.5 py-0.5 small rounded-pill">Weak</span>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small rounded-pill">Weak</span>
                                     {% endif %}
                                 </div>
                                 <div class="fw-bold text-success num-mono fs-5">
                                     {{ analysis.fundamental_analysis.overall_score|default:50 }}<span class="text-muted fs-6 fw-normal">/100</span>
                                 </div>
-                                <div class="progress mt-1.5" style="height: 4px; background: rgba(148,163,184,0.2);">
+                                <div class="progress mt-2" style="height: 4px; background: rgba(148,163,184,0.2);">
                                     <div class="progress-bar bg-success"
                                          role="progressbar"
                                          style="width: {{ analysis.fundamental_analysis.overall_score|default:50 }}%"></div>
@@ -252,9 +252,9 @@
                                     <span class="text-muted d-block small mb-1 fw-medium">Stock P/E vs Sector</span>
                                     {% if analysis.fundamental_analysis.pe_ratio and analysis.fundamental_analysis.sector_pe %}
                                         {% if analysis.fundamental_analysis.pe_ratio < analysis.fundamental_analysis.sector_pe %}
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 small rounded-pill">Discount</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small rounded-pill">Discount</span>
                                         {% else %}
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-1.5 py-0.5 small rounded-pill">Premium</span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small rounded-pill">Premium</span>
                                         {% endif %}
                                     {% endif %}
                                 </div>
@@ -270,7 +270,7 @@
                         <!-- Return on Equity (ROE) -->
                         <div class="col-6">
                             <div class="ai-stat-tile">
-                                <span class="text-muted d-block small mb-0.5 fw-medium">Return on Equity (ROE)</span>
+                                <span class="text-muted d-block small mb-1 fw-medium">Return on Equity (ROE)</span>
                                 <div class="fw-bold num-mono text-body fs-5">
                                     {{ analysis.fundamental_analysis.roe|floatformat:1|default:"—" }}%
                                 </div>
@@ -281,12 +281,12 @@
                         <div class="col-6">
                             <div class="ai-stat-tile">
                                 <div class="d-flex align-items-center justify-content-between">
-                                    <span class="text-muted d-block small mb-0.5 fw-medium">Debt to Equity</span>
+                                    <span class="text-muted d-block small mb-1 fw-medium">Debt to Equity</span>
                                     {% if analysis.fundamental_analysis.debt_to_equity is not None %}
                                         {% if analysis.fundamental_analysis.debt_to_equity <= 1.0 %}
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 small rounded-pill">Low Leverage</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small rounded-pill">Low Leverage</span>
                                         {% else %}
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-1.5 py-0.5 small rounded-pill">Leveraged</span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small rounded-pill">Leveraged</span>
                                         {% endif %}
                                     {% endif %}
                                 </div>
@@ -303,8 +303,8 @@
         <!-- Dual Perspective Research: Existing Holder vs New Investor -->
         <div class="row g-3 mb-4">
             <div class="col-md-6">
-                <div class="ai-glass-card h-100 p-3.5 shadow-sm">
-                    <div class="d-flex align-items-center gap-2 mb-2.5 pb-2 border-bottom">
+                <div class="ai-glass-card h-100 p-3 shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
                         <i class="bi bi-person-check-fill text-info fs-5"></i>
                         <div>
                             <h6 class="fw-bold text-body mb-0 small text-uppercase">Existing Portfolio Holder View</h6>
@@ -315,8 +315,8 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="ai-glass-card h-100 p-3.5 shadow-sm">
-                    <div class="d-flex align-items-center gap-2 mb-2.5 pb-2 border-bottom">
+                <div class="ai-glass-card h-100 p-3 shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
                         <i class="bi bi-wallet2 text-primary fs-5"></i>
                         <div>
                             <h6 class="fw-bold text-body mb-0 small text-uppercase">Prospective New Investor View</h6>
@@ -331,7 +331,7 @@
         <!-- Entry vs Invalidation Execution Triggers -->
         <div class="row g-3 mb-4">
             <div class="col-md-6">
-                <div class="ai-execution-card-entry p-3.5 shadow-sm h-100">
+                <div class="ai-execution-card-entry p-3 shadow-sm h-100">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-box-arrow-in-right text-success fs-5"></i>
                         <span class="fw-bold text-success small text-uppercase letter-spacing-1">Validated Entry Conditions</span>
@@ -340,7 +340,7 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="ai-execution-card-exit p-3.5 shadow-sm h-100">
+                <div class="ai-execution-card-exit p-3 shadow-sm h-100">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="bi bi-shield-slash-fill text-danger fs-5"></i>
                         <span class="fw-bold text-danger small text-uppercase letter-spacing-1">Invalidation / Exit Triggers</span>
@@ -351,7 +351,7 @@
         </div>
 
         <!-- Risk Assessment Detail -->
-        <div class="ai-glass-card p-3.5 mb-4 shadow-sm">
+        <div class="ai-glass-card p-3 mb-4 shadow-sm">
             <h6 class="fw-bold mb-2 text-danger d-flex align-items-center gap-2 small text-uppercase">
                 <i class="bi bi-shield-exclamation"></i> Capital Risk & Downside Assessment
             </h6>
@@ -360,12 +360,12 @@
 
         <!-- Missing / Unverified Information Callout -->
         {% if analysis.missing_information %}
-        <div class="alert alert-warning border-warning-subtle py-2.5 px-3.5 mb-4 rounded-3 shadow-sm" style="background: rgba(245, 158, 11, 0.08);">
-            <div class="d-flex align-items-center gap-2 mb-1.5">
+        <div class="alert alert-warning border-warning-subtle py-2 px-3 mb-4 rounded-3 shadow-sm" style="background: rgba(245, 158, 11, 0.08);">
+            <div class="d-flex align-items-center gap-2 mb-2">
                 <i class="bi bi-exclamation-octagon-fill text-warning"></i>
                 <strong class="small text-warning-emphasis">Identified Missing or Unverified Information:</strong>
             </div>
-            <ul class="mb-0 ps-3.5 small text-secondary">
+            <ul class="mb-0 ps-3 small text-secondary">
                 {% for item in analysis.missing_information %}
                 <li class="mb-1">{{ item }}</li>
                 {% endfor %}
@@ -375,10 +375,10 @@
 
         <!-- Data Sources & Audit Disclaimer -->
         <div class="pt-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-2 small text-muted">
-            <div class="d-flex flex-wrap align-items-center gap-1.5">
+            <div class="d-flex flex-wrap align-items-center gap-2">
                 <span class="fw-semibold me-1"><i class="bi bi-database-check me-1"></i> Data Sources:</span>
                 {% for src in analysis.data_sources_and_assumptions %}
-                    <span class="badge bg-body-tertiary text-secondary border px-2 py-0.5 rounded-pill">{{ src }}</span>
+                    <span class="badge bg-body-tertiary text-secondary border px-2 py-1 rounded-pill">{{ src }}</span>
                 {% endfor %}
             </div>
             <div>

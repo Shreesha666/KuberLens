@@ -5,7 +5,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                     <i class="bi bi-robot me-1"></i> AI Intelligence Desk
                 </span>
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
@@ -49,13 +49,13 @@
                     </button>
                 </div>
                 <div class="col-12 col-md-5">
-                    <div class="d-flex flex-wrap align-items-center gap-1.5 justify-content-md-end">
+                    <div class="d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
                         <span class="small text-muted me-1 fw-medium">Popular:</span>
                         <a href="{% url 'ai_analysis:hub' %}?symbol=SWSOLAR&role={{ selected_role }}&force=true"
                            hx-get="{% url 'ai_analysis:hub' %}?symbol=SWSOLAR&role={{ selected_role }}&force=true"
                            hx-target="#main-content"
                            hx-push-url="true"
-                           class="badge {% if symbol == 'SWSOLAR' %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2.5 py-1.5 rounded-pill">
+                           class="badge {% if symbol == 'SWSOLAR' %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2 py-1 rounded-pill">
                             SWSOLAR
                         </a>
                         {% for sym in popular_symbols %}
@@ -63,7 +63,7 @@
                            hx-get="{% url 'ai_analysis:hub' %}?symbol={{ sym }}&role={{ selected_role }}"
                            hx-target="#main-content"
                            hx-push-url="true"
-                           class="badge {% if sym == symbol %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2.5 py-1.5 rounded-pill">
+                           class="badge {% if sym == symbol %}bg-primary text-white shadow-sm{% else %}bg-body-tertiary text-secondary border{% endif %} text-decoration-none px-2 py-1 rounded-pill">
                             {{ sym }}
                         </a>
                         {% endfor %}

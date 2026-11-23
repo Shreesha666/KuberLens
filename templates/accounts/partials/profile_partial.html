@@ -1,92 +1,393 @@
+{% load core_tags humanize %}
+<!-- Account & User Profile Partial -->
 <div class="container-fluid p-0">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Header with System Security Badges -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
-            <h2 class="h3 fw-bold mb-1">User Preferences & Security</h2>
-            <p class="text-muted small mb-0">Manage account information, platform theme, and alert delivery channels.</p>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                    <i class="bi bi-person-gear me-1"></i> Account Command Center
+                </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                    <i class="bi bi-patch-check-fill me-1"></i> Verified Investor
+                </span>
+            </div>
+            <h1 class="h3 fw-bold mb-1 text-body">Account &amp; Investor Profile</h1>
+            <p class="text-secondary small mb-0">
+                Manage personal profile details, authentication credentials, virtual trading capital, and alert notifications.
+            </p>
         </div>
-        <span class="badge bg-secondary bg-opacity-25 text-secondary py-2 px-3">
-            <i class="bi bi-shield-lock me-1"></i> AES-256 Symmetric Encryption Active
-        </span>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-body-tertiary text-secondary border px-3 py-2 shadow-xs">
+                <i class="bi bi-shield-lock-fill text-success me-1"></i>
+                <span>AES-256 Platform Encryption Active</span>
+            </span>
+        </div>
     </div>
 
+    <!-- Feedback Alerts -->
     {% if success_message %}
-    <div class="alert alert-success py-2 px-3 mb-4 d-flex align-items-center gap-2">
-        <i class="bi bi-check-circle-fill"></i>
-        <span>{{ success_message }}</span>
+    <div class="alert alert-success border-0 shadow-sm py-2 px-3 mb-4 d-flex align-items-center justify-content-between gap-2 rounded-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+            <span class="fw-semibold small text-success-emphasis">{{ success_message }}</span>
+        </div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% if error_message %}
+    <div class="alert alert-danger border-0 shadow-sm py-2 px-3 mb-4 d-flex align-items-center justify-content-between gap-2 rounded-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+            <span class="fw-semibold small text-danger-emphasis">{{ error_message }}</span>
+        </div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endif %}
 
     <div class="row g-4">
-        <div class="col-12 col-lg-6">
-            <div class="stat-card">
-                <h5 class="fw-semibold mb-3">Investor Profile</h5>
-                <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
-                    {% csrf_token %}
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="form-label text-muted small">First Name</label>
-                            {{ user_form.first_name }}
+        <!-- ========================================== -->
+        <!-- LEFT COLUMN: Profile & Trading Portfolio  -->
+        <!-- ========================================== -->
+        <div class="col-12 col-xl-7">
+            <!-- 1. Profile Identity Card -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--bg-surface); border: 1px solid var(--border-color) !important; border-radius: 14px;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="profile-avatar-circle">
+                                {% if user.first_name and user.last_name %}
+                                    {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+                                {% else %}
+                                    {{ user.username|slice:":2"|upper }}
+                                {% endif %}
+                                <span class="profile-avatar-badge" title="Verified Account">
+                                    <i class="bi bi-check-lg"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <h4 class="fw-bold mb-0 text-body">
+                                        {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
+                                    </h4>
+                                    {% if user.is_superuser %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle small px-2 py-1">Admin</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-secondary small fw-medium mt-1">@{{ user.username }}</div>
+                                <div class="text-muted small d-flex align-items-center gap-2 mt-1">
+                                    <i class="bi bi-envelope"></i>
+                                    <span>{{ user.email|default:"No email linked" }}</span>
+                                    {% if user.email %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle small px-2 py-1 text-micro">
+                                        <i class="bi bi-patch-check-fill me-1"></i> Verified
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label text-muted small">Last Name</label>
-                            {{ user_form.last_name }}
+
+                        <!-- Edit Profile Trigger -->
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2 fw-semibold px-3 py-2 shadow-xs"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editProfileModal">
+                            <i class="bi bi-pencil-square"></i>
+                            <span>Edit Profile</span>
+                        </button>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-center gap-2 pt-3 border-top">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                            <i class="bi bi-award me-1"></i> Retail Trader &bull; Lv. 1
+                        </span>
+                        <span class="badge bg-body-tertiary text-secondary border px-2 py-1">
+                            <i class="bi bi-calendar3 me-1"></i> Member since {{ user.date_joined|date:"M Y" }}
+                        </span>
+                        <span class="badge bg-body-tertiary text-secondary border px-2 py-1">
+                            <i class="bi bi-globe me-1"></i> {{ user.preferred_timezone|default:"Asia/Kolkata" }}
+                        </span>
+                        {% if user.phone_number %}
+                        <span class="badge bg-body-tertiary text-secondary border px-2 py-1">
+                            <i class="bi bi-telephone me-1"></i> {{ user.phone_number }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Paper Trading Account & Financial Overview -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--bg-surface); border: 1px solid var(--border-color) !important; border-radius: 14px;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-body">Account Overview</h5>
+                        <span class="text-secondary small">Virtual paper trading capital &amp; execution statistics</span>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Live Paper Account
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <!-- Portfolio Value -->
+                        <div class="col-12 col-sm-6">
+                            <div class="account-kpi-card h-100">
+                                <div class="d-flex align-items-center gap-2 text-muted small fw-medium mb-1">
+                                    <i class="bi bi-wallet2 text-primary"></i>
+                                    <span>Virtual Portfolio Value</span>
+                                </div>
+                                <div class="h3 fw-bold num-mono text-body mb-0">
+                                    {% if paper_account %}
+                                        ₹{{ paper_account.total_portfolio_value|floatformat:2|intcomma_inr }}
+                                    {% else %}
+                                        ₹10,00,000.00
+                                    {% endif %}
+                                </div>
+                                <span class="text-secondary small" style="font-size: 0.75rem;">Combined cash + open MTM</span>
+                            </div>
+                        </div>
+
+                        <!-- Total Realized Returns -->
+                        <div class="col-12 col-sm-6">
+                            <div class="account-kpi-card h-100">
+                                <div class="d-flex align-items-center gap-2 text-muted small fw-medium mb-1">
+                                    <i class="bi bi-graph-up text-success"></i>
+                                    <span>Realized Total Returns</span>
+                                </div>
+                                <div class="h3 fw-bold num-mono mb-0 {% if paper_account.realized_pnl >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                                    {% if paper_account %}
+                                        {% if paper_account.realized_pnl >= 0 %}+{% endif %}₹{{ paper_account.realized_pnl|floatformat:2|intcomma_inr }}
+                                    {% else %}
+                                        +₹0.00
+                                    {% endif %}
+                                </div>
+                                <span class="text-secondary small" style="font-size: 0.75rem;">Lifetime closed trade performance</span>
+                            </div>
+                        </div>
+
+                        <!-- Available Cash Margin -->
+                        <div class="col-12 col-sm-6">
+                            <div class="account-kpi-card h-100">
+                                <div class="d-flex align-items-center gap-2 text-muted small fw-medium mb-1">
+                                    <i class="bi bi-currency-rupee text-info"></i>
+                                    <span>Available Buying Power</span>
+                                </div>
+                                <div class="h3 fw-bold num-mono text-body mb-0">
+                                    {% if paper_account %}
+                                        ₹{{ paper_account.cash_balance|floatformat:2|intcomma_inr }}
+                                    {% else %}
+                                        ₹10,00,000.00
+                                    {% endif %}
+                                </div>
+                                <span class="text-secondary small" style="font-size: 0.75rem;">Unencumbered trading liquidity</span>
+                            </div>
+                        </div>
+
+                        <!-- Total Executed Trades -->
+                        <div class="col-12 col-sm-6">
+                            <div class="account-kpi-card h-100">
+                                <div class="d-flex align-items-center gap-2 text-muted small fw-medium mb-1">
+                                    <i class="bi bi-arrow-repeat text-warning"></i>
+                                    <span>Total Trades Executed</span>
+                                </div>
+                                <div class="h3 fw-bold num-mono text-body mb-0">
+                                    {{ total_trades }}
+                                </div>
+                                <span class="text-secondary small" style="font-size: 0.75rem;">Completed paper trade contracts</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Email Address</label>
-                        {{ user_form.email }}
+
+                    <!-- Bottom KPI Summary Strip -->
+                    <div class="row g-2 text-center pt-3 border-top">
+                        <div class="col-3 border-end">
+                            <div class="text-secondary small text-uppercase text-micro fw-semibold">Holdings</div>
+                            <div class="h5 fw-bold num-mono text-body mb-0 mt-1">{{ holdings_count }}</div>
+                        </div>
+                        <div class="col-3 border-end">
+                            <div class="text-secondary small text-uppercase text-micro fw-semibold">Account Age</div>
+                            <div class="h5 fw-bold text-body mb-0 mt-1">{{ user.date_joined|timesince|truncatewords:2 }}</div>
+                        </div>
+                        <div class="col-3 border-end">
+                            <div class="text-secondary small text-uppercase text-micro fw-semibold">Win Rate</div>
+                            <div class="h5 fw-bold num-mono {% if win_rate >= 50 %}text-gain{% else %}text-secondary{% endif %} mb-0 mt-1">{{ win_rate }}%</div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-secondary small text-uppercase text-micro fw-semibold">Status</div>
+                            <div class="h5 fw-bold text-success mb-0 mt-1">Active</div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Phone Number</label>
-                        {{ user_form.phone_number }}
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label text-muted small">Preferred Timezone</label>
-                        {{ user_form.preferred_timezone }}
-                    </div>
-                    <hr class="border-secondary border-opacity-25 my-4">
-                    <h5 class="fw-semibold mb-3">System Preferences</h5>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Dashboard Theme</label>
-                        {{ preference_form.theme }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Default Chart Interval</label>
-                        {{ preference_form.default_chart_interval }}
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        {{ preference_form.email_alerts_enabled }}
-                        <label class="form-check-label text-muted small" for="{{ preference_form.email_alerts_enabled.id_for_label }}">
-                            Enable Email Notifications
-                        </label>
-                    </div>
-                    <div class="form-check form-switch mb-4">
-                        {{ preference_form.in_app_alerts_enabled }}
-                        <label class="form-check-label text-muted small" for="{{ preference_form.in_app_alerts_enabled.id_for_label }}">
-                            Enable In-App Notification Center
-                        </label>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save me-1"></i> Save Changes
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
 
-        <div class="col-12 col-lg-6">
-            <div class="stat-card">
-                <h5 class="fw-semibold mb-3">Credential Security</h5>
-                <p class="text-muted small">
-                    Platform credentials (broker access tokens, AI provider keys) are encrypted using authenticated symmetric encryption (Fernet / AES-128-CBC with HMAC-SHA256).
-                </p>
-                <div class="p-3 bg-body-tertiary rounded border border-secondary border-opacity-25 mb-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="small text-muted">Master Key Status</span>
-                        <span class="badge bg-success">Configured (Env Secret)</span>
+        <!-- ========================================== -->
+        <!-- RIGHT COLUMN: Security, Alerts & Settings  -->
+        <!-- ========================================== -->
+        <div class="col-12 col-xl-5">
+            <!-- 1. Credentials & Security -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--bg-surface); border: 1px solid var(--border-color) !important; border-radius: 14px;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-body">Security &amp; Credentials</h5>
+                        <span class="text-secondary small">Access authentication and encryption status</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between mt-2">
-                        <span class="small text-muted">Broker Integration</span>
-                        <span class="badge bg-secondary">Phase 10 Placeholder</span>
+                    <i class="bi bi-shield-check text-primary fs-5"></i>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Password Management Item -->
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="p-2 rounded-3 bg-body-tertiary border text-primary">
+                                <i class="bi bi-key-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-body mb-0">Password &amp; Security</h6>
+                                <span class="text-secondary small">Secured with Argon2 / PBKDF2 hashing</span>
+                            </div>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary fw-semibold px-3 py-2 shadow-xs"
+                                data-bs-toggle="modal"
+                                data-bs-target="#changePasswordModal">
+                            <i class="bi bi-shield-lock me-1"></i> Change Password
+                        </button>
+                    </div>
+
+                    <!-- Active Session Item -->
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="p-2 rounded-3 bg-body-tertiary border text-success">
+                                <i class="bi bi-laptop fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-body mb-0">Active Web Session</h6>
+                                <span class="text-secondary small">This Browser Session</span>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                            <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> Active Now
+                        </span>
+                    </div>
+
+                    <!-- Data Protection Advisory -->
+                    <div class="p-3 bg-body-tertiary rounded-3 border">
+                        <div class="d-flex align-items-center gap-2 text-primary fw-semibold small mb-1">
+                            <i class="bi bi-lock-fill"></i>
+                            <span>Cryptographic Safety Guarantee</span>
+                        </div>
+                        <p class="text-secondary small mb-0" style="font-size: 0.76rem; line-height: 1.4;">
+                            API keys, broker tokens, and paper trading orders are protected by symmetric encryption with strictly zero transmission of plaintext secrets.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Notification Preferences Card -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--bg-surface); border: 1px solid var(--border-color) !important; border-radius: 14px;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0 text-body">Notification Channels</h5>
+                    <span class="text-secondary small">Manage alert notifications and trade confirmations</span>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_preferences">
+                        <input type="hidden" name="theme" value="{{ preference.theme }}">
+                        <input type="hidden" name="default_chart_interval" value="{{ preference.default_chart_interval }}">
+
+                        <!-- Email Notifications Switch -->
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom mb-3">
+                            <div>
+                                <h6 class="fw-bold text-body mb-0">Email Notifications</h6>
+                                <span class="text-secondary small">Receive order execution &amp; price threshold triggers</span>
+                            </div>
+                            <div class="form-check form-switch mb-0">
+                                {{ preference_form.email_alerts_enabled }}
+                            </div>
+                        </div>
+
+                        <!-- In-App Notifications Switch -->
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom mb-4">
+                            <div>
+                                <h6 class="fw-bold text-body mb-0">In-App Alerts Center</h6>
+                                <span class="text-secondary small">Real-time alerts in notification drawer</span>
+                            </div>
+                            <div class="form-check form-switch mb-0">
+                                {{ preference_form.in_app_alerts_enabled }}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3 py-2 shadow-xs">
+                            <i class="bi bi-check2 me-1"></i> Save Notification Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. Trading & Display Preferences Card -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--bg-surface); border: 1px solid var(--border-color) !important; border-radius: 14px;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom">
+                    <h5 class="fw-bold mb-0 text-body">Interface &amp; Chart Preferences</h5>
+                    <span class="text-secondary small">Configure dashboard appearance and technical timeframes</span>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_preferences">
+                        <input type="hidden" name="email_alerts_enabled" value="{% if preference.email_alerts_enabled %}on{% endif %}">
+                        <input type="hidden" name="in_app_alerts_enabled" value="{% if preference.in_app_alerts_enabled %}on{% endif %}">
+
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small fw-medium">Dashboard Theme</label>
+                            {{ preference_form.theme }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-secondary small fw-medium">Default Chart Interval</label>
+                            {{ preference_form.default_chart_interval }}
+                        </div>
+
+                        <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3 py-2 shadow-xs">
+                            <i class="bi bi-sliders me-1"></i> Update Interface Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 4. Danger Zone Card -->
+            <div class="card border-0 shadow-sm danger-zone-card mb-4" style="border-radius: 14px;">
+                <div class="card-header bg-transparent py-3 px-4 border-bottom" style="border-color: rgba(239, 68, 68, 0.2) !important;">
+                    <div class="d-flex align-items-center gap-2 text-danger">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                        <h5 class="fw-bold mb-0">Danger Zone</h5>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Reset Paper Trading Account Item -->
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom mb-3" style="border-color: rgba(239, 68, 68, 0.15) !important;">
+                        <div>
+                            <h6 class="fw-bold text-danger mb-0">Reset Paper Trading Account</h6>
+                            <span class="text-secondary small">Reset virtual portfolio balance to ₹10,00,000</span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger fw-semibold px-3 py-2 shadow-xs"
+                                data-bs-toggle="modal"
+                                data-bs-target="#resetAccountModal">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Account
+                        </button>
+                    </div>
+
+                    <!-- Sign Out Item -->
+                    <div class="d-flex align-items-center justify-content-between pt-1">
+                        <div>
+                            <h6 class="fw-bold text-body mb-0">Sign Out</h6>
+                            <span class="text-secondary small">Terminate your current authenticated session</span>
+                        </div>
+                        <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-secondary fw-semibold px-3 py-2">
+                            <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+                        </a>
                     </div>
                 </div>
             </div>
@@ -94,3 +395,148 @@
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- MODAL 1: Edit Profile Details Modal        -->
+<!-- ========================================== -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--bg-surface); border-radius: 16px;">
+            <div class="modal-header border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-3 bg-primary-subtle text-primary">
+                        <i class="bi bi-person-lines-fill"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold text-body" id="editProfileModalLabel">Edit Profile Information</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_profile">
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-secondary small fw-medium">First Name</label>
+                            {{ user_form.first_name }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-secondary small fw-medium">Last Name</label>
+                            {{ user_form.last_name }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-medium">Email Address</label>
+                        {{ user_form.email }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-medium">Phone Number</label>
+                        {{ user_form.phone_number }}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-secondary small fw-medium">Preferred Timezone</label>
+                        {{ user_form.preferred_timezone }}
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-3 px-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('editProfileModal')); if(m) m.hide();">
+                        <i class="bi bi-save me-1"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 2: Change Password Modal             -->
+<!-- ========================================== -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--bg-surface); border-radius: 16px;">
+            <div class="modal-header border-bottom py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-3 bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-shield-lock-fill"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold text-body" id="changePasswordModalLabel">Change Account Password</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_password">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-medium">Current Password</label>
+                        {{ password_form.old_password }}
+                        {% if password_form.old_password.errors %}
+                        <div class="text-danger small mt-1">{{ password_form.old_password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small fw-medium">New Password</label>
+                        {{ password_form.new_password1 }}
+                        {% if password_form.new_password1.errors %}
+                        <div class="text-danger small mt-1">{{ password_form.new_password1.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text small" style="font-size: 0.74rem;">Must contain at least 8 characters, combining letters and numbers.</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-secondary small fw-medium">Confirm New Password</label>
+                        {{ password_form.new_password2 }}
+                        {% if password_form.new_password2.errors %}
+                        <div class="text-danger small mt-1">{{ password_form.new_password2.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-3 px-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')); if(m) m.hide();">
+                        <i class="bi bi-key me-1"></i> Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 3: Reset Paper Trading Account Modal -->
+<!-- ========================================== -->
+<div class="modal fade" id="resetAccountModal" tabindex="-1" aria-labelledby="resetAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="background: var(--bg-surface); border-radius: 16px;">
+            <div class="modal-header border-bottom py-3 px-4" style="border-color: rgba(239, 68, 68, 0.2) !important;">
+                <div class="d-flex align-items-center gap-2 text-danger">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="resetAccountModalLabel">Reset Virtual Trading Account</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'accounts:profile' %}" hx-post="{% url 'accounts:profile' %}" hx-target="#main-content">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset_paper_account">
+                <div class="modal-body p-4">
+                    <p class="text-body mb-3">
+                        Are you sure you want to reset your virtual paper trading account?
+                    </p>
+                    <ul class="text-secondary small mb-3 ps-3">
+                        <li>Cash balance will be restored to <strong>₹10,00,000.00</strong>.</li>
+                        <li>All open virtual positions will be cleared.</li>
+                        <li>All pending limit / stop-loss orders will be cancelled.</li>
+                    </ul>
+                    <div class="p-3 rounded bg-danger-subtle text-danger small border border-danger-subtle">
+                        <i class="bi bi-info-circle me-1"></i> This action cannot be undone. Historical trade analytics will be archived.
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-3 px-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-danger fw-semibold px-3" onclick="const m = bootstrap.Modal.getInstance(document.getElementById('resetAccountModal')); if(m) m.hide();">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Yes, Reset Virtual Balance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

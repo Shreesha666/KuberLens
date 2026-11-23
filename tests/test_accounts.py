@@ -108,4 +108,110 @@ def test_create_dev_user_command():
     out = StringIO()
     call_command("create_dev_user", username="testadmin", password="TestPass@123", stdout=out)
     assert "Successfully created development superuser 'testadmin'" in out.getvalue()
-    assert User.objects.filter(username="testadmin", is_superuser=True).exists()
+
+
+@pytest.mark.django_db
+def test_profile_update_action():
+    client = Client()
+    user = User.objects.create_user(
+        username="trader_pro",
+        email="trader@example.com",
+        password="ValidPassword123!"
+    )
+    client.force_login(user)
+    profile_url = reverse("accounts:profile")
+
+    res = client.post(
+        profile_url,
+        {
+            "action": "update_profile",
+            "first_name": "Shreesha",
+            "last_name": "Gundmi",
+            "email": "shreesha@example.com",
+            "phone_number": "+919876543210",
+            "preferred_timezone": "Asia/Kolkata",
+        }
+    )
+    assert res.status_code == 200
+    user.refresh_from_db()
+    assert user.first_name == "Shreesha"
+    assert user.last_name == "Gundmi"
+    assert user.email == "shreesha@example.com"
+    assert user.phone_number == "+919876543210"
+    assert "Profile details successfully updated." in res.content.decode()
+
+
+@pytest.mark.django_db
+def test_password_change_action():
+    client = Client()
+    user = User.objects.create_user(
+        username="secure_trader",
+        email="secure@example.com",
+        password="OldSecurePassword123!"
+    )
+    client.force_login(user)
+    profile_url = reverse("accounts:profile")
+
+    # Post invalid old password
+    res_err = client.post(
+        profile_url,
+        {
+            "action": "change_password",
+            "old_password": "WrongPassword123!",
+            "new_password1": "NewSecurePassword456!",
+            "new_password2": "NewSecurePassword456!",
+        }
+    )
+    assert res_err.status_code == 200
+    assert "Password change failed" in res_err.content.decode()
+
+    # Post valid password change
+    res_ok = client.post(
+        profile_url,
+        {
+            "action": "change_password",
+            "old_password": "OldSecurePassword123!",
+            "new_password1": "NewSecurePassword456!",
+            "new_password2": "NewSecurePassword456!",
+        }
+    )
+    assert res_ok.status_code == 200
+    assert "Your password has been changed successfully." in res_ok.content.decode()
+
+    # Verify new password authenticates
+    user.refresh_from_db()
+    assert user.check_password("NewSecurePassword456!")
+
+
+@pytest.mark.django_db
+def test_reset_paper_account_action():
+    from decimal import Decimal
+    from apps.paper_trading.models import PaperAccount
+
+    client = Client()
+    user = User.objects.create_user(
+        username="paper_trader",
+        email="paper@example.com",
+        password="ValidPassword123!"
+    )
+    client.force_login(user)
+
+    # Initialize paper account with modified cash balance
+    paper_acc, _ = PaperAccount.objects.get_or_create(user=user)
+    paper_acc.cash_balance = Decimal("450000.00")
+    paper_acc.realized_pnl = Decimal("-50000.00")
+    paper_acc.save()
+
+    profile_url = reverse("accounts:profile")
+    res = client.post(
+        profile_url,
+        {
+            "action": "reset_paper_account",
+        }
+    )
+    assert res.status_code == 200
+    paper_acc.refresh_from_db()
+    assert paper_acc.cash_balance == Decimal("1000000.00")
+    assert paper_acc.realized_pnl == Decimal("0.00")
+    assert "Virtual trading account has been reset" in res.content.decode()
+

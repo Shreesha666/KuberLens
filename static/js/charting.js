@@ -13,6 +13,24 @@
 // 1. TRADINGVIEW LIGHTWEIGHT CHARTS ENGINE
 // ============================================================================
 
+function normalizeChartDate(t) {
+    if (!t) return new Date().toISOString().split('T')[0];
+    if (typeof t === 'string') return t.split('T')[0];
+    if (typeof t === 'object') {
+        if (t.year !== undefined && t.month !== undefined && t.day !== undefined) {
+            const m = String(t.month).padStart(2, '0');
+            const d = String(t.day).padStart(2, '0');
+            return `${t.year}-${m}-${d}`;
+        }
+        if (t instanceof Date) return t.toISOString().split('T')[0];
+    }
+    if (typeof t === 'number') {
+        const d = new Date(t > 1e11 ? t : t * 1000);
+        return d.toISOString().split('T')[0];
+    }
+    return String(t);
+}
+
 class TradingViewStockChart {
     constructor(containerId, dataUrl, options = {}) {
         this.containerId = containerId;
@@ -410,7 +428,7 @@ class TradingViewStockChart {
         const volVal = quoteData.volume ? parseInt(quoteData.volume, 10) : 0;
 
         // Default to today's date YYYY-MM-DD
-        const todayStr = quoteData.time || new Date().toISOString().split('T')[0];
+        const todayStr = normalizeChartDate(quoteData.time);
 
         let lastCandle = (this.rawCandles && this.rawCandles.length > 0)
             ? this.rawCandles[this.rawCandles.length - 1]
@@ -423,7 +441,8 @@ class TradingViewStockChart {
         let volume = volVal;
 
         if (lastCandle) {
-            if (lastCandle.time === todayStr) {
+            const lastCandleDate = normalizeChartDate(lastCandle.time);
+            if (lastCandleDate === todayStr) {
                 // Update today's existing candle in real-time
                 targetTime = todayStr;
                 open = lastCandle.open;
@@ -434,7 +453,7 @@ class TradingViewStockChart {
                 lastCandle.high = high;
                 lastCandle.low = low;
                 lastCandle.volume = volume;
-            } else if (lastCandle.time < todayStr) {
+            } else if (lastCandleDate < todayStr) {
                 // Advance to a new forming candle for today
                 targetTime = todayStr;
                 open = openVal || lastCandle.close || price;
@@ -450,7 +469,8 @@ class TradingViewStockChart {
             open: open,
             high: high,
             low: low,
-            close: price
+            close: price,
+            volume: volume
         };
 
         try {
@@ -872,26 +892,32 @@ class TradingViewStockChart {
 
     handleCrosshairMove(param) {
         if (!param || !param.time || !param.seriesData) {
-            if (this.rawCandles.length > 0) this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
+            if (this.rawCandles && this.rawCandles.length > 0) {
+                this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
+            }
             return;
         }
+
+        const dateStr = normalizeChartDate(param.time);
 
         const data = param.seriesData.get(this.candlestickSeries)
             || param.seriesData.get(this.areaSeries)
             || param.seriesData.get(this.lineSeries);
 
         if (data) {
-            const raw = this.rawCandles.find(c => c.time === param.time);
+            const raw = this.rawCandles ? this.rawCandles.find(c => normalizeChartDate(c.time) === dateStr) : null;
             if (raw) {
                 this.updateLegend(raw);
             } else if (data.open !== undefined) {
+                const volData = this.volumeSeries ? param.seriesData.get(this.volumeSeries) : null;
+                const volVal = volData ? (volData.value || 0) : 0;
                 this.updateLegend({
-                    time: param.time,
+                    time: dateStr,
                     open: data.open,
                     high: data.high,
                     low: data.low,
                     close: data.close,
-                    volume: 0,
+                    volume: volVal,
                 });
             }
         }
@@ -907,10 +933,11 @@ class TradingViewStockChart {
         const closeEl = document.getElementById('legend-close');
         const volEl = document.getElementById('legend-volume');
 
+        const dateStr = normalizeChartDate(candle.time);
         const isUp = candle.close >= candle.open;
         const colorClass = isUp ? 'text-success' : 'text-danger';
 
-        if (dateEl) dateEl.textContent = candle.time;
+        if (dateEl) dateEl.textContent = dateStr;
         if (openEl) openEl.textContent = Number(candle.open).toFixed(2);
         if (highEl) highEl.textContent = Number(candle.high).toFixed(2);
         if (lowEl) lowEl.textContent = Number(candle.low).toFixed(2);
@@ -919,11 +946,17 @@ class TradingViewStockChart {
             closeEl.className = `${colorClass} fw-bold`;
         }
         if (volEl) {
-            const v = candle.volume;
+            let v = Number(candle.volume);
+            if (isNaN(v) || v <= 0) {
+                if (this.rawCandles && this.rawCandles.length > 0) {
+                    const match = this.rawCandles.find(c => normalizeChartDate(c.time) === dateStr);
+                    if (match && match.volume > 0) v = Number(match.volume);
+                }
+            }
             if (v >= 10000000) volEl.textContent = `${(v / 10000000).toFixed(2)}Cr`;
             else if (v >= 100000) volEl.textContent = `${(v / 100000).toFixed(2)}L`;
             else if (v >= 1000) volEl.textContent = `${(v / 1000).toFixed(1)}k`;
-            else volEl.textContent = v > 0 ? v.toLocaleString('en-IN') : '-';
+            else volEl.textContent = (v && v > 0) ? v.toLocaleString('en-IN') : '-';
         }
 
         const updateTag = (wrapId, valId, val, show) => {

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 
 from apps.core.mixins import HTMXResponseMixin
@@ -10,7 +11,7 @@ from apps.trading.models import TradeSetup
 from apps.watchlists.models import Watchlist
 
 
-class DashboardView(HTMXResponseMixin, TemplateView):
+class DashboardView(LoginRequiredMixin, HTMXResponseMixin, TemplateView):
     """
     Main platform dashboard landing page.
     Renders partial template on HTMX swap and full application shell on direct URL access.

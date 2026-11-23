@@ -680,14 +680,14 @@
                     </div>
 
                     <!-- Clean Behavioral Guidance Cards (No Harsh Full-Width Banners) -->
-                    <div class="card border rounded-3 mb-4 p-3.5" style="border-color: var(--pt-border) !important;">
+                    <div class="card border rounded-3 mb-4 p-3" style="border-color: var(--pt-border) !important;">
                         <h6 class="fw-bold text-body small text-uppercase mb-3" style="font-size: 0.72rem; letter-spacing: 0.5px;">
                             <i class="bi bi-lightbulb text-warning me-1"></i> Behavioral Feedback &amp; Actionable Insights
                         </h6>
                         <div class="d-flex flex-column gap-2">
                             {% for insight in coach.insights %}
-                            <div class="p-2.5 px-3 rounded-2 border small d-flex align-items-start gap-2.5 {% if insight.impact == 'POSITIVE' %}border-success-subtle bg-success-subtle text-success-emphasis{% elif insight.impact == 'NEGATIVE' %}border-danger-subtle bg-danger-subtle text-danger-emphasis{% else %}border-secondary border-opacity-10 bg-body-tertiary text-body{% endif %}">
-                                <i class="bi {% if insight.impact == 'POSITIVE' %}bi-check-circle-fill text-success{% elif insight.impact == 'NEGATIVE' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} mt-0.5"></i>
+                            <div class="p-2 px-3 rounded-2 border small d-flex align-items-start gap-2 {% if insight.impact == 'POSITIVE' %}border-success-subtle bg-success-subtle text-success-emphasis{% elif insight.impact == 'NEGATIVE' %}border-danger-subtle bg-danger-subtle text-danger-emphasis{% else %}border-secondary border-opacity-10 bg-body-tertiary text-body{% endif %}">
+                                <i class="bi {% if insight.impact == 'POSITIVE' %}bi-check-circle-fill text-success{% elif insight.impact == 'NEGATIVE' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} mt-1"></i>
                                 <div>
                                     <strong class="me-1">{{ insight.title }}:</strong>
                                     <span>{{ insight.description }}</span>
@@ -700,10 +700,10 @@
                     </div>
 
                     <!-- Quantitative Stats Grid -->
-                    <h6 class="fw-bold text-body small text-uppercase mb-2.5" style="font-size: 0.72rem; letter-spacing: 0.5px;">Performance Summary</h6>
-                    <div class="row g-2.5">
+                    <h6 class="fw-bold text-body small text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 0.5px;">Performance Summary</h6>
+                    <div class="row g-2">
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border rounded-2 p-2.5" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
+                            <div class="card border rounded-2 p-2" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Total Trades</span>
                                 <div class="h4 fw-bold num-mono text-body mt-1 mb-0">{{ analytics.total_trades }}</div>
                                 <div class="text-muted small" style="font-size: 0.7rem;">{{ analytics.closed_trades }} closed round-trips</div>
@@ -711,7 +711,7 @@
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border rounded-2 p-2.5" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
+                            <div class="card border rounded-2 p-2" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Profitable Trades</span>
                                 <div class="h4 fw-bold num-mono text-success mt-1 mb-0">{{ analytics.win_count }}</div>
                                 <div class="text-muted small" style="font-size: 0.7rem;">Win Rate: {{ analytics.win_rate }}%</div>
@@ -719,7 +719,7 @@
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border rounded-2 p-2.5" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
+                            <div class="card border rounded-2 p-2" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Losing Trades</span>
                                 <div class="h4 fw-bold num-mono text-danger mt-1 mb-0">{{ analytics.loss_count }}</div>
                                 <div class="text-muted small" style="font-size: 0.7rem;">Loss Rate: {{ analytics.loss_rate }}%</div>
@@ -727,7 +727,7 @@
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
-                            <div class="card border rounded-2 p-2.5" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
+                            <div class="card border rounded-2 p-2" style="background: var(--pt-subtle-bg); border-color: var(--pt-border) !important;">
                                 <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.68rem;">Profit Factor</span>
                                 <div class="h4 fw-bold num-mono text-primary mt-1 mb-0">{{ analytics.profit_factor }}</div>
                                 <div class="text-muted small" style="font-size: 0.7rem;">Gross Wins / Gross Losses</div>
@@ -735,7 +735,7 @@
                         </div>
 
                         <div class="col-12 mt-2">
-                            <div class="card border rounded-2 p-2.5" style="border-color: var(--pt-border) !important;">
+                            <div class="card border rounded-2 p-2" style="border-color: var(--pt-border) !important;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="fw-bold text-body small text-uppercase" style="font-size: 0.7rem;">Statutory Friction Simulated</span>
                                     <span class="badge bg-secondary-subtle text-secondary border">Realistic Taxes</span>

@@ -55,7 +55,7 @@
                 <div class="col-12 col-lg-5 d-flex flex-column align-items-lg-end justify-content-between gap-3">
                     <!-- Session P&L Callout Box -->
                     <div class="p-3 rounded-3 border border-secondary border-opacity-15 bg-body bg-opacity-75 shadow-2xs d-flex align-items-center gap-3 w-100" style="max-width: 380px;">
-                        <div class="p-2.5 rounded-3 {% if total_day_pnl >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} flex-shrink-0">
+                        <div class="p-2 rounded-3 {% if total_day_pnl >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} flex-shrink-0">
                             <i class="bi bi-activity fs-4"></i>
                         </div>
                         <div class="flex-grow-1">
@@ -103,7 +103,7 @@
     <div class="row g-3 mb-4">
         <!-- Pillar 1: Invested Capital & Unrealised Return -->
         <div class="col-12 col-md-4">
-            <div class="stat-card-elevated {% if unrealised_pnl >= 0 %}border-accent-success{% else %}border-accent-danger{% endif %} h-100 d-flex flex-column justify-content-between p-3.5">
+            <div class="stat-card-elevated {% if unrealised_pnl >= 0 %}border-accent-success{% else %}border-accent-danger{% endif %} h-100 d-flex flex-column justify-content-between p-3">
                 <div>
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Invested &amp; Returns</span>
@@ -129,7 +129,7 @@
 
         <!-- Pillar 2: Realised Gains & Dividend Income -->
         <div class="col-12 col-md-4">
-            <div class="stat-card-elevated border-accent-info h-100 d-flex flex-column justify-content-between p-3.5">
+            <div class="stat-card-elevated border-accent-info h-100 d-flex flex-column justify-content-between p-3">
                 <div>
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Realised P&amp;L &amp; Income</span>
@@ -149,7 +149,7 @@
 
         <!-- Pillar 3: Portfolio Health & Diversification Status -->
         <div class="col-12 col-md-4">
-            <div class="stat-card-elevated border-accent-primary h-100 d-flex flex-column justify-content-between p-3.5">
+            <div class="stat-card-elevated border-accent-primary h-100 d-flex flex-column justify-content-between p-3">
                 <div>
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Diversification Health</span>
@@ -184,7 +184,7 @@
             <div class="row g-2">
                 {% for warning in concentration_warnings %}
                 <div class="col-12 col-md-6">
-                    <div class="d-flex align-items-start gap-2 small text-body p-2.5 rounded-3 bg-body bg-opacity-75 border border-warning border-opacity-25 shadow-2xs">
+                    <div class="d-flex align-items-start gap-2 small text-body p-2 rounded-3 bg-body bg-opacity-75 border border-warning border-opacity-25 shadow-2xs">
                         <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0 mt-0.5"></i>
                         <div>{{ warning }}</div>
                     </div>
@@ -412,7 +412,7 @@
                 </div>
 
                 <div class="card-footer bg-transparent border-0 px-4 pb-3 pt-0">
-                    <div class="p-2.5 rounded-3 bg-body-tertiary border border-secondary border-opacity-10 small d-flex align-items-center justify-content-between">
+                    <div class="p-2 rounded-3 bg-body-tertiary border border-secondary border-opacity-10 small d-flex align-items-center justify-content-between">
                         <span class="text-muted"><i class="bi bi-lightbulb text-warning me-1.5"></i>Risk Guideline:</span>
                         <span class="text-body fw-bold" style="font-size: 0.76rem;">Max 30% per sector recommended</span>
                     </div>

@@ -1432,3 +1432,34 @@ body {
     border-left: 4px solid var(--color-red);
     border-radius: 12px;
 }
+
+/* ==========================================================================
+   Precision Spacing Utilities (.5 scale safety net for Bootstrap)
+   ========================================================================== */
+.p-0\.5 { padding: 0.125rem !important; }
+.p-1\.5 { padding: 0.375rem !important; }
+.p-2\.5 { padding: 0.75rem !important; }
+.p-3\.5 { padding: 1.125rem !important; }
+.py-0\.5 { padding-top: 0.125rem !important; padding-bottom: 0.125rem !important; }
+.py-1\.5 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
+.py-2\.5 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+.py-3\.5 { padding-top: 1.125rem !important; padding-bottom: 1.125rem !important; }
+.px-0\.5 { padding-left: 0.125rem !important; padding-right: 0.125rem !important; }
+.px-1\.5 { padding-left: 0.375rem !important; padding-right: 0.375rem !important; }
+.px-2\.5 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+.px-3\.5 { padding-left: 1.125rem !important; padding-right: 1.125rem !important; }
+.pt-2\.5 { padding-top: 0.75rem !important; }
+.pt-3\.5 { padding-top: 1.125rem !important; }
+.pb-2\.5 { padding-bottom: 0.75rem !important; }
+.m-1\.5 { margin: 0.375rem !important; }
+.m-2\.5 { margin: 0.75rem !important; }
+.mt-0\.5 { margin-top: 0.125rem !important; }
+.mt-1\.5 { margin-top: 0.375rem !important; }
+.mt-2\.5 { margin-top: 0.75rem !important; }
+.mb-0\.5 { margin-bottom: 0.125rem !important; }
+.mb-1\.5 { margin-bottom: 0.375rem !important; }
+.mb-2\.5 { margin-bottom: 0.75rem !important; }
+.gap-1\.5 { gap: 0.375rem !important; }
+.gap-2\.5 { gap: 0.75rem !important; }
+.g-2\.5 { --bs-gutter-x: 0.75rem; --bs-gutter-y: 0.75rem; }
+

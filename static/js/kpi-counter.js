@@ -155,13 +155,16 @@
 
   // CodeFronts mechanical rolling odometer tumbler digit animation
   function renderRollingOdometer(el, targetVal, options, kpiId) {
+    if (!el) return;
     const newStr = formatNumber(targetVal, options);
     const prevState = (window._dashboardKpiState && window._dashboardKpiState[kpiId]) ? window._dashboardKpiState[kpiId] : null;
     const prevStr = (prevState && prevState.str) ? prevState.str : (el.textContent.trim() || newStr);
 
-    // Pulse card glow indicator if numeric value changed
+    console.log("[KuberLens] Rolling Odometer for", kpiId, "prev:", prevStr, "new:", newStr);
+
+    // Pulse card glow indicator
     const parentCard = el.closest(".kpi-card, .stat-card-elevated");
-    if (parentCard && prevState && prevState.num !== targetVal) {
+    if (parentCard) {
       parentCard.classList.remove("kpi-updated");
       void parentCard.offsetWidth;
       parentCard.classList.add("kpi-updated");
@@ -171,26 +174,32 @@
     const wrap = document.createElement("span");
     wrap.className = "odo-wrap";
 
-    // Build cells matching newStr structure; start strips at previous digits from right-alignment
+    const isIdentical = (prevState && prevState.num === targetVal);
+    const stripsToAnimate = [];
+
+    // Build cells matching newStr structure
     for (let i = 0; i < newStr.length; i++) {
       const ch = newStr[i];
       if (ch >= "0" && ch <= "9") {
         const d = parseInt(ch, 10);
-        // Align digits from the right to preserve decimal and unit places
         const offsetFromRight = newStr.length - 1 - i;
         const prevIdx = prevStr.length - 1 - offsetFromRight;
+
         let startDigit = d;
-        if (prevIdx >= 0 && prevIdx < prevStr.length && prevStr[prevIdx] >= "0" && prevStr[prevIdx] <= "9") {
+        if (!isIdentical && prevIdx >= 0 && prevIdx < prevStr.length && prevStr[prevIdx] >= "0" && prevStr[prevIdx] <= "9") {
           startDigit = parseInt(prevStr[prevIdx], 10);
+        } else if (isIdentical && offsetFromRight < 3) {
+          // If value is identical, roll the last digits by 1 notch so user visually sees the mechanical refresh
+          startDigit = (d + 9) % 10;
         }
 
         const cell = document.createElement("span");
         cell.className = "odo-cell";
-        cell.dataset.d = String(startDigit);
+        cell.dataset.d = String(d);
 
         const strip = document.createElement("span");
         strip.className = "odo-strip";
-        strip.style.setProperty("--odo-y", (-startDigit * 10) + "%");
+        strip.style.transform = "translateY(" + (-startDigit * 10) + "%)";
 
         let html = "";
         for (let num = 0; num <= 9; num++) {
@@ -199,6 +208,13 @@
         strip.innerHTML = html;
         cell.appendChild(strip);
         wrap.appendChild(cell);
+
+        stripsToAnimate.push({
+          strip: strip,
+          startDigit: startDigit,
+          targetDigit: d,
+          delay: (newStr.length - 1 - offsetFromRight) * 25
+        });
       } else {
         const charSpan = document.createElement("span");
         charSpan.className = "odo-char";
@@ -208,27 +224,34 @@
     }
 
     el.appendChild(wrap);
-    void wrap.offsetWidth; // Force layout reflow so starting positions are committed
+    void wrap.offsetWidth; // Force layout paint
 
-    // Trigger sliding animation to new digits
+    // Animate using Web Animations API for guaranteed smooth mechanical roll
     requestAnimationFrame(function () {
-      for (let i = 0; i < newStr.length; i++) {
-        const ch = newStr[i];
-        const child = wrap.children[i];
-        if (!child) continue;
-
-        if (ch >= "0" && ch <= "9") {
-          const d = parseInt(ch, 10);
-          const strip = child.querySelector(".odo-strip");
-          if (strip) {
-            strip.style.setProperty("--odo-y", (-d * 10) + "%");
-            child.dataset.d = String(d);
-          }
+      stripsToAnimate.forEach(function (item) {
+        if (typeof item.strip.animate === "function") {
+          const anim = item.strip.animate(
+            [
+              { transform: "translateY(" + (-item.startDigit * 10) + "%)" },
+              { transform: "translateY(" + (-item.targetDigit * 10) + "%)" }
+            ],
+            {
+              duration: 750,
+              delay: item.delay,
+              easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+              fill: "forwards"
+            }
+          );
+          anim.onfinish = function () {
+            item.strip.style.transform = "translateY(" + (-item.targetDigit * 10) + "%)";
+          };
+        } else {
+          item.strip.style.transform = "translateY(" + (-item.targetDigit * 10) + "%)";
         }
-      }
+      });
     });
 
-    // Record new state
+    // Record state
     window._dashboardKpiState = window._dashboardKpiState || {};
     window._dashboardKpiState[kpiId] = {
       num: targetVal,
@@ -328,9 +351,23 @@
     }
   }
 
-  // Export globally for programmatic control
+  // Export globally for programmatic control & verification
   window.initKpiCounters = initKpiCounters;
   window.animateCounter = animateCounter;
+  window.renderRollingOdometer = renderRollingOdometer;
+  window.animateOdometerCounter = animateOdometerCounter;
+  window.testRollingOdometer = function (kpiId, testValue) {
+    kpiId = kpiId || "portfolio_value";
+    testValue = (testValue !== undefined) ? testValue : Math.round(Math.random() * 50000 + 100000);
+    const el = document.querySelector('[data-kpi-id="' + kpiId + '"]') || document.querySelector('[data-kpi-counter]');
+    if (!el) {
+      console.warn("Element not found for kpiId:", kpiId);
+      return;
+    }
+    el.setAttribute("data-target", testValue);
+    animateOdometerCounter(el, kpiId);
+    console.log("Rolled", kpiId, "to", testValue);
+  };
 
   // Auto-run on DOM ready
   if (document.readyState === "loading") {
@@ -341,17 +378,20 @@
     initKpiCounters(document);
   }
 
+  // Debounced handler for HTMX swaps to prevent dual execution between afterSwap and load
+  let _swapDebounceTimer = null;
+  function handleHtmxEvent(evt) {
+    if (_swapDebounceTimer) clearTimeout(_swapDebounceTimer);
+    const target = (evt.detail && (evt.detail.target || evt.detail.elt)) ? (evt.detail.target || evt.detail.elt) : document;
+    _swapDebounceTimer = setTimeout(function () {
+      initKpiCounters(target);
+    }, 20);
+  }
+
   // Auto-run on HTMX swaps and dynamic partial loads
   if (typeof document !== "undefined") {
-    document.body.addEventListener("htmx:afterSwap", function (evt) {
-      const target = (evt.detail && evt.detail.target) ? evt.detail.target : document;
-      initKpiCounters(target);
-    });
-
-    document.body.addEventListener("htmx:load", function (evt) {
-      const target = (evt.detail && evt.detail.elt) ? evt.detail.elt : document;
-      initKpiCounters(target);
-    });
+    document.body.addEventListener("htmx:afterSwap", handleHtmxEvent);
+    document.body.addEventListener("htmx:load", handleHtmxEvent);
   }
 })();
 

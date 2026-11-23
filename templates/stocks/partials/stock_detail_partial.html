@@ -91,36 +91,39 @@
 
 <!-- Dual Recommendation Framework (Existing Holder vs New Investor Tabbed Switcher) -->
 {% if recommendations %}
-<div class="card border-0 shadow-sm mb-4 border-top border-4 border-info">
-    <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+<div class="card border border-secondary border-opacity-10 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 pt-3 pb-2.5 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
         {% if holding %}
-        <!-- Segmented Tab Pills Switcher (Visible when user has active holdings in this stock) -->
-        <ul class="nav nav-pills bg-body-tertiary p-1 rounded-3 border" id="recommendation-tabs" role="tablist" style="font-size: 0.85rem;">
+        <!-- Modern Segmented Pill Switcher -->
+        <ul class="nav tv-segmented-nav" id="recommendation-tabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active py-1 px-3 d-inline-flex align-items-center gap-1.5 fw-semibold"
+                <button class="nav-link active d-inline-flex align-items-center"
                         id="tab-fresh-trade-plan-btn"
                         data-bs-toggle="pill"
                         data-bs-target="#tab-fresh-trade-plan"
                         type="button" role="tab">
-                    <i class="bi bi-lightbulb text-info"></i>
+                    <i class="bi bi-crosshair text-info me-2"></i>
                     <span>New Prospective Investor</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link py-1 px-3 d-inline-flex align-items-center gap-1.5 fw-semibold"
+                <button class="nav-link d-inline-flex align-items-center"
                         id="tab-my-position-strategy-btn"
                         data-bs-toggle="pill"
                         data-bs-target="#tab-my-position-strategy"
                         type="button" role="tab">
-                    <i class="bi bi-person-check text-primary"></i>
-                    <span>Existing Holder Strategy ({{ holding.total_quantity }} sh &bull; {{ recommendations.existing_holder.action }})</span>
+                    <i class="bi bi-wallet2 text-primary me-2"></i>
+                    <span>Existing Holder Strategy</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-2 px-2 py-0.5 rounded-pill" style="font-size: 0.70rem;">
+                        {{ holding.total_quantity }} sh &bull; {{ recommendations.existing_holder.action }}
+                    </span>
                 </button>
             </li>
         </ul>
         {% else %}
         <!-- Standalone Header (When user does not hold shares) -->
         <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-lightbulb text-info fs-5"></i>
+            <i class="bi bi-crosshair text-info fs-5"></i>
             <h5 class="fw-bold mb-0 text-body">New Prospective Investor</h5>
         </div>
         {% endif %}
@@ -135,6 +138,49 @@
             </span>
         </div>
     </div>
+
+    <style>
+        .tv-segmented-nav {
+            background-color: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.04));
+            padding: 3px;
+            border-radius: 9999px;
+            display: inline-flex;
+            border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.08));
+            gap: 2px;
+        }
+        .tv-segmented-nav .nav-link {
+            border-radius: 9999px !important;
+            color: var(--bs-secondary-color, #64748b) !important;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            font-weight: 500;
+            transition: all 0.15s ease-in-out;
+            border: none !important;
+            background: transparent;
+        }
+        .tv-segmented-nav .nav-link:hover {
+            color: var(--bs-body-color, #1e293b) !important;
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        .tv-segmented-nav .nav-link.active {
+            background-color: var(--bs-card-bg, #ffffff) !important;
+            color: var(--bs-body-color, #0f172a) !important;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+        [data-bs-theme="dark"] .tv-segmented-nav {
+            background-color: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        [data-bs-theme="dark"] .tv-segmented-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        [data-bs-theme="dark"] .tv-segmented-nav .nav-link.active {
+            background-color: #2a2e39 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+    </style>
 
     <div class="tab-content" id="recommendation-tabs-content">
         <!-- 1. Fresh Trade Plan Tab Pane (Active by default) -->

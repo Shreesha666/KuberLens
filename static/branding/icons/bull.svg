@@ -4,6 +4,11 @@
     <style>
       .cls-1 {
         fill: #059669;
+        stroke: #059669;
+        stroke-width: 0.45px;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        paint-order: stroke fill;
       }
     </style>
   </defs>

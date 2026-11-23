@@ -210,7 +210,7 @@ def _get_icon_inner(filename: str, fallback_inner: str = "") -> str:
 
 
 @register.simple_tag
-def bull_icon(size=14, css_class=""):
+def bull_icon(size=16, css_class=""):
     """Renders the custom KuberLens Bull SVG icon from static/branding/icons/bull.svg."""
     classes = f"trend-animal-icon trend-bull-icon {css_class}".strip()
     inner = _get_icon_inner("bull.svg")
@@ -222,7 +222,7 @@ def bull_icon(size=14, css_class=""):
 
 
 @register.simple_tag
-def bear_icon(size=14, css_class=""):
+def bear_icon(size=16, css_class=""):
     """Renders the custom KuberLens Bear SVG icon from static/branding/icons/bear.svg."""
     classes = f"trend-animal-icon trend-bear-icon {css_class}".strip()
     inner = _get_icon_inner("bear.svg")
@@ -234,7 +234,7 @@ def bear_icon(size=14, css_class=""):
 
 
 @register.simple_tag
-def trend_badge(signal, size=14, css_class=""):
+def trend_badge(signal, size=16, css_class=""):
     """Renders a glowing trend signal badge with accompanying bull or bear icon."""
     sig = str(signal).strip().upper() if signal else "NEUTRAL"
     if "BULL" in sig:

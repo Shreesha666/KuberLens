@@ -282,7 +282,7 @@
                                 <i class="bi bi-speedometer2"></i>
                             </a>
                             {% if item.ipo.listing %}
-                            <a href="{% url 'stocks:detail' item.ipo.symbol %}" class="btn btn-sm btn-outline-primary py-0.5 px-2" title="Technical Chart">
+                            <a href="{% url 'stocks:stock_detail' item.ipo.symbol %}" class="btn btn-sm btn-outline-primary py-0.5 px-2" title="Technical Chart">
                                 <i class="bi bi-graph-up"></i>
                             </a>
                             {% endif %}

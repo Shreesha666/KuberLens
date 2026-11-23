@@ -1193,7 +1193,7 @@
                 <h5 class="fw-bold text-body">Technical Chart &amp; Moving Averages</h5>
                 <p class="text-muted small mb-3">View candlestick price action, SMA 20/50/200 trends, RSI, and MACD indicators for {{ ipo.symbol }}.</p>
                 {% if ipo.listing %}
-                <a href="{% url 'stocks:detail' ipo.symbol %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <a href="{% url 'stocks:stock_detail' ipo.symbol %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
                     <i class="bi bi-box-arrow-up-right"></i>
                     <span>Open Technical Stock Chart</span>
                 </a>

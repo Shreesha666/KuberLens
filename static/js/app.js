@@ -126,5 +126,23 @@ document.addEventListener("DOMContentLoaded", function () {
             toast.remove();
         }, 5000);
     };
+
+    // 5. Close Global Search Results Dropdown on Click Outside or Escape
+    document.addEventListener("click", function (event) {
+        const searchContainer = document.getElementById("global-search-container");
+        const searchResults = document.getElementById("search-results");
+        if (searchContainer && searchResults && !searchContainer.contains(event.target)) {
+            searchResults.innerHTML = "";
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            const searchResults = document.getElementById("search-results");
+            if (searchResults) {
+                searchResults.innerHTML = "";
+            }
+        }
+    });
 });
 

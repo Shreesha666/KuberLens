@@ -37,7 +37,7 @@ class StockSearchView(View):
         query = request.GET.get("q", "").strip()
         if not query or len(query) < 1:
             if request.htmx:
-                return JsonResponse({"results": []})
+                return HttpResponse("")
             return JsonResponse({"results": []})
 
         listings = smart_stock_search(query, limit=8)
@@ -69,7 +69,6 @@ class StockSearchView(View):
         if request.htmx:
             from django.template.loader import render_to_string
             html = render_to_string("stocks/partials/search_results_partial.html", {"results": results, "query": query}, request=request)
-            from django.http import HttpResponse
             return HttpResponse(html)
 
         return JsonResponse({"results": results})

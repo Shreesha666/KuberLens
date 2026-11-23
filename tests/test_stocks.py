@@ -223,6 +223,14 @@ class TestStockViews:
         assert "RELIANCE" in content
         assert "list-group-item" in content
 
+    def test_search_empty_query_htmx_returns_empty_html(self, seeded_stocks):
+        client = Client()
+        url = reverse("stocks:stock_search") + "?q="
+        response = client.get(url, HTTP_HX_REQUEST="true")
+
+        assert response.status_code == 200
+        assert response.content.decode() == ""
+
     def test_stock_list_full_shell_and_htmx(self, seeded_stocks):
         client = Client()
         url = reverse("stocks:stock_list")

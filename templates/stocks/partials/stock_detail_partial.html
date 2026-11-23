@@ -1103,7 +1103,7 @@
         const dataUrl = '{% url "stocks:stock_chart_data" listing.symbol %}';
         function mount() {
             if (typeof window.initStockChart === 'function') {
-                window.initStockChart('tradingview-chart-container', dataUrl);
+                window.initStockChart('tradingview-chart-container', dataUrl, { symbol: '{{ listing.symbol }}' });
             } else {
                 setTimeout(mount, 40);
             }

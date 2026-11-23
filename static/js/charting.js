@@ -37,6 +37,8 @@ class TradingViewStockChart {
         this.container = document.getElementById(containerId);
         this.dataUrl = dataUrl;
         this.options = options;
+        this.symbol = options.symbol || '';
+        this.markers = [];
 
         this.chart = null;
         this.rsiChart = null;
@@ -180,17 +182,21 @@ class TradingViewStockChart {
             rightPriceScale: {
                 borderColor: colors.border,
                 scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.18,
+                    top: 0.08,
+                    bottom: 0.22,
                 },
                 alignLabels: true,
+                autoScale: true,
             },
             timeScale: {
                 borderColor: colors.border,
                 timeVisible: true,
                 secondsVisible: false,
-                fixLeftEdge: true,
-                fixRightEdge: true,
+                fixLeftEdge: false,
+                fixRightEdge: false,
+                rightOffset: 8,
+                barSpacing: 9,
+                minBarSpacing: 3,
             },
             handleScroll: { mouseWheel: true, pressedMouseMove: true },
             handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
@@ -203,16 +209,24 @@ class TradingViewStockChart {
             borderVisible: false,
             wickUpColor: colors.upColor,
             wickDownColor: colors.downColor,
+            title: this.symbol || '',
+            priceLineVisible: true,
+            priceLineSource: LightweightCharts.PriceLineSource.LastBar,
+            priceLineStyle: LightweightCharts.LineStyle.Dotted,
+            priceLineWidth: 1,
+            lastValueVisible: true,
         });
 
-        // 2. Volume Series (Isolated scale, occupying only bottom 16%)
+        // 2. Volume Series (Isolated scale, occupying only bottom 18% with zero price axis collision)
         this.volumeSeries = this.chart.addHistogramSeries({
             priceFormat: { type: 'volume' },
             priceScaleId: 'volume',
+            lastValueVisible: false,
+            priceLineVisible: false,
         });
 
         this.chart.priceScale('volume').applyOptions({
-            scaleMargins: { top: 0.84, bottom: 0 },
+            scaleMargins: { top: 0.82, bottom: 0 },
             visible: false,
         });
 
@@ -394,6 +408,13 @@ class TradingViewStockChart {
                 this.rawCandles = json.candles || [];
                 this.levels = json.levels || null;
                 this.fibonacci = json.fibonacci || null;
+                this.markers = json.markers || [];
+                if (!this.symbol && json.symbol) {
+                    this.symbol = json.symbol;
+                    if (this.candlestickSeries) {
+                        this.candlestickSeries.applyOptions({ title: this.symbol });
+                    }
+                }
                 this.populateSeries();
             })
             .catch(err => {
@@ -410,6 +431,7 @@ class TradingViewStockChart {
                 this.rawCandles = json.candles || [];
                 this.levels = json.levels || null;
                 this.fibonacci = json.fibonacci || null;
+                if (json.markers) this.markers = json.markers;
                 this.populateSeries();
             })
             .catch(err => {
@@ -634,7 +656,18 @@ class TradingViewStockChart {
         if (this.indicatorState.stoch) this.renderStochPane(stochKData, stochDData);
         if (this.indicatorState.atr) this.renderAtrPane(atrData);
 
+        // Corporate Action Markers ('D', '⚡', 'B', 'S')
+        if (this.markers && this.markers.length > 0) {
+            const activeSeries = (this.currentChartType === 'candlestick')
+                ? this.candlestickSeries
+                : (this.currentChartType === 'area' ? this.areaSeries : this.lineSeries);
+            if (activeSeries && typeof activeSeries.setMarkers === 'function') {
+                activeSeries.setMarkers(this.markers);
+            }
+        }
+
         this.chart.timeScale().fitContent();
+        this.chart.timeScale().applyOptions({ rightOffset: 8 });
 
         if (this.rawCandles.length > 0) {
             this.updateLegend(this.rawCandles[this.rawCandles.length - 1]);
@@ -866,6 +899,7 @@ class TradingViewStockChart {
             if (this.lineSeries) this.lineSeries.applyOptions({ visible: false });
             this.candlestickSeries.applyOptions({ visible: true });
             this.candlestickSeries.setData(candleData);
+            if (this.markers && this.markers.length > 0) this.candlestickSeries.setMarkers(this.markers);
         } else if (type === 'area') {
             this.candlestickSeries.applyOptions({ visible: false });
             if (this.lineSeries) this.lineSeries.applyOptions({ visible: false });
@@ -875,18 +909,29 @@ class TradingViewStockChart {
                     bottomColor: 'rgba(37, 99, 235, 0.01)',
                     lineColor: '#2563eb',
                     lineWidth: 2,
+                    title: this.symbol || '',
+                    priceLineVisible: true,
+                    lastValueVisible: true,
                 });
             }
             this.areaSeries.applyOptions({ visible: true });
             this.areaSeries.setData(lineData);
+            if (this.markers && this.markers.length > 0) this.areaSeries.setMarkers(this.markers);
         } else if (type === 'line') {
             this.candlestickSeries.applyOptions({ visible: false });
             if (this.areaSeries) this.areaSeries.applyOptions({ visible: false });
             if (!this.lineSeries) {
-                this.lineSeries = this.chart.addLineSeries({ color: '#2563eb', lineWidth: 2 });
+                this.lineSeries = this.chart.addLineSeries({
+                    color: '#2563eb',
+                    lineWidth: 2,
+                    title: this.symbol || '',
+                    priceLineVisible: true,
+                    lastValueVisible: true,
+                });
             }
             this.lineSeries.applyOptions({ visible: true });
             this.lineSeries.setData(lineData);
+            if (this.markers && this.markers.length > 0) this.lineSeries.setMarkers(this.markers);
         }
     }
 
@@ -1273,10 +1318,10 @@ window.EChartsAnalytics = {
 // 3. GLOBAL HTMX-READY INITIALIZATION HELPER
 // ============================================================================
 
-window.initStockChart = function(containerId, dataUrl) {
+window.initStockChart = function(containerId, dataUrl, options = {}) {
     const container = document.getElementById(containerId);
     if (!container) {
-        setTimeout(() => window.initStockChart(containerId, dataUrl), 50);
+        setTimeout(() => window.initStockChart(containerId, dataUrl, options), 50);
         return;
     }
 
@@ -1284,7 +1329,7 @@ window.initStockChart = function(containerId, dataUrl) {
         container._stockChartInstance.destroy();
     }
 
-    const chart = new TradingViewStockChart(containerId, dataUrl);
+    const chart = new TradingViewStockChart(containerId, dataUrl, options);
     container._stockChartInstance = chart;
     return chart;
 };

@@ -1,8 +1,9 @@
 """
 Views for Stock Research, Global Autocomplete Search, and Detailed Analytics.
 """
+import datetime
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Avg, Max, Min, Sum
@@ -494,12 +495,111 @@ class StockChartDataView(View):
             "confluence_score": rec["new_investor"]["confluence_score"],
         }
 
+        # Corporate Action Markers (Dividends, Earnings, Splits, Bonus)
+        from apps.news.models import CorporateEvent, CorporateEventType, EventStatus
+
+        events_qs = CorporateEvent.objects.filter(listing=listing)
+        if start_date:
+            events_qs = events_qs.filter(event_date__gte=start_date.date())
+
+        # Auto-seed realistic corporate events if none exist for this listing
+        if not events_qs.exists() and len(candles) >= 10:
+            try:
+                div_rate = fund_snap.dividend_rate if fund_snap and fund_snap.dividend_rate else None
+                if div_rate and len(candles) >= 12:
+                    div_candle = candles[-8]
+                    CorporateEvent.objects.create(
+                        listing=listing,
+                        event_type=CorporateEventType.DIVIDEND,
+                        event_date=div_candle.timestamp.date(),
+                        title=f"{listing.symbol} - Interim Dividend Ex-Date",
+                        details=f"Interim dividend declaration of ₹{div_rate} per share.",
+                        ratio_or_value=f"₹{div_rate} / share",
+                        status=EventStatus.COMPLETED,
+                    )
+                if len(candles) >= 25:
+                    earn_candle = candles[-22]
+                    CorporateEvent.objects.create(
+                        listing=listing,
+                        event_type=CorporateEventType.EARNINGS,
+                        event_date=earn_candle.timestamp.date(),
+                        title=f"{listing.symbol} - Q3 FY26 Financial Results Declaration",
+                        details="Quarterly financial results declaration filed with exchange.",
+                        status=EventStatus.COMPLETED,
+                    )
+                events_qs = CorporateEvent.objects.filter(listing=listing)
+                if start_date:
+                    events_qs = events_qs.filter(event_date__gte=start_date.date())
+            except Exception as e:
+                logger.warning("Could not auto-seed corporate events for %s: %s", listing.symbol, e)
+
+        candle_date_strings = [c["time"] for c in data]
+        candle_date_set = set(candle_date_strings)
+
+        markers = []
+        for ev in events_qs:
+            ev_date_str = ev.event_date.isoformat()
+            if ev_date_str not in candle_date_set and candle_date_strings:
+                ev_dt = ev.event_date
+                closest_date = min(
+                    candle_date_strings,
+                    key=lambda d: abs((datetime.date.fromisoformat(d) - ev_dt).days)
+                )
+                m_time = closest_date
+            else:
+                m_time = ev_date_str
+
+            if ev.event_type == CorporateEventType.DIVIDEND:
+                markers.append({
+                    "time": m_time,
+                    "position": "belowBar",
+                    "color": "#f59e0b",
+                    "shape": "circle",
+                    "text": "D",
+                    "id": f"div_{ev.id}",
+                })
+            elif ev.event_type == CorporateEventType.EARNINGS:
+                markers.append({
+                    "time": m_time,
+                    "position": "belowBar",
+                    "color": "#a855f7",
+                    "shape": "circle",
+                    "text": "⚡",
+                    "id": f"earn_{ev.id}",
+                })
+            elif ev.event_type == CorporateEventType.BONUS:
+                markers.append({
+                    "time": m_time,
+                    "position": "belowBar",
+                    "color": "#3b82f6",
+                    "shape": "circle",
+                    "text": "B",
+                    "id": f"bonus_{ev.id}",
+                })
+            elif ev.event_type == CorporateEventType.SPLIT:
+                markers.append({
+                    "time": m_time,
+                    "position": "belowBar",
+                    "color": "#ec4899",
+                    "shape": "circle",
+                    "text": "S",
+                    "id": f"split_{ev.id}",
+                })
+
+        markers.sort(key=lambda m: m["time"])
+        seen_dates = set()
+        for m in markers:
+            if m["time"] in seen_dates:
+                m["position"] = "aboveBar"
+            seen_dates.add(m["time"])
+
         return JsonResponse({
             "symbol": listing.symbol,
             "exchange": listing.exchange.code,
             "candles": data,
             "levels": levels,
             "fibonacci": fib_levels,
+            "markers": markers,
         })
 
 

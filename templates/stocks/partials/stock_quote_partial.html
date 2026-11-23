@@ -3,6 +3,13 @@
 <div class="text-md-end"
      id="stock-quote-container"
      data-stock-quote-widget="true"
+     data-symbol="{{ listing.symbol }}"
+     data-price="{{ quote.price|default:'' }}"
+     data-open="{{ quote.open|default:'' }}"
+     data-high="{{ quote.high|default:'' }}"
+     data-low="{{ quote.low|default:'' }}"
+     data-volume="{{ quote.volume|default:'' }}"
+     data-time="{% if quote.retrieved_at %}{{ quote.retrieved_at|date:'Y-m-d' }}{% endif %}"
      {% if is_market_open %}hx-trigger="every 15s" hx-get="{% url 'stocks:stock_quote_partial' listing.symbol %}" hx-swap="outerHTML" data-silent-refresh="true"{% endif %}>
     {% if quote %}
     <div class="d-flex align-items-baseline justify-content-md-end gap-2">

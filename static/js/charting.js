@@ -383,6 +383,99 @@ class TradingViewStockChart {
             });
     }
 
+    refreshData(silent = true) {
+        if (!this.dataUrl) return;
+        const url = `${this.dataUrl}?days=${this.currentDays}&_t=${Date.now()}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(json => {
+                this.rawCandles = json.candles || [];
+                this.levels = json.levels || null;
+                this.fibonacci = json.fibonacci || null;
+                this.populateSeries();
+            })
+            .catch(err => {
+                if (!silent) console.error("Failed to sync TradingView chart data:", err);
+            });
+    }
+
+    updateLiveBar(quoteData) {
+        if (!this.chart || !quoteData) return;
+        const price = parseFloat(quoteData.price);
+        if (isNaN(price) || price <= 0) return;
+
+        const openVal = quoteData.open ? parseFloat(quoteData.open) : null;
+        const highVal = quoteData.high ? parseFloat(quoteData.high) : null;
+        const lowVal = quoteData.low ? parseFloat(quoteData.low) : null;
+        const volVal = quoteData.volume ? parseInt(quoteData.volume, 10) : 0;
+
+        // Default to today's date YYYY-MM-DD
+        const todayStr = quoteData.time || new Date().toISOString().split('T')[0];
+
+        let lastCandle = (this.rawCandles && this.rawCandles.length > 0)
+            ? this.rawCandles[this.rawCandles.length - 1]
+            : null;
+
+        let targetTime = todayStr;
+        let open = openVal || price;
+        let high = highVal || price;
+        let low = lowVal || price;
+        let volume = volVal;
+
+        if (lastCandle) {
+            if (lastCandle.time === todayStr) {
+                // Update today's existing candle in real-time
+                targetTime = todayStr;
+                open = lastCandle.open;
+                high = Math.max(lastCandle.high, price, highVal || price);
+                low = Math.min(lastCandle.low, price, lowVal || price);
+                volume = volVal || lastCandle.volume;
+                lastCandle.close = price;
+                lastCandle.high = high;
+                lastCandle.low = low;
+                lastCandle.volume = volume;
+            } else if (lastCandle.time < todayStr) {
+                // Advance to a new forming candle for today
+                targetTime = todayStr;
+                open = openVal || lastCandle.close || price;
+                high = Math.max(open, price, highVal || price);
+                low = Math.min(open, price, lowVal || price);
+                const newCandle = { time: targetTime, open, high, low, close: price, volume };
+                this.rawCandles.push(newCandle);
+            }
+        }
+
+        const bar = {
+            time: targetTime,
+            open: open,
+            high: high,
+            low: low,
+            close: price
+        };
+
+        try {
+            if (this.candlestickSeries) {
+                this.candlestickSeries.update(bar);
+            }
+            if (this.lineSeries) {
+                this.lineSeries.update({ time: targetTime, value: price });
+            }
+            if (this.areaSeries) {
+                this.areaSeries.update({ time: targetTime, value: price });
+            }
+            if (this.volumeSeries && volume > 0) {
+                this.volumeSeries.update({
+                    time: targetTime,
+                    value: volume,
+                    color: price >= open ? 'rgba(34, 197, 94, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+                });
+            }
+            this.updateLegend(bar);
+        } catch (e) {
+            console.warn("[TradingViewStockChart] Error updating live bar:", e);
+        }
+    }
+
     populateSeries() {
         if (!this.chart || !this.rawCandles || this.rawCandles.length === 0) return;
 
@@ -972,10 +1065,23 @@ class TradingViewStockChart {
             };
         }
 
-        // 5. Fit Content (Reset Zoom)
+        // 5. Fit Content (Reset Zoom) & Refresh Data
         const fitBtn = document.getElementById('btn-reset-zoom');
         if (fitBtn) {
             fitBtn.onclick = () => { if (this.chart) this.chart.timeScale().fitContent(); };
+        }
+        const refreshBtn = document.getElementById('btn-chart-refresh');
+        if (refreshBtn) {
+            refreshBtn.onclick = () => {
+                const icon = refreshBtn.querySelector('i');
+                if (icon) icon.classList.add('spin-animation');
+                refreshBtn.classList.add('disabled');
+                this.refreshData(false);
+                setTimeout(() => {
+                    refreshBtn.classList.remove('disabled');
+                    if (icon) icon.classList.remove('spin-animation');
+                }, 800);
+            };
         }
 
         // 6. Fullscreen Toggle
@@ -1160,5 +1266,23 @@ document.addEventListener('htmx:beforeSwap', function(evt) {
                 c._stockChartInstance = null;
             }
         });
+    }
+});
+
+// Sync live price updates directly into TradingView Lightweight Chart
+document.addEventListener('htmx:afterSwap', function(evt) {
+    const quoteEl = document.getElementById('stock-quote-container');
+    if (quoteEl && quoteEl.dataset.price) {
+        const chartContainer = document.getElementById('tradingview-chart-container');
+        if (chartContainer && chartContainer._stockChartInstance && typeof chartContainer._stockChartInstance.updateLiveBar === 'function') {
+            chartContainer._stockChartInstance.updateLiveBar({
+                price: quoteEl.dataset.price,
+                open: quoteEl.dataset.open,
+                high: quoteEl.dataset.high,
+                low: quoteEl.dataset.low,
+                volume: quoteEl.dataset.volume,
+                time: quoteEl.dataset.time
+            });
+        }
     }
 });

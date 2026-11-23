@@ -1,6 +1,7 @@
 /* ==========================================================================
    KuberLens Premium Auth Experience (Login & Sign-Up)
    Jaw-dropping Fintech Terminal Design with Multi-Layered Visual Ambience
+   & Auto-Advancing Feature Showcase Carousel
    ========================================================================== */
 
 /* Full Viewport Canvas */
@@ -136,10 +137,68 @@
     color: rgba(255, 255, 255, 0.9);
 }
 
-/* Multi-Layered Interactive Candlestick Terminal Showcase */
-.auth-terminal-stage {
+/* Market Status Pill */
+.market-status-pill {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.market-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: statusBlink 1.8s ease-in-out infinite;
+}
+
+.market-pulse-dot.closed {
+    background-color: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+}
+
+@keyframes statusBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* ==========================================================================
+   CAROUSEL CONTAINER & SLIDES
+   ========================================================================== */
+.auth-carousel-container {
     position: relative;
-    margin: 1.5rem 0;
+    width: 100%;
+    overflow: hidden;
+    margin: 1.25rem 0;
+}
+
+.auth-carousel-track {
+    display: flex;
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 100%;
+}
+
+.auth-carousel-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    opacity: 0.35;
+    transform: scale(0.97);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+    user-select: none;
+}
+
+.auth-carousel-slide.active {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .auth-terminal-card {
@@ -153,15 +212,9 @@
                 0 0 0 1px rgba(255, 255, 255, 0.05);
     position: relative;
     z-index: 3;
-    animation: subtleCardFloat 7s ease-in-out infinite;
 }
 
-@keyframes subtleCardFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-7px); }
-}
-
-/* Candlestick Wave Visualization Container */
+/* Candlestick SVG Chart */
 .candlestick-chart-svg {
     width: 100%;
     height: 110px;
@@ -179,18 +232,18 @@
 }
 
 .candle-green {
-    fill: #10B981;
-    stroke: #10B981;
+    fill: #10b981;
+    stroke: #10b981;
 }
 
 .candle-red {
-    fill: #EF4444;
-    stroke: #EF4444;
+    fill: #ef4444;
+    stroke: #ef4444;
 }
 
-/* Glowing Pulsing Price Dot */
+/* Glowing Pulsing Price Beacon */
 .price-pulse-circle {
-    fill: #10B981;
+    fill: #10b981;
     animation: pricePulse 2s ease-in-out infinite;
 }
 
@@ -213,26 +266,70 @@
     gap: 0.65rem;
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
     z-index: 5;
-    animation: badgeFloat 5.5s ease-in-out infinite;
 }
 
 .badge-top-right {
-    top: -18px;
-    right: -15px;
-    animation-delay: -1.5s;
+    top: -16px;
+    right: -12px;
     border-color: rgba(37, 99, 235, 0.35);
 }
 
 .badge-bottom-left {
-    bottom: -18px;
-    left: -15px;
-    animation-delay: -3.5s;
+    bottom: -16px;
+    left: -12px;
     border-color: rgba(16, 185, 129, 0.35);
 }
 
-@keyframes badgeFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+/* Carousel Navigation & Indicators */
+.auth-carousel-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.auth-carousel-indicators {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.auth-carousel-indicator {
+    width: 20px;
+    height: 4px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-carousel-indicator.active {
+    width: 42px;
+    background: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+}
+
+.auth-carousel-arrow {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-size: 0.85rem;
+}
+
+.auth-carousel-arrow:hover {
+    background: rgba(255, 255, 255, 0.22);
+    transform: scale(1.08);
+    color: #ffffff;
 }
 
 /* Glass Feature Pill */
@@ -287,6 +384,23 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Live User Avatar Preview */
+.auth-live-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+    flex-shrink: 0;
+    transition: transform 0.25s ease, background 0.25s ease;
 }
 
 /* Modern Input Groups with Icon Highlights */

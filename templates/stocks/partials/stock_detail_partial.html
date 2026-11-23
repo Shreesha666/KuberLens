@@ -89,90 +89,56 @@
     </div>
 </div>
 
-<!-- Dual Recommendation Framework (Existing Holder vs New Investor) -->
+<!-- Dual Recommendation Framework (Existing Holder vs New Investor Tabbed Switcher) -->
 {% if recommendations %}
-<div class="row g-4 mb-4">
-    <!-- 1. Existing Holder Guidance (Only shown if user has active holdings in this stock) -->
-    {% if holding %}
-    <div class="col-12">
-        <div class="card border-0 shadow-sm border-top border-4 border-primary">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-check text-primary fs-5"></i>
-                    <h5 class="fw-bold mb-0 text-body">Existing Holder Strategy</h5>
-                </div>
-                <span class="badge {% if recommendations.existing_holder.action == 'ADD / ACCUMULATE' %}bg-success text-white{% elif recommendations.existing_holder.action == 'PARTIAL PROFIT BOOKING' %}bg-warning text-dark{% elif recommendations.existing_holder.action == 'REDUCE EXPOSURE' or recommendations.existing_holder.action == 'EXIT' %}bg-danger text-white{% elif recommendations.existing_holder.action == 'HOLD / TIGHTEN STOP' %}bg-info text-white{% elif recommendations.existing_holder.action == 'HOLD' %}bg-secondary text-white{% else %}bg-secondary-subtle text-secondary border{% endif %}">
-                    {{ recommendations.existing_holder.action }}
-                </span>
-            </div>
-            <div class="card-body px-4 py-3">
-                {% if recommendations.existing_holder.warning %}
-                <div class="alert alert-danger py-2 px-3 small fw-bold mb-3 d-flex align-items-center gap-2">
-                    <i class="bi bi-shield-x fs-5"></i>
-                    <span>{{ recommendations.existing_holder.warning }}</span>
-                </div>
-                {% endif %}
+<div class="card border-0 shadow-sm mb-4 border-top border-4 border-info">
+    <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        {% if holding %}
+        <!-- Segmented Tab Pills Switcher (Visible when user has active holdings in this stock) -->
+        <ul class="nav nav-pills bg-body-tertiary p-1 rounded-3 border" id="recommendation-tabs" role="tablist" style="font-size: 0.85rem;">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active py-1 px-3 d-inline-flex align-items-center gap-1.5 fw-semibold"
+                        id="tab-fresh-trade-plan-btn"
+                        data-bs-toggle="pill"
+                        data-bs-target="#tab-fresh-trade-plan"
+                        type="button" role="tab">
+                    <i class="bi bi-lightbulb text-info"></i>
+                    <span>New Prospective Investor</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-1 px-3 d-inline-flex align-items-center gap-1.5 fw-semibold"
+                        id="tab-my-position-strategy-btn"
+                        data-bs-toggle="pill"
+                        data-bs-target="#tab-my-position-strategy"
+                        type="button" role="tab">
+                    <i class="bi bi-person-check text-primary"></i>
+                    <span>Existing Holder Strategy ({{ holding.total_quantity }} sh &bull; {{ recommendations.existing_holder.action }})</span>
+                </button>
+            </li>
+        </ul>
+        {% else %}
+        <!-- Standalone Header (When user does not hold shares) -->
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-lightbulb text-info fs-5"></i>
+            <h5 class="fw-bold mb-0 text-body">New Prospective Investor</h5>
+        </div>
+        {% endif %}
 
-                <div class="mb-3">
-                    <span class="text-muted small d-block mb-1 fw-semibold text-uppercase">Strategy Rationale</span>
-                    <p class="text-body mb-0 small">{{ recommendations.existing_holder.reasoning }}</p>
-                </div>
-
-                <div class="row g-3 mb-3 small pt-2 border-top">
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <span class="text-muted d-block">Portfolio Allocation</span>
-                        <span class="fw-bold num-mono text-body">
-                            {{ recommendations.existing_holder.allocation_pct }}%
-                            <span class="text-muted fw-normal">({{ holding.total_quantity }} shares)</span>
-                        </span>
-                    </div>
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <span class="text-muted d-block">Avg Position Cost</span>
-                        <span class="fw-bold num-mono text-body">
-                            {% if recommendations.existing_holder.existing_avg_price %}
-                                ₹{{ recommendations.existing_holder.existing_avg_price|floatformat:2 }}
-                            {% else %}
-                                —
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="p-2 rounded bg-light border small h-100">
-                            <span class="text-muted fw-semibold d-block text-uppercase" style="font-size: 0.75rem;">Invalidation Trigger</span>
-                            <span class="text-body">{{ recommendations.existing_holder.invalidation_condition }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 border-top d-flex justify-content-between align-items-center">
-                    <span class="text-muted extra-small">Active holding in your portfolio</span>
-                    <a href="{% url 'holdings:detail' listing.symbol %}" class="btn btn-sm btn-outline-primary"
-                       hx-get="{% url 'holdings:detail' listing.symbol %}" hx-target="#main-content" hx-push-url="true">
-                        <i class="bi bi-wallet2"></i> View In Holdings
-                    </a>
-                </div>
-            </div>
+        <!-- Confluence and Status Badges -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge {% if recommendations.new_investor.confluence_score >= 75 %}bg-success text-white{% elif recommendations.new_investor.confluence_score >= 50 %}bg-primary text-white{% else %}bg-warning text-dark{% endif %} small">
+                <i class="bi bi-shield-check"></i> {{ recommendations.new_investor.confluence_score }}% Confluence
+            </span>
+            <span class="badge {% if recommendations.new_investor.status == 'FAVORABLE ENTRY' %}bg-success text-white{% elif recommendations.new_investor.status == 'AVOID / WAIT' %}bg-danger text-white{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                {{ recommendations.new_investor.status }}
+            </span>
         </div>
     </div>
-    {% endif %}
 
-    <!-- 2. New Prospective Investor Guidance (Full Width) -->
-    <div class="col-12">
-        <div class="card border-0 shadow-sm border-top border-4 border-info">
-            <div class="card-header bg-transparent border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-lightbulb text-info fs-5"></i>
-                    <h5 class="fw-bold mb-0 text-body">New Prospective Investor</h5>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="badge {% if recommendations.new_investor.confluence_score >= 75 %}bg-success text-white{% elif recommendations.new_investor.confluence_score >= 50 %}bg-primary text-white{% else %}bg-warning text-dark{% endif %} small">
-                        <i class="bi bi-shield-check"></i> {{ recommendations.new_investor.confluence_score }}% Confluence
-                    </span>
-                    <span class="badge {% if recommendations.new_investor.status == 'FAVORABLE ENTRY' %}bg-success text-white{% elif recommendations.new_investor.status == 'AVOID / WAIT' %}bg-danger text-white{% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
-                        {{ recommendations.new_investor.status }}
-                    </span>
-                </div>
-            </div>
+    <div class="tab-content" id="recommendation-tabs-content">
+        <!-- 1. Fresh Trade Plan Tab Pane (Active by default) -->
+        <div class="tab-pane fade show active" id="tab-fresh-trade-plan" role="tabpanel">
             <div class="card-body px-4 py-3">
                 <!-- 1. Key Trade Execution Metrics (3-Column Spacious Grid) -->
                 <div class="row g-3 mb-3 small pt-1">
@@ -286,6 +252,67 @@
                 </div>
             </div>
         </div>
+
+        {% if holding %}
+        <!-- 2. Existing Holder Strategy Tab Pane (Only rendered if user has holdings) -->
+        <div class="tab-pane fade" id="tab-my-position-strategy" role="tabpanel">
+            <div class="card-body px-4 py-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between p-3 rounded-3 bg-primary-subtle border border-primary-subtle mb-3 gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-wallet2 fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="fw-bold fs-6 text-body">Your Position: {{ holding.total_quantity }} shares</span>
+                                <span class="badge {% if recommendations.existing_holder.action == 'ADD / ACCUMULATE' %}bg-success text-white{% elif recommendations.existing_holder.action == 'PARTIAL PROFIT BOOKING' %}bg-warning text-dark{% elif recommendations.existing_holder.action == 'REDUCE EXPOSURE' or recommendations.existing_holder.action == 'EXIT' %}bg-danger text-white{% elif recommendations.existing_holder.action == 'HOLD / TIGHTEN STOP' %}bg-info text-white{% elif recommendations.existing_holder.action == 'HOLD' %}bg-secondary text-white{% else %}bg-secondary-subtle text-secondary border{% endif %}">
+                                    {{ recommendations.existing_holder.action }}
+                                </span>
+                            </div>
+                            <div class="text-muted small mt-0.5">
+                                Avg Cost: <strong class="text-body num-mono">₹{{ recommendations.existing_holder.existing_avg_price|floatformat:2 }}</strong> &bull;
+                                Allocation: <strong class="text-body num-mono">{{ recommendations.existing_holder.allocation_pct }}%</strong> of Portfolio
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{% url 'holdings:detail' listing.symbol %}" class="btn btn-sm btn-primary"
+                       hx-get="{% url 'holdings:detail' listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> View In Holdings
+                    </a>
+                </div>
+
+                {% if recommendations.existing_holder.warning %}
+                <div class="alert alert-danger py-2 px-3 small fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-x fs-5"></i>
+                    <span>{{ recommendations.existing_holder.warning }}</span>
+                </div>
+                {% endif %}
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 rounded bg-light border h-100">
+                            <span class="text-muted small d-block mb-1 fw-semibold text-uppercase">Strategy Rationale</span>
+                            <p class="text-body mb-0 small">{{ recommendations.existing_holder.reasoning }}</p>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 rounded bg-light border h-100">
+                            <span class="text-muted small d-block mb-1 fw-semibold text-uppercase">Invalidation Trigger</span>
+                            <p class="text-body mb-0 small">{{ recommendations.existing_holder.invalidation_condition }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-muted extra-small">Portfolio Strategy updated based on current price &amp; technical indicators</span>
+                    <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}" class="btn btn-sm btn-outline-secondary"
+                       hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}" hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-plus-circle me-1"></i> Add Transaction
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}

@@ -16,7 +16,9 @@ from apps.instruments.models import ExchangeListing
 from apps.market.models import HistoricalCandle
 from apps.ml_engine.models import (
     MarketRegimeType,
+    MLInferenceState,
     MLModelRecord,
+    MLModelState,
     MLPrediction,
     MLPredictionLabel,
 )
@@ -155,6 +157,10 @@ class StockMLRanker:
                     "random_guess_accuracy": 0.500,
                 },
                 "is_active": True,
+                "algorithm": "HEURISTIC_RULE_BASED",
+                "model_state": MLModelState.LEGACY_HEURISTIC,
+                "horizon_sessions": 10,
+                "calibration_method": "NONE",
             },
         )
         return record
@@ -163,20 +169,30 @@ class StockMLRanker:
     def evaluate_and_predict(cls, listing: ExchangeListing) -> MLPrediction:
         """
         Evaluates historical candles for a listing and persists an MLPrediction record.
+        Uses update_or_create to enforce idempotency on (listing, model_record, horizon, session).
         """
         model_rec = cls.get_or_create_active_model()
+        now_ts = timezone.now()
+        session_date = now_ts.date()
         candles = HistoricalCandle.objects.filter(listing=listing, interval__iexact="1d").order_by("timestamp")
 
         if candles.count() < 30:
             # Fallback prediction if data is minimal
-            pred = MLPrediction.objects.create(
+            pred, _ = MLPrediction.objects.update_or_create(
                 listing=listing,
                 model_record=model_rec,
-                prediction_timestamp=timezone.now(),
-                prediction_label=MLPredictionLabel.SIDEWAYS_CONSOLIDATION,
-                confidence_score=Decimal("0.5000"),
-                regime_classification=MarketRegimeType.RANGE_BOUND,
-                feature_contributions={"data_note": "Under 30 trading candles available."},
+                horizon_sessions=10,
+                as_of_session=session_date,
+                defaults={
+                    "prediction_timestamp": now_ts,
+                    "prediction_label": MLPredictionLabel.SIDEWAYS_CONSOLIDATION,
+                    "confidence_score": Decimal("0.5000"),
+                    "regime_classification": MarketRegimeType.RANGE_BOUND,
+                    "feature_contributions": {"data_note": "Under 30 trading candles available."},
+                    "is_heuristic": True,
+                    "inference_state": MLInferenceState.INSUFFICIENT_DATA,
+                    "calibration_status": "UNCALIBRATED",
+                },
             )
             return pred
 
@@ -239,14 +255,21 @@ class StockMLRanker:
             "regime_summary": regime_info["summary"],
         }
 
-        prediction = MLPrediction.objects.create(
+        prediction, _ = MLPrediction.objects.update_or_create(
             listing=listing,
             model_record=model_rec,
-            prediction_timestamp=timezone.now(),
-            prediction_label=label,
-            confidence_score=Decimal(str(round(confidence, 4))),
-            regime_classification=regime_info["regime"],
-            feature_contributions=feature_contrib,
+            horizon_sessions=10,
+            as_of_session=session_date,
+            defaults={
+                "prediction_timestamp": now_ts,
+                "prediction_label": label,
+                "confidence_score": Decimal(str(round(confidence, 4))),
+                "regime_classification": regime_info["regime"],
+                "feature_contributions": feature_contrib,
+                "is_heuristic": True,
+                "inference_state": MLInferenceState.HEURISTIC_FALLBACK,
+                "calibration_status": "UNCALIBRATED",
+            },
         )
 
         return prediction

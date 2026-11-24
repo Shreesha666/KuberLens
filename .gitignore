@@ -20,6 +20,9 @@ db.sqlite3
 db.sqlite3-journal
 media/
 backups/
+models/**/*.joblib
+models/**/*.parquet
+models/artifacts/
 
 # Static collected
 staticfiles/

@@ -229,4 +229,8 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 # Company Logo Provider Settings (Shareperks ISIN CDN)
 SHAREPERKS_LOGO_BASE_URL = os.getenv("SHAREPERKS_LOGO_BASE_URL", "https://company-logo.shareperks.in/logo")
 
+# Machine Learning Artifact & Registry Settings (AIML Spec v2.1)
+ML_MODEL_DIR = BASE_DIR / "models"
+ML_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
 

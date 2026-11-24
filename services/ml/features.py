@@ -49,7 +49,8 @@ FEATURE_CATALOG: list[FeatureSpec] = [
     FeatureSpec("realized_vol_20", "VOLATILITY", 20, "20-day rolling standard deviation of 1-day log returns * sqrt(252)"),
     FeatureSpec("volume_ratio_20", "VOLUME", 20, "Volume / 20-day SMA(Volume) capped at 5.0x"),
     FeatureSpec("obv_trend_ratio_20", "VOLUME", 20, "OBV / 20-day SMA(OBV) minus 1.0"),
-    FeatureSpec("benchmark_rel_strength_20", "MARKET_CONTEXT", 20, "20-session stock return minus cross-sectional universe median return"),
+    FeatureSpec("universe_median_rel_strength_20", "MARKET_CONTEXT", 20, "20-session stock return minus cross-sectional universe median return"),
+    FeatureSpec("benchmark_rel_strength_20", "MARKET_CONTEXT", 20, "20-session stock return minus verified NIFTY 50 index benchmark return (NaN when benchmark candles unavailable)"),
     FeatureSpec("market_regime_id", "REGIME", 30, "Market regime categorical: 0=RANGE_BOUND, 1=TRENDING_UP, 2=TRENDING_DOWN, 3=HIGH_VOLATILITY"),
 ]
 
@@ -257,13 +258,17 @@ class FeaturePipeline:
 
         df_out = pd.concat(processed_dfs, ignore_index=True)
 
-        # Cross-Sectional Market Context: Benchmark Relative Strength
+        # Cross-Sectional Market Context: Universe Median Relative Strength
         # Excess 20d return over the median return of the cross-sectional universe on each session
         if "return_20d" in df_out.columns:
             session_medians = df_out.groupby("session_date")["return_20d"].transform("median")
-            df_out["benchmark_rel_strength_20"] = df_out["return_20d"] - session_medians
+            df_out["universe_median_rel_strength_20"] = df_out["return_20d"] - session_medians
         else:
-            df_out["benchmark_rel_strength_20"] = 0.0
+            df_out["universe_median_rel_strength_20"] = 0.0
+
+        # True Benchmark Relative Strength (against verified NIFTY 50 index candles)
+        # Sourced only when verified benchmark candles are available; otherwise NaN
+        df_out["benchmark_rel_strength_20"] = np.nan
 
         # Point-in-Time Fundamental Feature Integration Guard
         # If no verified filing publication dates exist, fundamental features are strictly excluded.

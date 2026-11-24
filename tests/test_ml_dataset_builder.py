@@ -703,3 +703,48 @@ class TestPhase21MultiExchangeUniversesAndEligibility:
         assert date(2026, 11, 20) in expected
         assert date(2026, 11, 23) in expected
         assert date(2026, 11, 21) not in expected
+
+    def test_require_authentic_data_quarantines_synthetic_candles(self, sample_listing):
+        """
+        Tests Task 1 requirement: require_authentic_data=True quarantines
+        synthetic/seeded candles and unknown-provenance records from production dataset.
+        """
+        # Create 1 authentic candle and 1 seeded candle
+        HistoricalCandle.objects.create(
+            listing=sample_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 1, 10, 0)),
+            interval="1d",
+            open=Decimal("100.0"),
+            high=Decimal("105.0"),
+            low=Decimal("95.0"),
+            close=Decimal("102.0"),
+            volume=10000,
+            source_provider="JUGAAD",
+        )
+        HistoricalCandle.objects.create(
+            listing=sample_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 2, 10, 0)),
+            interval="1d",
+            open=Decimal("102.0"),
+            high=Decimal("106.0"),
+            low=Decimal("100.0"),
+            close=Decimal("104.0"),
+            volume=12000,
+            source_provider="SEEDED",
+        )
+
+        builder = DatasetBuilder(
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 3),
+            universe=[sample_listing.symbol],
+            require_authentic_data=True,
+            authentic_providers=("JUGAAD", "YAHOO"),
+        )
+        expected = builder.get_expected_trading_sessions()
+        df_clean, audit = builder.extract_listing_data(sample_listing, expected)
+
+        # SEEDED candle must be quarantined, only JUGAAD candle kept
+        assert len(df_clean) == 1
+        assert df_clean["source_provider"].iloc[0] == "JUGAAD"
+        assert audit["quarantined_candles"] >= 1
+        assert any("Unverified provenance" in str(err) for err in audit["quarantined_details"][0]["validation_errors"])

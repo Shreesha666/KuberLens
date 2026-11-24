@@ -57,6 +57,10 @@ class TestFeaturePipeline:
         rsi_feat = MLFeatureDefinition.objects.get(name="rsi_14")
         assert rsi_feat.category == "MOMENTUM"
         assert rsi_feat.lookback_periods == 14
+        # Verify renamed universe median feature
+        assert MLFeatureDefinition.objects.filter(name="universe_median_rel_strength_20").exists()
+        # Verify true benchmark relative strength feature
+        assert MLFeatureDefinition.objects.filter(name="benchmark_rel_strength_20").exists()
 
     def test_momentum_and_trend_feature_calculation(self, synthetic_stock_df):
         pipeline = FeaturePipeline(warmup_sessions=50)
@@ -235,3 +239,51 @@ class TestTargetBuilder:
         assert "target_binary_5d" in df_out.columns
         assert "target_binary_10d" in df_out.columns
         assert "target_binary_20d" in df_out.columns
+
+    def test_target_with_in_holding_corporate_action(self):
+        """
+        Tests forward economic return calculation when a 2-for-1 stock split
+        occurs inside the holding period between entry O_{t+1} and exit C_{t+h}.
+        The unadjusted close falls by 50%, but point-in-time adjusted prices
+        neutralize the split, reflecting the true economic holding return.
+        """
+        base_date = date(2026, 6, 1)
+        dates = [base_date + timedelta(days=i) for i in range(10)]
+
+        # Stock splits 2-for-1 on day 5 (factor=0.5 prior to day 5)
+        # Raw prices: 100 for days 0-4, then 50 for days 5-9 (no real loss)
+        raw_closes = [100.0] * 5 + [50.0] * 5
+        raw_opens = [100.0] * 5 + [50.0] * 5
+
+        # Backward adjusted prices (neutralized):
+        # Day 0-4 adjusted price = 100 * 0.5 = 50.0
+        # Day 5-9 adjusted price = 50 * 1.0 = 50.0
+        adj_closes = [50.0] * 10
+        adj_opens = [50.0] * 10
+
+        df = pd.DataFrame({
+            "symbol": ["SPLITSTOCK"] * 10,
+            "exchange": ["NSE"] * 10,
+            "isin": ["INE000SPLT01"] * 10,
+            "session_date": dates,
+            "open_raw": raw_opens,
+            "high_raw": [p + 2.0 for p in raw_opens],
+            "low_raw": [p - 2.0 for p in raw_opens],
+            "close_raw": raw_closes,
+            "volume_raw": [10000] * 10,
+            "adjustment_factor": [0.5] * 5 + [1.0] * 5,
+            "open_adj": adj_opens,
+            "high_adj": [p + 1.0 for p in adj_opens],
+            "low_adj": [p - 1.0 for p in adj_opens],
+            "close_adj": adj_closes,
+            "volume_adj": [20000] * 5 + [10000] * 5,
+        })
+
+        configs = {5: TargetConfig(horizon_sessions=5, hurdle_rate=0.005, slippage_pct=0.0)}
+        builder = TargetBuilder(target_configs=configs, use_tax_calculator=False)
+        df_target = builder.compute_stock_targets(df)
+
+        # For row 0: Entry is day 1 open (adj = 50.0), Exit is day 5 close (adj = 50.0).
+        # Economic return should be (50 - 50) / 50 = 0.0 (NOT -50% loss from raw price drop)
+        abs_ret = df_target["target_return_abs_5d"].iloc[0]
+        assert np.isclose(abs_ret, 0.0)

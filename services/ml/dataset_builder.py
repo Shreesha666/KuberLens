@@ -699,6 +699,8 @@ class DatasetBuilder:
         chunk_size: int = 50,
         min_sessions: int = 200,
         min_median_volume: float = 5000.0,
+        require_authentic_data: bool = False,
+        authentic_providers: tuple[str, ...] = ("JUGAAD", "YAHOO"),
     ):
         self.start_date = start_date
         self.end_date = end_date
@@ -710,6 +712,8 @@ class DatasetBuilder:
         self.deduplicate_dual_listings = deduplicate_dual_listings
         self.primary_policy = primary_policy
         self.chunk_size = chunk_size
+        self.require_authentic_data = require_authentic_data
+        self.authentic_providers = authentic_providers
 
         self.adjuster = CorporateActionAdjuster()
         self.validator = DataQualityValidator()
@@ -763,6 +767,23 @@ class DatasetBuilder:
                 duplicate_dates.add(cdate)
             seen_dates.add(cdate)
 
+            source_p = (c.source_provider or "UNKNOWN").upper()
+            if self.require_authentic_data and source_p not in self.authentic_providers:
+                # Quarantine synthetic, seeded, or unknown candles from production training
+                rec_unverified = {
+                    "candle_id": c.id,
+                    "session_date": cdate,
+                    "open": float(c.open),
+                    "high": float(c.high),
+                    "low": float(c.low),
+                    "close": float(c.close),
+                    "volume": int(c.volume),
+                    "source_provider": source_p,
+                    "validation_errors": [f"Unverified provenance: source_provider '{source_p}' is not in approved authentic providers {self.authentic_providers}."],
+                }
+                quarantined_records.append(rec_unverified)
+                continue
+
             rec = {
                 "candle_id": c.id,
                 "session_date": cdate,
@@ -771,7 +792,7 @@ class DatasetBuilder:
                 "low": float(c.low),
                 "close": float(c.close),
                 "volume": int(c.volume),
-                "source_provider": c.source_provider or "UNKNOWN",
+                "source_provider": source_p,
             }
             is_valid, errors = self.validator.validate_candle_record(rec)
             if is_valid:

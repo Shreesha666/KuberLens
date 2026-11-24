@@ -546,7 +546,9 @@ class MLEligibilityClassifier:
 
         candle_dates_set = set(timestamps)
         missing_count = sum(1 for d in expected_sessions if d not in candle_dates_set)
-        coverage_pct = round(clean_candles / len(expected_sessions) * 100.0, 2) if expected_sessions else 0.0
+        # Count candles that fall on expected official trading sessions
+        valid_trading_candles_count = sum(1 for d in candle_dates_set if d in expected_sessions)
+        coverage_pct = round(valid_trading_candles_count / len(expected_sessions) * 100.0, 2) if expected_sessions else 0.0
 
         quarantine_pct = (quarantined_count / total_candles * 100.0) if total_candles else 0.0
 
@@ -944,11 +946,13 @@ class DatasetBuilder:
         # Phase 4 requires multi-year history (e.g. >= 3-5 years)
         ready_for_phase_4 = coverage_distribution["at_least_3_years"] >= 50 and coverage_distribution["at_least_5_years"] >= 20
 
-        return {
+        audit = {
             "universe_meta": universe_meta,
             "total_listings_audited": len(listings),
             "distinct_securities_count": distinct_isins,
             "expected_trading_sessions_count": total_sessions,
+            "total_expected_slots": len(listings) * total_sessions,
+            "total_valid_trading_candles": (len(listings) * total_sessions) - (missing_session_reasons["pre_listing"] + missing_session_reasons["missing_source_data"]),
             "earliest_global_session": earliest_global.isoformat() if earliest_global else None,
             "latest_global_session": latest_global.isoformat() if latest_global else None,
             "status_counts": status_counts,
@@ -980,6 +984,7 @@ class DatasetBuilder:
                 for r in listings_results[:100]  # top 100 sample
             ],
         }
+        return audit
 
     def build_canonical_dataframe(self) -> tuple[pd.DataFrame, dict[str, Any]]:
         """

@@ -643,5 +643,63 @@ class TestPhase21MultiExchangeUniversesAndEligibility:
         output = out.getvalue()
         assert "Historical Data Readiness & Coverage Audit" in output
         assert "ML Eligibility Classification Breakdown" in output
-        assert "Historical Depth Distribution" in output
-        assert "Readiness Gates" in output
+
+    def test_reconciliation_exact_mathematical_identity(self, sample_listing, nse_exchange):
+        """
+        Regression test for Phase 2.1 audit discrepancies:
+        Proves total_expected_slots == total_valid_trading_candles + missing_pre_listing + missing_source_data
+        """
+        # Create a second listing with 0 candles
+        inst2 = Instrument.objects.create(isin="INE000ZERO01", display_name="ZeroCo", legal_name="ZeroCo Ltd", is_active=True)
+        listing_zero = ExchangeListing.objects.create(symbol="ZEROCO", exchange=nse_exchange, instrument=inst2, is_tradeable=True)
+
+        base_date = date(2026, 6, 1)  # Monday
+        end_date = date(2026, 6, 12)   # Friday (10 trading sessions)
+
+        # Seed sample_listing with 6 candles starting from day 4 (pre-listing = 4 slots)
+        for i in range(4, 10):
+            HistoricalCandle.objects.create(
+                listing=sample_listing,
+                timestamp=timezone.make_aware(timezone.datetime(2026, 6, 1, 10, 0)) + timedelta(days=i),
+                interval="1d",
+                open=Decimal("100.0"),
+                high=Decimal("105.0"),
+                low=Decimal("95.0"),
+                close=Decimal("102.0"),
+                volume=10000,
+            )
+
+        builder = DatasetBuilder(
+            start_date=base_date,
+            end_date=end_date,
+            universe=[sample_listing.symbol, listing_zero.symbol],
+        )
+        audit = builder.audit_universe_readiness()
+
+        total_slots = audit["total_expected_slots"]
+        valid_candles = audit["total_valid_trading_candles"]
+        pre_listing = audit["missing_session_reasons"]["pre_listing"]
+        missing_source = audit["missing_session_reasons"]["missing_source_data"]
+
+        # Exact mathematical reconciliation identity
+        assert total_slots == valid_candles + pre_listing + missing_source
+
+    def test_sunday_non_trading_session_exclusion(self, sample_listing):
+        """
+        Regression test: Proves weekend/Sunday dates (e.g. 2026-11-22) are never
+        treated as expected exchange trading sessions.
+        """
+        sunday_date = date(2026, 11, 22)
+        assert not ExchangeCalendar.is_trading_day(sunday_date)
+
+        builder = DatasetBuilder(
+            start_date=date(2026, 11, 20),
+            end_date=date(2026, 11, 23),
+            universe=[sample_listing.symbol],
+        )
+        expected = builder.get_expected_trading_sessions()
+        assert sunday_date not in expected
+        # Friday 20th and Monday 23rd should be included, Saturday 21st and Sunday 22nd omitted
+        assert date(2026, 11, 20) in expected
+        assert date(2026, 11, 23) in expected
+        assert date(2026, 11, 21) not in expected

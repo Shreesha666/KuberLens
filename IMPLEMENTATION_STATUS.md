@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform (KuberLens)  
 **Document Purpose:** Living tracker of modules, phases, components, analytical engines, and verification metrics  
 **Last Updated:** 2026-11-24  
-**Current Overall State:** 🟢 **ALL CORE PHASES & MODULES FULLY IMPLEMENTED & VALIDATED &bull; AI/ML PHASES 1, 1.1, 2, 2.1 & 3 COMPLETE &bull; 326 / 326 TESTS PASSING**
+**Current Overall State:** 🟢 **ALL CORE PHASES & MODULES FULLY IMPLEMENTED & VALIDATED &bull; AI/ML PHASES 1, 1.1, 2, 2.1 & 3 COMPLETE &bull; 328 / 328 TESTS PASSING**
 
 ---
 
@@ -105,8 +105,8 @@ The project is structured into **22 domain-specific Django applications**:
 ## 5. Automated Testing & Verification Log
 
 **Environment:** Python 3.13 / Django 5.1 / Pytest 9.2  
-**Total Tests:** **326**  
-**Results:** **326 Passed (100% Pass Rate)**  
+**Total Tests:** **328**  
+**Results:** **328 Passed (100% Pass Rate)**  
 **Average Execution Time:** ~40 seconds
 
 | Test Suite | File | Tests Run | Result | Key Tested Areas |
@@ -145,9 +145,9 @@ The project is structured into **22 domain-specific Django applications**:
 | **PaperTrading Virtual Brokerage** | `tests/test_paper_trading.py` | 30 | 🟢 PASSED | Virtual account provisioning, CNC & MIS margin, dynamic slippage, statutory tax breakdown, terminal UI, coach |
 | **Brand Logos & Assets** | `tests/test_logos.py` | 5 | 🟢 PASSED | Company logo resolution, fallback initials, theme styling, logo service caching |
 | **AI/ML Models & Lifecycle** | `tests/test_ml_models.py` | 13 | 🟢 PASSED | Snapshot uniqueness, feature definitions, approved model constraint, atomic promotion/rollback, prediction idempotency, inference state separation, execution modes, heuristic null probability, backup restorability, archive preservation, monitoring events |
-| **AI/ML Dataset Builder & Multi-Exchange Readiness** | `tests/test_ml_dataset_builder.py` | 19 | 🟢 PASSED | Calendar holidays/weekends, 5-for-1 split & 1:1/3:1 bonus parsing, point-in-time adjustment, raw/adjusted separation, OHLC validation, suspicious jumps, hash reproducibility, quarantine, snapshot persistence, multi-exchange universe resolution (ALL_NSE_BSE), dual-listing deduplication, primary listing selection policies, ML eligibility classifier across all 7 tiers, bounded chunk streaming |
+| **AI/ML Dataset Builder & Multi-Exchange Readiness** | `tests/test_ml_dataset_builder.py` | 21 | 🟢 PASSED | Calendar holidays/weekends, 5-for-1 split & 1:1/3:1 bonus parsing, point-in-time adjustment, raw/adjusted separation, OHLC validation, suspicious jumps, hash reproducibility, quarantine, snapshot persistence, multi-exchange universe resolution (ALL_NSE_BSE), dual-listing deduplication, primary listing selection policies, ML eligibility classifier across all 7 tiers, bounded chunk streaming, mathematical slot reconciliation identity, Sunday/holiday exclusion |
 | **AI/ML Features & Targets Engine** | `tests/test_ml_features_targets.py` | 10 | 🟢 PASSED | 22 technical feature formulas, lookback boundaries, zero future leakage, fundamental publication guards, warmup trimming, next-open execution, Indian statutory tax deduction, incomplete horizon handling, binary hurdle classification, grouped universe shifts |
-| **TOTAL** | **36 Test Files** | **326** | 🟢 **326 / 326 PASSED** | **100% Pass Rate across entire platform** |
+| **TOTAL** | **36 Test Files** | **328** | 🟢 **328 / 328 PASSED** | **100% Pass Rate across entire platform** |
 
 ---
 

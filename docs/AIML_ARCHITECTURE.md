@@ -138,10 +138,38 @@ Under no circumstances may a model with `calibration_status = "RAW"` or `"UNCALI
 
 ## 5. Dataset & Feature Engineering Specifications
 
-### 5.1 Universe Reconciliation & Survivorship Bias
-- **Universe Definition:** NIFTY LargeMidcap 250 (100 Large Cap + 150 Mid Cap companies).
-- **Listing Count Reconciliation:** In `apps/instruments/management/commands/seed_nifty250.py`, the `NIFTY_250_STOCKS` array contains 271 equity definitions (representing the official 250 index constituents plus tracking reserves / recent inclusions/exclusions). When seeded across primary exchange listings, this produced 268 active listings in the local development database. The broader market master contains 2,651 NSE listings from full Bhavcopy ingestion.
-- **Survivorship Bias Disclaimer:** The dataset builder extracts historical time-series for current constituents. The system documents that historical delistings, suspensions, and index removals prior to the current index composition are not included in this universe, introducing survivorship bias into multi-year historical backtests.
+### 5.1 Dynamic Stock Universes, Dual-Listing Deduplication & Eligibility
+
+#### Multi-Exchange Scope & Universe Definitions
+KuberLens AI/ML supports **ALL eligible NSE and BSE equities** as a first-class platform capability, rather than being confined to fixed index lists:
+- `ALL_NSE`: All active, tradeable listings on the National Stock Exchange of India.
+- `ALL_BSE`: All active, tradeable listings on the Bombay Stock Exchange.
+- `ALL_NSE_BSE`: Unified multi-exchange equity universe across both exchanges.
+- `NIFTY_50` / `NIFTY_100` / `NIFTY_250`: Major index constituent universes resolved dynamically.
+- `PORTFOLIO_HOLDINGS`: Equities currently held in active user portfolios or paper-trading accounts.
+- `CUSTOM`: Configurable list of exchange tickers.
+
+#### Dual-Listing Deduplication via ISIN
+To prevent duplicate cross-sectional training observations for companies listed simultaneously on both NSE and BSE (e.g. RELIANCE, TCS, INFY), `UniverseResolver` matches listings by their canonical International Securities Identification Number (`Instrument.isin`). A single authoritative listing is selected using deterministic policies:
+1. `PRIMARY_FLAG_THEN_LIQUIDITY` (Default): Prioritizes listings explicitly flagged `is_primary=True`; ties default to NSE for higher electronic market depth and order-book liquidity.
+2. `NSE_PRIORITY`: Enforces NSE listing selection across all dual-listed pairs.
+3. `BSE_PRIORITY`: Enforces BSE listing selection across all dual-listed pairs.
+Listings lacking ISINs are preserved safely by their distinct `(exchange, symbol)` identity.
+
+#### 7-Tier ML Eligibility Classifier
+Every listing in the resolved universe is evaluated against data depth, liquidity, staleness, and quality thresholds via `MLEligibilityClassifier`:
+1. `ML_ELIGIBLE`: $\ge 200$ clean trading sessions, median volume $\ge 5,000$ shares/day, zero volume $< 30\%$, fresh data, $< 5\%$ quarantine errors.
+2. `LIMITED_HISTORY`: $50 \le N < 200$ sessions (e.g. recent IPOs). Supported via heuristic fallback or specialized short-horizon models.
+3. `INSUFFICIENT_HISTORY`: $< 50$ trading sessions. Excluded from statistical model training.
+4. `INSUFFICIENT_LIQUIDITY`: Fails median volume or zero-volume thresholds.
+5. `STALE_DATA`: Most recent candle older than 10 trading sessions from observation end date.
+6. `DATA_QUALITY_FAILED`: Excessive OHLC anomalies ($\ge 5\%$ quarantined).
+7. `SUSPENDED_OR_INACTIVE`: Listing marked `is_tradeable=False` or halted by the exchange.
+
+#### Historical Depth & Readiness Gate Audit
+An audit across the local database environment (`2025-11-12` to `2026-11-22`, 257 trading days) established:
+- **Phase 3 Readiness (Feature Engineering):** **READY (YES)** — 280 NSE equities possess $\ge 200$ trading days (70,066 clean daily candles), providing complete ground truth for feature engineering, corporate adjustments, and target formulation.
+- **Phase 4 Readiness (Walk-Forward Model Training):** **NOT READY (NO)** — 0 equities currently possess $\ge 3$ or 5 years of historical candles in the local database. Historical bhavcopy ingestion for 2020–2025 is required before Phase 4 walk-forward training.
 
 ### 5.2 Market-Wide Corporate Action Adjustments & Tested Mathematical Conventions
 

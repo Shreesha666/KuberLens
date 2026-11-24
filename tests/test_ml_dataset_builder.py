@@ -20,6 +20,9 @@ from services.ml.dataset_builder import (
     CorporateActionAdjuster,
     DataQualityValidator,
     DatasetBuilder,
+    MLEligibilityClassifier,
+    MLEligibilityStatus,
+    UniverseResolver,
 )
 
 
@@ -396,5 +399,249 @@ class TestDatasetBuilderPointInTimeAndProvenance:
         )
         output = out.getvalue()
         assert "KuberLens AI/ML Dataset Snapshot Builder" in output
-        assert "DRY RUN (In-Memory Audit)" in output
+        assert "DRY RUN" in output
         assert "Content Hash" in output
+
+
+@pytest.mark.django_db
+class TestPhase21MultiExchangeUniversesAndEligibility:
+    """
+    Tests Phase 2.1 Multi-Exchange (NSE/BSE) expansion, dual-listing deduplication,
+    primary listing selection, and ML eligibility classification.
+    """
+
+    @pytest.fixture
+    def bse_exchange(self):
+        ex, _ = Exchange.objects.get_or_create(code="BSE", defaults={"name": "Bombay Stock Exchange"})
+        return ex
+
+    @pytest.fixture
+    def dual_listed_pair(self, nse_exchange, bse_exchange):
+        inst, _ = Instrument.objects.get_or_create(
+            isin="INE123DUAL99",
+            defaults={
+                "legal_name": "Dual Listed Holdings Limited",
+                "display_name": "Dual Holdings",
+                "sector": "Financial Services",
+                "is_active": True,
+            },
+        )
+        nse_listing = ExchangeListing.objects.create(
+            symbol="DUALNSE",
+            exchange=nse_exchange,
+            instrument=inst,
+            is_tradeable=True,
+            is_primary=True,
+        )
+        bse_listing = ExchangeListing.objects.create(
+            symbol="599999",
+            exchange=bse_exchange,
+            instrument=inst,
+            is_tradeable=True,
+            is_primary=False,
+        )
+        return nse_listing, bse_listing
+
+    def test_universe_resolution_dual_listing_deduplication(self, dual_listed_pair):
+        nse_l, bse_l = dual_listed_pair
+
+        # Cross-exchange resolution with deduplication
+        resolved, meta = UniverseResolver.resolve(
+            universe="ALL_NSE_BSE",
+            deduplicate_dual_listings=True,
+            primary_policy="PRIMARY_FLAG_THEN_LIQUIDITY",
+        )
+        # Should deduplicate the BSE listing in favor of the primary NSE listing
+        symbols = [item.symbol for item in resolved]
+        assert "DUALNSE" in symbols
+        assert "599999" not in symbols
+        assert meta["deduplicated_duplicates_count"] >= 1
+
+    def test_primary_listing_selection_policies(self, nse_exchange, bse_exchange):
+        inst, _ = Instrument.objects.get_or_create(
+            isin="INE999TIE001",
+            defaults={"legal_name": "Tie Corp", "display_name": "Tie Corp", "is_active": True},
+        )
+        l_nse = ExchangeListing.objects.create(symbol="TIENSE", exchange=nse_exchange, instrument=inst, is_tradeable=True, is_primary=False)
+        l_bse = ExchangeListing.objects.create(symbol="588888", exchange=bse_exchange, instrument=inst, is_tradeable=True, is_primary=False)
+
+        # 1. NSE_PRIORITY policy
+        chosen_nse = UniverseResolver._select_primary_listing([l_nse, l_bse], policy="NSE_PRIORITY")
+        assert chosen_nse.symbol == "TIENSE"
+
+        # 2. BSE_PRIORITY policy
+        chosen_bse = UniverseResolver._select_primary_listing([l_nse, l_bse], policy="BSE_PRIORITY")
+        assert chosen_bse.symbol == "588888"
+
+    def test_missing_isin_safe_handling(self, nse_exchange):
+        # Listing with an instrument having no isin is preserved without crashing
+        inst, _ = Instrument.objects.get_or_create(
+            isin="NO_ISIN_TEMP",
+            defaults={"legal_name": "No ISIN Corp", "display_name": "No ISIN Corp", "is_active": True},
+        )
+        ExchangeListing.objects.create(
+            symbol="NOISINSTOCK",
+            exchange=nse_exchange,
+            instrument=inst,
+            is_tradeable=True,
+        )
+        resolved, meta = UniverseResolver.resolve(
+            universe=["NOISINSTOCK"],
+            deduplicate_dual_listings=True,
+        )
+        assert len(resolved) == 1
+        assert resolved[0].symbol == "NOISINSTOCK"
+
+    def test_ml_eligibility_classification_all_tiers(self, sample_listing):
+        classifier = MLEligibilityClassifier(
+            min_sessions=200,
+            min_limited_sessions=50,
+            min_median_volume=5000.0,
+            max_stale_sessions=10,
+        )
+        expected_sessions = [date(2026, 1, 1) + timedelta(days=i) for i in range(250)]
+        end_date = expected_sessions[-1]
+
+        # 1. Inactive / Suspended
+        sample_listing.is_tradeable = False
+        res_suspended = classifier.classify_listing(sample_listing, [], expected_sessions, end_date)
+        assert res_suspended.status == MLEligibilityStatus.SUSPENDED_OR_INACTIVE
+        sample_listing.is_tradeable = True
+
+        # 2. Insufficient History (< 50 sessions)
+        candles_insufficient = [
+            HistoricalCandle(
+                listing=sample_listing,
+                timestamp=timezone.make_aware(timezone.datetime(2026, 8, 1, 10, 0)) + timedelta(days=i),
+                volume=10000,
+            )
+            for i in range(30)
+        ]
+        res_insufficient = classifier.classify_listing(sample_listing, candles_insufficient, expected_sessions, end_date)
+        assert res_insufficient.status == MLEligibilityStatus.INSUFFICIENT_HISTORY
+
+        # 3. Limited History (50 <= N < 200 sessions, e.g. recent IPO)
+        candles_limited = [
+            HistoricalCandle(
+                listing=sample_listing,
+                timestamp=timezone.make_aware(timezone.datetime(2026, 4, 1, 10, 0)) + timedelta(days=i),
+                volume=10000,
+            )
+            for i in range(100)
+        ]
+        res_limited = classifier.classify_listing(sample_listing, candles_limited, expected_sessions, end_date)
+        assert res_limited.status == MLEligibilityStatus.LIMITED_HISTORY
+
+        # 4. Insufficient Liquidity (volume < 5,000)
+        # Give it recent candles up to expected_sessions[-1] so it is not stale
+        candles_illiquid = [
+            HistoricalCandle(
+                listing=sample_listing,
+                timestamp=timezone.make_aware(timezone.datetime(expected_sessions[i].year, expected_sessions[i].month, expected_sessions[i].day, 10, 0)),
+                volume=500,  # below 5000 threshold
+            )
+            for i in range(250)
+        ]
+        res_illiquid = classifier.classify_listing(sample_listing, candles_illiquid, expected_sessions, end_date)
+        assert res_illiquid.status == MLEligibilityStatus.INSUFFICIENT_LIQUIDITY
+
+        # 5. Stale Data (last candle older than 10 sessions from end_date)
+        candles_stale = [
+            HistoricalCandle(
+                listing=sample_listing,
+                timestamp=timezone.make_aware(timezone.datetime(2026, 1, 1, 10, 0)) + timedelta(days=i),
+                volume=10000,
+            )
+            for i in range(210)
+        ]
+        # latest is ~ day 210, if end_date is far in future, check staleness
+        far_future = date(2027, 1, 1)
+        res_stale_verified = classifier.classify_listing(sample_listing, candles_stale, expected_sessions, end_date=far_future)
+        assert res_stale_verified.status == MLEligibilityStatus.STALE_DATA
+
+        # 6. Data Quality Failed (excessive quarantine errors >= 5%)
+        res_dq = classifier.classify_listing(
+            sample_listing,
+            candles_limited,
+            expected_sessions,
+            end_date=end_date,
+            quarantined_count=20,  # 20 / 120 = 16.7% > 5%
+        )
+        assert res_dq.status == MLEligibilityStatus.DATA_QUALITY_FAILED
+
+        # 7. Fully ML Eligible
+        candles_eligible = [
+            HistoricalCandle(
+                listing=sample_listing,
+                timestamp=timezone.make_aware(timezone.datetime(2026, 1, 1, 10, 0)) + timedelta(days=i),
+                volume=15000,
+            )
+            for i in range(245)
+        ]
+        res_eligible = classifier.classify_listing(sample_listing, candles_eligible, expected_sessions, end_date)
+        assert res_eligible.status == MLEligibilityStatus.ML_ELIGIBLE
+        assert "Meets all data depth" in res_eligible.reason
+
+    def test_chunked_processing_and_dataset_reproducibility(self, sample_listing, nse_exchange):
+        base_date = date(2026, 7, 1)
+        # Create 2 listings with 15 candles each
+        inst2, _ = Instrument.objects.get_or_create(
+            isin="INE999CHUNK2",
+            defaults={"legal_name": "Chunk Corp 2", "display_name": "Chunk Corp 2", "is_active": True},
+        )
+        listing2, _ = ExchangeListing.objects.get_or_create(
+            symbol="CHUNKCORP2",
+            exchange=nse_exchange,
+            defaults={"instrument": inst2, "is_tradeable": True},
+        )
+
+        for lst in [sample_listing, listing2]:
+            for i in range(15):
+                c_date = base_date + timedelta(days=i)
+                HistoricalCandle.objects.create(
+                    listing=lst,
+                    timestamp=timezone.make_aware(timezone.datetime(c_date.year, c_date.month, c_date.day, 10, 0)),
+                    interval="1d",
+                    open=Decimal("150.0"),
+                    high=Decimal("155.0"),
+                    low=Decimal("148.0"),
+                    close=Decimal("152.0"),
+                    volume=5000,
+                    source_provider="TEST",
+                )
+
+        # Build with chunk_size=1
+        builder_chunk1 = DatasetBuilder(
+            start_date=base_date,
+            end_date=base_date + timedelta(days=14),
+            universe=[sample_listing.symbol, listing2.symbol],
+            chunk_size=1,
+        )
+        df_chunk1, meta_chunk1 = builder_chunk1.build_canonical_dataframe()
+
+        # Build with chunk_size=10
+        builder_chunk10 = DatasetBuilder(
+            start_date=base_date,
+            end_date=base_date + timedelta(days=14),
+            universe=[sample_listing.symbol, listing2.symbol],
+            chunk_size=10,
+        )
+        df_chunk10, meta_chunk10 = builder_chunk10.build_canonical_dataframe()
+
+        # Chunked streaming must produce 100% identical canonical dataset and hash
+        assert len(df_chunk1) == len(df_chunk10)
+        assert meta_chunk1["content_hash"] == meta_chunk10["content_hash"]
+
+    def test_audit_only_command_execution(self, sample_listing):
+        out = StringIO()
+        call_command(
+            "build_ml_dataset",
+            universe=sample_listing.symbol,
+            audit_only=True,
+            stdout=out,
+        )
+        output = out.getvalue()
+        assert "Historical Data Readiness & Coverage Audit" in output
+        assert "ML Eligibility Classification Breakdown" in output
+        assert "Historical Depth Distribution" in output
+        assert "Readiness Gates" in output

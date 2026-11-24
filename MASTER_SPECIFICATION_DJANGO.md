@@ -116,22 +116,37 @@ Use compatible, maintained package versions. Pin the actual selected versions in
 ## 4.1 Project directory
 
 ```text
-indian_stock_intelligence/
+stockmarket_analytics_django/
 │
 ├── manage.py
-├── requirements.txt
+├── pyproject.toml
+├── pytest.ini
+├── Dockerfile
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── .env
 ├── .env.example
 ├── .gitignore
 ├── README.md
 ├── MASTER_SPECIFICATION_DJANGO.md
-├── IMPLEMENTATION_STATUS.md
 ├── ARCHITECTURE.md
+├── IMPLEMENTATION_STATUS.md
+├── DEVELOPMENT_PLAN.md
+├── DATA_SOURCES.md
+├── papertrading_implementation_status.md
+│
+├── requirements/
+│   ├── base.txt
+│   ├── local.txt
+│   └── production.txt
 │
 ├── config/
 │   ├── settings/
+│   │   ├── __init__.py
 │   │   ├── base.py
 │   │   ├── development.py
 │   │   └── production.py
+│   ├── __init__.py
 │   ├── urls.py
 │   ├── celery.py
 │   └── wsgi.py
@@ -149,6 +164,7 @@ indian_stock_intelligence/
 │   ├── holdings/
 │   ├── ipo/
 │   ├── trading/
+│   ├── paper_trading/
 │   ├── screener/
 │   ├── watchlists/
 │   ├── ai_analysis/
@@ -167,71 +183,196 @@ indian_stock_intelligence/
 │   │   ├── registry.py
 │   │   ├── normalizer.py
 │   │   ├── health.py
+│   │   ├── exceptions.py
 │   │   └── providers/
 │   │       ├── jugaad/
 │   │       ├── yahoo/
 │   │       └── zerodha/
-│   ├── ipo_providers/
-│   │   ├── base.py
-│   │   ├── ipos_markets.py
-│   │   ├── nse.py
-│   │   ├── bse.py
-│   │   └── sebi.py
-│   ├── ai_providers/
-│   ├── news_providers/
-│   └── broker_providers/
+│   ├── broker_providers/
+│   │   └── zerodha/
+│   └── ai_providers/
+│       ├── base.py
+│       ├── factory.py
+│       ├── fallback.py
+│       └── gemini.py
 │
 ├── services/
 │   ├── market_data/
+│   │   ├── auto_ingest.py
+│   │   └── service.py
 │   ├── indicators/
+│   │   └── calculator.py
 │   ├── fundamentals/
+│   │   └── analyzer.py
+│   ├── portfolio/
+│   │   ├── accounting.py
+│   │   └── importer.py
+│   ├── paper_trading/
+│   │   ├── engine.py
+│   │   ├── coach.py
+│   │   └── tax_calculator.py
+│   ├── risk/
+│   │   └── calculator.py
+│   ├── screener/
+│   │   └── engine.py
+│   ├── trading/
+│   │   └── scanner.py
 │   ├── ipo/
 │   │   ├── lifecycle.py
-│   │   ├── subscription.py
-│   │   ├── research.py
-│   │   ├── valuation.py
-│   │   ├── scoring.py
 │   │   ├── planner.py
-│   │   ├── allotment.py
 │   │   ├── comparison.py
 │   │   ├── performance.py
-│   │   └── sync.py
-│   ├── portfolio/
-│   ├── risk/
+│   │   ├── predictor.py
+│   │   ├── backtester.py
+│   │   ├── ipos_markets_client.py
+│   │   └── registrars/
+│   ├── ai/
+│   │   └── researcher.py
+│   ├── ml/
+│   │   └── engine.py
+│   ├── backtesting/
+│   │   └── engine.py
 │   ├── recommendations/
-│   └── common/
+│   │   └── evaluator.py
+│   ├── alerts/
+│   │   └── evaluator.py
+│   ├── brokers/
+│   │   └── sync.py
+│   ├── calendar/
+│   │   └── exchange_calendar.py
+│   ├── logos/
+│   │   └── service.py
+│   └── reports/
+│       └── generator.py
 │
 ├── templates/
 │   ├── base/
-│   ├── components/
+│   │   ├── shell.html
+│   │   ├── _header.html
+│   │   ├── _sidebar.html
+│   │   └── _footer.html
+│   ├── accounts/
+│   │   ├── login.html
+│   │   ├── signup.html
+│   │   ├── profile.html
+│   │   └── partials/
+│   ├── dashboard/
+│   │   ├── dashboard.html
+│   │   ├── market_overview.html
+│   │   └── partials/
+│   ├── stocks/
+│   │   ├── stock_list.html
+│   │   ├── stock_detail.html
+│   │   ├── sector_analysis.html
+│   │   └── partials/
+│   ├── technical_analysis/
+│   │   ├── overview.html
+│   │   └── partials/
+│   ├── fundamental_analysis/
+│   │   ├── overview.html
+│   │   └── partials/
+│   ├── portfolio/
+│   │   ├── overview.html
+│   │   ├── investment_journal.html
+│   │   ├── import_holdings.html
+│   │   └── partials/
+│   ├── holdings/
+│   │   ├── holding_list.html
+│   │   ├── holding_detail.html
+│   │   ├── add_transaction.html
+│   │   └── partials/
+│   ├── paper_trading/
+│   │   ├── terminal.html
+│   │   └── partials/
+│   ├── trading/
+│   │   ├── scanner.html
+│   │   ├── risk_management.html
+│   │   ├── journal.html
+│   │   └── partials/
+│   ├── screener/
+│   │   ├── screener.html
+│   │   └── partials/
+│   ├── watchlists/
+│   │   ├── watchlist_list.html
+│   │   └── partials/
+│   ├── ai_analysis/
+│   │   ├── hub.html
+│   │   ├── recommendations.html
+│   │   └── partials/
+│   ├── ml_engine/
+│   │   ├── dashboard.html
+│   │   └── partials/
 │   ├── ipo/
 │   │   ├── dashboard.html
-│   │   ├── issues_list.html
 │   │   ├── calendar.html
 │   │   ├── bid_planner.html
-│   │   ├── applications.html
-│   │   ├── performance.html
-│   │   ├── comparison.html
-│   │   ├── detail.html
+│   │   ├── compare.html
+│   │   ├── backtest.html
+│   │   ├── applications_list.html
+│   │   └── partials/
+│   ├── news/
+│   │   ├── feed.html
+│   │   ├── calendar.html
+│   │   └── partials/
+│   ├── alerts/
+│   │   ├── list.html
+│   │   └── partials/
+│   ├── backtesting/
+│   │   ├── dashboard.html
+│   │   ├── run_detail.html
+│   │   └── partials/
+│   ├── brokers/
+│   │   ├── broker_settings.html
+│   │   ├── derivatives_overview.html
+│   │   └── partials/
+│   ├── reports/
+│   │   ├── report_center.html
+│   │   ├── print_tearsheet.html
+│   │   └── partials/
+│   ├── notifications/
+│   │   ├── list.html
+│   │   └── partials/
+│   ├── settings_app/
+│   │   ├── data_sources.html
 │   │   └── partials/
 │   └── errors/
+│       ├── 404.html
+│       └── 500.html
 │
 ├── static/
 │   ├── css/
-│   │   ├── typography.css
-│   │   └── custom.css
+│   │   ├── theme.css
+│   │   ├── auth.css
+│   │   ├── risk-management.css
+│   │   ├── kpi-counter.css
+│   │   └── live-activity-widget.css
 │   ├── js/
-│   │   ├── charts-lightweight.js
-│   │   ├── charts-echarts.js
-│   │   └── htmx-lifecycle.js
-│   ├── images/
-│   └── vendor/
+│   │   ├── app.js
+│   │   ├── charting.js
+│   │   ├── kpi-counter.js
+│   │   └── live-activity-widget.js
+│   ├── vendor/
+│   │   ├── echarts.min.js
+│   │   └── lightweight-charts.standalone.production.js
+│   ├── fonts/
+│   │   └── inter/
+│   ├── branding/
+│   │   ├── logo/
+│   │   ├── icons/
+│   │   ├── favicon/
+│   │   └── stock_logos/
+│   └── KuberLens_Brand_Assets/
 │
-├── media/
-├── logs/
 ├── scripts/
+│   ├── health_check.py
+│   ├── backup_db.sh
+│   └── restore_db.sh
+│
 ├── tests/
+├── logs/
 └── docs/
+    ├── DEPLOYMENT.md
+    └── SECURITY.md
 ```
 
 ## 4.2 Django app responsibilities
@@ -250,6 +391,7 @@ indian_stock_intelligence/
 | holdings | Existing holdings, buy/sell transactions |
 | ipo | IPO Intelligence Centre: canonical lifecycle, live subscription analytics, fundamental valuation, quantitative scoring, bid planner, allotment probability, and listing performance |
 | trading | Swing trading, trade setups, position sizing, trade journal |
+| paper_trading | Simulated trading execution engine, virtual portfolios, order lifecycle, performance analytics, and trader coaching |
 | screener | Custom stock screening, saved presets |
 | watchlists | User watchlists, alerts monitoring |
 | ai_analysis | AI stock research and multi-perspective insights |

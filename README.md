@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.1-success.svg)](https://www.djangoproject.com/)
 [![HTMX](https://img.shields.io/badge/UI-HTMX%20%2B%20Bootstrap%205-purple.svg)](https://htmx.org/)
+[![User Guide](https://img.shields.io/badge/Docs-MkDocs%20Material%20v1.0-indigo.svg)](http://localhost:8000/help/)
 [![Tests](https://img.shields.io/badge/Tests-226%20Passed%20(100%25)-brightgreen.svg)](tests/)
 [![Code Style](https://img.shields.io/badge/Linter-Ruff%20Clean-black.svg)](https://github.com/astral-sh/ruff)
 [![Architecture](https://img.shields.io/badge/Architecture-Django%20Modular%20Monolith-orange.svg)](ARCHITECTURE.md)
@@ -22,8 +23,10 @@ An institutional-grade personal stock market research, technical analysis, portf
 7. [Environment Variables & Configuration](#7-environment-variables--configuration)
 8. [Local Development Quickstart](#8-local-development-quickstart)
 9. [Platform Navigation & URL Directory](#9-platform-navigation--url-directory)
-10. [Automated Testing & Code Quality](#10-automated-testing--code-quality)
-11. [Operations, Backup & Docker Runbook](#11-operations-backup--docker-runbook)
+10. [In-App User Guide & Documentation System (`/help/`)](#10-in-app-user-guide--documentation-system-help)
+    - [Documentation Build & Deployment Command](#documentation-build--deployment-command)
+11. [Automated Testing & Code Quality](#11-automated-testing--code-quality)
+12. [Operations, Backup & Docker Runbook](#12-operations-backup--docker-runbook)
 
 ---
 
@@ -97,6 +100,14 @@ The platform is designed as a **Django Modular Monolith** adhering to clean doma
 - Multi-variable threshold alerts (price crossovers, RSI oversold/overbought, portfolio stop-loss breaches) with cooldown deduplication.
 - In-app notification center with dynamic unread indicator.
 - Institutional report generation: printable PDF/HTML tear-sheets and CSV ledger exports.
+
+### 📚 Integrated User Guide & In-App Help System (`/help/`)
+- **Direct In-App Delivery:** Native `/help/` routing directly inside the running Django web server with zero external server dependencies.
+- **38 Verified Operational Guides:** Page-by-page operational manual covering all platform features across 12 structured chapters.
+- **Real High-Resolution UI Screenshots:** High-fidelity Playwright screenshots captured directly from the live application at retina scale ($1440 \times 900$).
+- **Contextual Help Icons:** 1-click guide triggers integrated directly on active pages (Single Stock Intelligence, ML Predictions, Risk Veto Dashboard, IPO Intelligence, and Portfolio Cockpit).
+- **Fast Client-Side Search:** Instant search powered by an in-memory Lunr.js web worker over 147 pre-indexed documentation topics.
+- **Enterprise Security:** Path traversal protection via Django's `safe_join` and `@login_required` authentication enforcement.
 
 ---
 
@@ -311,7 +322,13 @@ celery -A config worker --loglevel=info
 celery -A config beat --loglevel=info
 ```
 
-### 7. Start the Development Server
+### 7. Compile the In-App User Guide
+Build the full MkDocs documentation site directly into `site/` for local and production serving:
+```bash
+python manage.py build_docs
+```
+
+### 8. Start the Development Server
 ```bash
 python manage.py runserver 8000
 ```
@@ -352,10 +369,54 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 | **News & Corporate Events**| [`/news/`](http://localhost:8000/news/) | Real-time news feed, corporate filings, earnings announcements |
 | **Alerts Engine** | [`/alerts/`](http://localhost:8000/alerts/) | Automated price, indicator, and stop-loss alert triggers |
 | **Reports Center** | [`/reports/`](http://localhost:8000/reports/) | Institutional printable PDF tear-sheets and CSV exports |
+| **In-App User Guide** | [`/help/`](http://localhost:8000/help/) | Searchable MkDocs documentation website served directly inside Django |
+| **Getting Started Guide** | [`/help/getting-started/installation-and-setup/`](http://localhost:8000/help/getting-started/installation-and-setup/) | Quick start setup, platform navigation, and data sync mechanics |
+| **Frequently Asked Questions** | [`/help/faq/`](http://localhost:8000/help/faq/) | Common issues, 15m delay notices, cache diagnostics, and troubleshooting |
 
 ---
 
-## 10. Automated Testing & Code Quality
+## 10. In-App User Guide & Documentation System (`/help/`)
+
+KuberLens includes a fully-integrated, searchable documentation system built with **Material for MkDocs**, served directly by the core Django web engine without requiring a secondary web server.
+
+### Architecture & Capabilities
+- **Integrated URL Routing:** Accessible at [`/help/`](http://localhost:8000/help/) with subpath routing for every chapter, section, and static asset.
+- **100% Verified Page Coverage:** All 38 application views are documented across 12 structured chapters, verified with real HTTP 200 responses and high-resolution Playwright browser screenshots ($1440 \times 900$).
+- **Contextual Help Buttons:** 1-click guide access directly from application headers:
+  - *Single Stock Intelligence* $\to$ `/help/single-stock/single-stock-cockpit/`
+  - *ML Predictions Engine* $\to$ `/help/ai-ml/ml-prediction-engine/`
+  - *Risk Intelligence Dashboard* $\to$ `/help/risk/risk-veto-card/`
+  - *IPO Intelligence Centre* $\to$ `/help/ipo/ipo-dashboard-and-issues/`
+  - *Portfolio Cockpit* $\to$ `/help/portfolio/portfolio-cockpit/`
+- **Instant Search:** Client-side search worker pre-indexed across 147 platform topics and indicator definitions.
+- **Enterprise Security:** Path-traversal protection via `safe_join` prevents access outside the `site/` directory, while `@login_required` safeguards private documentation.
+
+### Documentation Build & Deployment Command
+
+A repeatable build process is available via Django's management interface:
+
+```bash
+# Standard compilation: builds MkDocs documentation into site/
+python manage.py build_docs
+```
+
+To regenerate Markdown source files from the page inventory generator before compiling:
+```bash
+# Full regeneration + compilation pipeline
+python manage.py build_docs --regenerate-markdown
+```
+
+#### Production & Deployment Notes
+- **Zero Extra Server Required:** The build output (`site/`) is served natively through Django's `serve_help_docs` view mounted at `/help/`. It operates seamlessly across both development (`DEBUG=True`) and production (`DEBUG=False` / Gunicorn / WhiteNoise) without binding extra ports.
+- **CI/CD Integration:** Include `python manage.py build_docs` in your deployment or Dockerfile build sequence right alongside `python manage.py collectstatic`.
+- **Automated Verification:** Run the automated end-to-end integration and security test suite:
+  ```bash
+  python scripts/verify_help_integration.py
+  ```
+
+---
+
+## 11. Automated Testing & Code Quality
 
 The platform enforces high test coverage and strict linting:
 
@@ -389,7 +450,7 @@ ruff check .
 
 ---
 
-## 11. Operations, Backup & Docker Runbook
+## 12. Operations, Backup & Docker Runbook
 
 ### Automated PostgreSQL Backup & Restore
 Automated operational scripts are provided in `scripts/`:

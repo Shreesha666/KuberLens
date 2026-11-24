@@ -1,0 +1,129 @@
+site_name: KuberLens V1.0 User Guide
+site_description: "Indian Stock Market Research & Intelligence Platform - Complete User Guide and Operational Manual"
+site_author: "KuberLens Engineering Team"
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    logo: material/chart-timeline-variant-shimmer
+    repo: fontawesome/brands/git-alt
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.keys
+  - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+exclude_docs: |
+  AIML_*.md
+  DEPLOYMENT.md
+  SECURITY.md
+  SINGLE_STOCK_INTELLIGENCE_WORKFLOW_REPORT.md
+  KUBERLENS_PAGE_BY_PAGE_USER_GUIDE.md
+
+nav:
+  - Home & Overview: index.md
+  - A. Getting Started:
+      - Quick Start & Installation: getting-started/installation-and-setup.md
+      - Interface & Navigation: getting-started/platform-navigation.md
+      - Market Feeds & EOD Sync: getting-started/data-sources-and-sync.md
+  - B. Market Dashboard & Research:
+      - Executive Dashboard: market-research/executive-dashboard.md
+      - Market Breadth & Heatmaps: market-research/market-breadth-and-overview.md
+      - Stock Directory: market-research/stock-directory.md
+      - Quantitative Screener: market-research/stock-screener.md
+      - Sector & Industry Matrix: market-research/sector-analysis.md
+      - News & Market Events: market-research/news-and-events.md
+  - C. Single Stock Intelligence:
+      - 6-Pillar Intelligence Cockpit: single-stock/single-stock-cockpit.md
+      - Interactive Charting & Indicators: single-stock/interactive-charting.md
+      - EOD Pipeline & Cache Diagnostics: single-stock/eod-pipeline-diagnostics.md
+  - D. Technical & Fundamental Analysis:
+      - Technical Analysis Desk: analysis/technical-analysis-desk.md
+      - Fundamental Health & Valuation: analysis/fundamental-valuation-desk.md
+  - E. IPO Intelligence Desk:
+      - IPO Dashboard & Primary Issues: ipo/ipo-dashboard-and-issues.md
+      - IPO Calendar & Timeline: ipo/ipo-calendar.md
+      - RHP Financials & Demand Analysis: ipo/ipo-research-and-performance.md
+      - Compare IPOs Side-by-Side: ipo/ipo-comparative-matrix.md
+      - IPO Strategy Backtester: ipo/ipo-backtester.md
+      - Family Demat Vault & Applications: ipo/family-vault-and-applications.md
+  - F. Portfolio & Watchlists:
+      - Portfolio Cockpit & P&L Analytics: portfolio/portfolio-cockpit.md
+      - Holdings & Transaction Ledger: portfolio/holdings-management.md
+      - Multi-Watchlist Monitoring: portfolio/watchlists.md
+      - Investment Thesis Journal: portfolio/investment-journal.md
+  - G. Trading & Execution Desk:
+      - Paper Trading Terminal: trading/paper-trading-terminal.md
+      - Algorithmic Swing Scanner: trading/swing-scanner.md
+      - Trade Execution & Psychology Journal: trading/trade-journal.md
+      - Quantitative Strategy Backtester: trading/strategy-backtesting.md
+      - F&O Derivatives Desk: trading/derivatives-fo.md
+      - Risk & Position Sizing Desk: trading/risk-management.md
+  - H. AI & ML Predictions:
+      - Multi-Persona AI Stock Research: ai-ml/ai-stock-research.md
+      - Systematic AI Recommendations: ai-ml/ai-recommendations.md
+      - ML Prediction Engine & Regimes: ai-ml/ml-prediction-engine.md
+  - I. Risk Intelligence & Veto:
+      - 5-Pillar Institutional Risk Veto: risk/risk-veto-card.md
+      - Out-of-Sample Forward Shadow Evidence: risk/forward-shadow-evaluation.md
+      - Real-Time Alerts & Triggers: risk/alerts-and-notifications.md
+  - J. Tutorials & Practical Workflows:
+      - Swing Pullback Workflow Tutorial: tutorials/swing-pullback-workflow.md
+      - Portfolio Risk Audit Tutorial: tutorials/portfolio-risk-audit.md
+      - IPO Listing Strategy Tutorial: tutorials/ipo-listing-strategy.md
+  - K. Frequently Asked Questions: faq.md
+  - L. Administrator Guide:
+      - Batch EOD Pipeline Runner: admin/eod-pipeline-runner.md
+      - Data Provider Failovers & Settings: admin/data-sources-and-brokers.md
+      - Reports & Capital Gains Export: admin/reports-and-exports.md
+  - Verification & Coverage Report: coverage-report.md
+  - Compliance & Risk Disclaimers: legal-disclaimers.md

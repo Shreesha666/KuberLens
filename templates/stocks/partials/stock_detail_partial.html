@@ -39,6 +39,9 @@
                         </a>
                         </span>
                         {% endif %}
+                        <a href="/help/single-stock/single-stock-cockpit/" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-2xs" title="Single Stock Intelligence Guide">
+                            <i class="bi bi-question-circle"></i> Guide
+                        </a>
                     </div>
                 </div>
             </div>
@@ -86,8 +89,148 @@
                 </span>
             </div>
         </div>
+
+        <!-- Intelligence Diagnostic Summary Strip & Provenance -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3 mt-3 border-top border-secondary border-opacity-10 small">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Market Regime Badge -->
+                <span class="badge {% if regime_info.regime == 'TRENDING_UP' %}bg-success-subtle text-success border border-success-subtle{% elif regime_info.regime == 'TRENDING_DOWN' %}bg-danger-subtle text-danger border border-danger-subtle{% elif regime_info.regime == 'HIGH_VOLATILITY' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% else %}bg-secondary-subtle text-secondary border{% endif %} px-2.5 py-1"
+                      title="Statistical market regime classification with zero lookahead bias">
+                    <i class="bi bi-compass me-1"></i>Regime: <strong>{{ regime_info.regime|default:"RANGE_BOUND" }}</strong>
+                    {% if regime_info.confidence %}
+                    <span class="opacity-75 num-mono ms-1">({{ regime_info.confidence|floatformat:2 }} Conf)</span>
+                    {% endif %}
+                </span>
+
+                <!-- Risk Tier & Veto Status -->
+                <span class="badge {% if risk_assessment.risk_level.value == 'LOW_RISK' %}bg-success text-white{% elif risk_assessment.risk_level.value == 'MODERATE_RISK' %}bg-warning text-dark{% elif risk_assessment.risk_level.value == 'HIGH_RISK' %}bg-danger text-white{% else %}bg-secondary text-white{% endif %} px-2.5 py-1"
+                      title="Multi-factor systematic risk evaluation">
+                    <i class="bi bi-shield-shaded me-1"></i>Risk: <strong>{{ risk_assessment.risk_level.value|default:"INSUFFICIENT_DATA" }}</strong>
+                    {% if risk_assessment.risk_score is not None %}
+                    <span class="num-mono ms-1">({{ risk_assessment.risk_score }}/100)</span>
+                    {% endif %}
+                </span>
+
+                {% if risk_assessment.is_vetoed %}
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"
+                      title="{{ risk_assessment.veto_reasons|join:'; ' }}">
+                    <i class="bi bi-shield-x me-1"></i>VETO ACTIVE
+                </span>
+                {% else %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                    <i class="bi bi-shield-check me-1"></i>RISK PASSED
+                </span>
+                {% endif %}
+
+                <!-- ML Forward Directional Score -->
+                {% if ml_prediction %}
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2.5 py-1"
+                      title="Experimental 10-session directional forecast (research only)">
+                    <i class="bi bi-cpu me-1"></i>Forecast: <strong>{{ ml_prediction.get_prediction_label_display }}</strong>
+                    <span class="opacity-75 num-mono ms-1">({{ ml_prediction.confidence_score|floatformat:2 }})</span>
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- EOD & Intraday Data Provenance Timestamps -->
+            <div class="d-flex flex-wrap align-items-center gap-2 text-muted text-nowrap" style="font-size: 0.75rem;">
+                {% if latest_eod_session %}
+                <span title="Latest historical EOD candle session date and source provider">
+                    <i class="bi bi-calendar-check me-1"></i>EOD Session: <strong class="text-body num-mono">{{ latest_eod_session }}</strong>
+                    {% if candle_source_provider %}<span class="badge bg-light text-secondary border ms-1">{{ candle_source_provider }}</span>{% endif %}
+                </span>
+                {% endif %}
+                <span title="Phase 4.3 Research diagnostic: 0 lookahead bias, point-in-time calculation">
+                    <i class="bi bi-fingerprint me-1"></i><span class="badge bg-light text-secondary border">feat-v2.1.0</span>
+                </span>
+                <form method="post" action="{% url 'stocks:stock_sync_eod' listing.symbol %}"
+                      hx-post="{% url 'stocks:stock_sync_eod' listing.symbol %}"
+                      hx-target="#main-content"
+                      hx-indicator="#sync-eod-spinner-{{ listing.symbol }}"
+                      class="d-inline m-0 p-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-xs btn-outline-secondary border-opacity-50 d-inline-flex align-items-center gap-1 py-0.5 px-2" style="font-size: 0.70rem;" title="Fetch latest completed daily candles from exchange provider">
+                        <i class="bi bi-arrow-repeat"></i>
+                        <span>Sync EOD</span>
+                        <span id="sync-eod-spinner-{{ listing.symbol }}" class="htmx-indicator spinner-border spinner-border-sm" role="status" style="width: 0.7rem; height: 0.7rem;"></span>
+                    </button>
+                </form>
+                {% if sync_message %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-0.5" style="font-size: 0.70rem;">
+                    <i class="bi bi-info-circle me-1"></i>{{ sync_message }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Active Portfolio Holding & P&L Card (When Held by User) -->
+{% if holding %}
+<div class="card border border-primary border-opacity-25 shadow-sm mb-4 bg-primary bg-opacity-10">
+    <div class="card-body p-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+                    <i class="bi bi-wallet2 fs-5"></i>
+                </div>
+                <div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="fw-bold text-body fs-6">Active Portfolio Position</span>
+                        <span class="badge bg-primary text-white">{{ holding.total_quantity }} Shares</span>
+                        {% if holding_allocation_pct > 0 %}
+                        <span class="badge bg-light text-secondary border">{{ holding_allocation_pct }}% of Portfolio</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted small mt-0.5">
+                        Avg Price: <strong class="text-body num-mono">₹{{ holding.average_buy_price|floatformat:2 }}</strong> &bull;
+                        Invested: <strong class="text-body num-mono">₹{{ holding.invested_amount|floatformat:2 }}</strong> &bull;
+                        Current Value: <strong class="text-body num-mono">₹{{ holding.current_value|floatformat:2 }}</strong>
+                        {% if holding.first_purchased_at %}
+                        &bull; Held since: <span class="num-mono">{{ holding.first_purchased_at|date:"Y-m-d" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-3 text-md-end">
+                <div>
+                    <span class="text-muted d-block small">Unrealized P&amp;L</span>
+                    <span class="fs-6 fw-bold num-mono {% if holding.unrealised_pnl >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                        {% if holding.unrealised_pnl >= 0 %}+{% endif %}₹{{ holding.unrealised_pnl|floatformat:2 }}
+                        ({{ holding.unrealised_pnl_percent|floatformat:2 }}%)
+                    </span>
+                </div>
+                {% if holding.realised_pnl %}
+                <div class="d-none d-sm-block">
+                    <span class="text-muted d-block small">Realized P&amp;L</span>
+                    <span class="fs-6 fw-semibold num-mono {% if holding.realised_pnl >= 0 %}text-gain{% else %}text-loss{% endif %}">
+                        {% if holding.realised_pnl >= 0 %}+{% endif %}₹{{ holding.realised_pnl|floatformat:2 }}
+                    </span>
+                </div>
+                {% endif %}
+                {% if holding.dividend_earned > 0 %}
+                <div class="d-none d-md-block">
+                    <span class="text-muted d-block small">Dividends Earned</span>
+                    <span class="fs-6 fw-semibold num-mono text-success">
+                        ₹{{ holding.dividend_earned|floatformat:2 }}
+                    </span>
+                </div>
+                {% endif %}
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'holdings:detail' listing.symbol %}" class="btn btn-sm btn-primary shadow-sm"
+                       hx-get="{% url 'holdings:detail' listing.symbol %}" hx-target="#main-content" hx-push-url="true">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Position Ledger
+                    </a>
+                    <a href="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}" class="btn btn-sm btn-outline-secondary"
+                       hx-get="{% url 'holdings:add_transaction' %}?symbol={{ listing.symbol }}" hx-target="#main-content" hx-push-url="true" title="Record Transaction">
+                        <i class="bi bi-plus-circle"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Dual Recommendation Framework (Existing Holder vs New Investor Tabbed Switcher) -->
 {% if recommendations %}
@@ -687,8 +830,23 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="ml-regime-tab" data-bs-toggle="tab" data-bs-target="#ml-regime-pane" type="button" role="tab">
+                    <i class="bi bi-cpu text-info"></i> ML Regime &amp; Forecasts
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="risk-intelligence-tab" data-bs-toggle="tab" data-bs-target="#risk-intelligence-pane" type="button" role="tab">
+                    <i class="bi bi-shield-exclamation text-danger"></i> Risk Intelligence &amp; Vetoes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link fw-semibold" id="fundamental-tab" data-bs-toggle="tab" data-bs-target="#fundamental-pane" type="button" role="tab">
                     <i class="bi bi-bar-chart-steps text-success"></i> Fundamental Health & Valuation
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold" id="shadow-evidence-tab" data-bs-toggle="tab" data-bs-target="#shadow-evidence-pane" type="button" role="tab">
+                    <i class="bi bi-binoculars text-secondary"></i> Shadow Evidence ({{ shadow_count }})
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -820,7 +978,315 @@
             {% endif %}
         </div>
 
-        <!-- 2. FUNDAMENTAL ANALYSIS TAB -->
+        <!-- 2. ML REGIME & FORECASTS TAB -->
+        <div class="tab-pane fade" id="ml-regime-pane" role="tabpanel">
+            <!-- Regulatory Research-Only Disclosure -->
+            <div class="alert alert-secondary border border-secondary border-opacity-25 rounded-3 d-flex align-items-center mb-4 py-2 px-3">
+                <i class="bi bi-shield-lock-fill text-secondary me-2 fs-5 flex-shrink-0"></i>
+                <div class="small text-body">
+                    <strong>Research-Only Disclosure:</strong> Machine learning forecasts and market regime classifications are analytical research tools (<code>EXPERIMENTAL_MODEL</code> / <code>HEURISTIC_FALLBACK</code>). All indicators are computed strictly with 0 chronological lookahead bias. Statistical confidence reflects historical regime certainty, not guaranteed returns or financial advice.
+                </div>
+            </div>
+
+            {% if ml_prediction or regime_info %}
+            <!-- Top Metric Cards Grid -->
+            <div class="row g-3 mb-4">
+                <!-- 1. Market Regime Card -->
+                <div class="col-12 col-md-4">
+                    <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary border-opacity-10 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Structural Market Regime</span>
+                                <span class="badge {% if regime_info.regime == 'TRENDING_UP' %}bg-success text-white{% elif regime_info.regime == 'TRENDING_DOWN' %}bg-danger text-white{% elif regime_info.regime == 'HIGH_VOLATILITY' %}bg-warning text-dark{% else %}bg-secondary text-white{% endif %}">
+                                    {{ regime_info.regime|default:ml_prediction.regime_classification|default:"RANGE_BOUND" }}
+                                </span>
+                            </div>
+                            <div class="h5 fw-bold text-body mb-1">
+                                {{ regime_info.regime|default:ml_prediction.regime_classification|default:"RANGE_BOUND" }}
+                            </div>
+                            <div class="text-muted small mb-2" style="font-size: 0.78rem;">
+                                {{ regime_info.summary|default:"Point-in-time trend and volatility analysis." }}
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
+                            <span class="text-muted">Regime Confidence:</span>
+                            <span class="fw-bold num-mono text-body">
+                                {% if regime_info.confidence %}{{ regime_info.confidence|floatformat:2 }}{% else %}0.50{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Forward Directional Forecast Card -->
+                <div class="col-12 col-md-4">
+                    <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary border-opacity-10 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Experimental Forecast (10-Session)</span>
+                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
+                                    Horizon: {{ ml_prediction.horizon_sessions|default:10 }}d
+                                </span>
+                            </div>
+                            <div class="h5 fw-bold text-body mb-1">
+                                {{ ml_prediction.get_prediction_label_display|default:"SIDEWAYS_CONSOLIDATION" }}
+                            </div>
+                            <div class="text-muted small mb-2" style="font-size: 0.78rem;">
+                                {{ ml_prediction.disclaimer|default:"Predictive research opinion based on historical statistical patterns." }}
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top border-secondary border-opacity-10">
+                            <div class="d-flex justify-content-between align-items-center small mb-1" style="font-size: 0.75rem;">
+                                <span class="text-muted">Directional Probability:</span>
+                                <span class="fw-bold num-mono text-body">
+                                    {% if ml_prediction.raw_probability %}{{ ml_prediction.raw_probability|floatformat:2 }}{% elif ml_prediction.confidence_score %}{{ ml_prediction.confidence_score|floatformat:2 }}{% else %}0.50{% endif %}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center small text-muted" style="font-size: 0.70rem;">
+                                <span>Calibration: <span class="badge bg-light text-secondary border px-1 py-0">{{ ml_prediction.calibration_status|default:"UNCALIBRATED" }}</span></span>
+                                <span>State: <span class="badge bg-light text-secondary border px-1 py-0">{{ ml_prediction.get_inference_state_display|default:"HEURISTIC_FALLBACK" }}</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Model Provenance Card -->
+                <div class="col-12 col-md-4">
+                    <div class="p-3 bg-body-tertiary rounded-3 h-100 border border-secondary border-opacity-10 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.70rem; letter-spacing: 0.04em;">Model Architecture</span>
+                                <span class="badge bg-light text-secondary border">
+                                    {{ ml_prediction.model_record.algorithm|default:"HEURISTIC_RULE_BASED" }}
+                                </span>
+                            </div>
+                            <div class="fw-semibold text-body mb-1 small">
+                                Record: <span class="num-mono">{{ ml_prediction.model_record.model_name|default:"Baseline Statistical Heuristic" }}</span>
+                            </div>
+                            <div class="text-muted small mb-2" style="font-size: 0.75rem;">
+                                Mode: <strong class="text-body">{{ ml_prediction.get_execution_mode_display|default:"ONLINE_REALTIME" }}</strong> &bull;
+                                As-of: <span class="num-mono">{{ ml_prediction.as_of_session|default:latest_eod_session|default:"Today" }}</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between align-items-center small" style="font-size: 0.75rem;">
+                            <span class="text-muted">Algorithm State:</span>
+                            <span class="badge bg-light text-secondary border">
+                                {{ ml_prediction.model_record.get_model_state_display|default:"EXPERIMENTAL" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driving Feature Contributions -->
+            {% if ml_prediction.feature_contributions %}
+            <div class="card border border-secondary border-opacity-10 rounded-3 mb-3 bg-body">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-2.5 px-3">
+                    <h6 class="fw-bold mb-0 text-body small text-uppercase" style="letter-spacing: 0.03em;">
+                        <i class="bi bi-sliders me-1 text-primary"></i> Point-in-Time Statistical Drivers
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3 small">
+                        {% for feat_key, feat_val in ml_prediction.feature_contributions.items %}
+                        {% if feat_key != "regime_summary" and feat_key != "data_note" %}
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <div class="p-2 rounded bg-body-tertiary border border-secondary border-opacity-10">
+                                <span class="text-muted d-block text-truncate" style="font-size: 0.72rem;" title="{{ feat_key }}">
+                                    {{ feat_key|title }}
+                                </span>
+                                <span class="fw-bold num-mono text-body" style="font-size: 0.85rem;">
+                                    {{ feat_val }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-cpu fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                <h6 class="fw-bold text-body">ML Statistical Evaluation Unavailable</h6>
+                <p class="small text-muted mb-0">At least 20 historical daily trading sessions are required to compute point-in-time market regime classification and directional forecasts.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 3. RISK INTELLIGENCE & VETOES TAB -->
+        <div class="tab-pane fade" id="risk-intelligence-pane" role="tabpanel">
+            <!-- Systematic Risk Header Banner -->
+            <div class="alert {% if risk_assessment.is_vetoed %}alert-danger border-danger-subtle{% else %}alert-success border-success-subtle{% endif %} rounded-3 d-flex align-items-center mb-4 py-2 px-3">
+                <i class="bi {% if risk_assessment.is_vetoed %}bi-shield-x text-danger{% else %}bi-shield-check text-success{% endif %} me-2 fs-5 flex-shrink-0"></i>
+                <div class="small">
+                    {% if risk_assessment.is_vetoed %}
+                    <strong class="text-danger">Multi-Factor Risk Veto Active:</strong> This stock currently exceeds safety risk thresholds. Setups are flagged with elevated systematic risk and would be excluded from autonomous allocation.
+                    {% else %}
+                    <strong class="text-success">Multi-Factor Risk Check Passed:</strong> Risk score ({{ risk_assessment.risk_score }}/100) and volatility metrics are within acceptable systematic risk bounds.
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Risk Status KPI Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                        <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.70rem;">Risk Tier</span>
+                        <span class="fs-5 fw-bold num-mono {% if risk_assessment.risk_level.value == 'LOW_RISK' %}text-success{% elif risk_assessment.risk_level.value == 'MODERATE_RISK' %}text-warning{% elif risk_assessment.risk_level.value == 'HIGH_RISK' %}text-danger{% else %}text-secondary{% endif %}">
+                            {{ risk_assessment.risk_level.value|default:"INSUFFICIENT_DATA" }}
+                        </span>
+                        <div class="text-muted small" style="font-size: 0.70rem;">Multi-factor classification</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                        <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.70rem;">Risk Score</span>
+                        <span class="fs-5 fw-bold num-mono text-body">
+                            {{ risk_assessment.risk_score|default:"—" }} <span class="small fw-normal text-muted" style="font-size: 0.75rem;">/ 100</span>
+                        </span>
+                        <div class="text-muted small" style="font-size: 0.70rem;">Bounded systematic score</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                        <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.70rem;">Systematic Veto</span>
+                        <span class="fs-5 fw-bold {% if risk_assessment.is_vetoed %}text-danger{% else %}text-success{% endif %}">
+                            {% if risk_assessment.is_vetoed %}VETOED{% else %}ACCEPTED{% endif %}
+                        </span>
+                        <div class="text-muted small" style="font-size: 0.70rem;">Execution filter verdict</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                        <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 0.70rem;">Regime Context</span>
+                        <span class="fs-5 fw-semibold text-body">
+                            {{ risk_assessment.regime.value|default:"SIDEWAYS_CONSOLIDATION" }}
+                        </span>
+                        <div class="text-muted small" style="font-size: 0.70rem;">Point-in-time environment</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Veto Reasons -->
+            <div class="card border border-secondary border-opacity-10 rounded-3 mb-4 bg-body">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-2.5 px-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-body small text-uppercase" style="letter-spacing: 0.03em;">
+                        <i class="bi bi-shield-exclamation me-1 text-danger"></i> Veto &amp; Warning Diagnostics
+                    </h6>
+                    <span class="badge {% if risk_assessment.is_vetoed %}bg-danger{% else %}bg-success{% endif %} text-white small">
+                        {{ risk_assessment.veto_reasons|length }} Trigger(s)
+                    </span>
+                </div>
+                <div class="card-body p-3">
+                    {% if risk_assessment.veto_reasons %}
+                    <ul class="list-unstyled mb-0">
+                        {% for reason in risk_assessment.veto_reasons %}
+                        <li class="d-flex align-items-start gap-2 py-1.5 small text-body border-bottom border-secondary border-opacity-10 last-border-0">
+                            <i class="bi bi-exclamation-triangle-fill text-danger flex-shrink-0 mt-0.5"></i>
+                            <span>{{ reason }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="d-flex align-items-center gap-2 text-success small py-1">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <span>No systematic veto triggers. Volatility, trend momentum, and intermediate support indicators are healthy.</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 5-Factor Quantitative Risk Scorecard -->
+            <div class="card border border-secondary border-opacity-10 rounded-3 bg-body">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 py-2.5 px-3">
+                    <h6 class="fw-bold mb-0 text-body small text-uppercase" style="letter-spacing: 0.03em;">
+                        <i class="bi bi-grid-3x3-gap me-1 text-primary"></i> 5-Factor Quantitative Risk Scorecard
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3 small">
+                        <!-- Factor 1: ATR Volatility -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-body">Daily Volatility (ATR 14)</span>
+                                    <span class="badge {% if risk_assessment.metrics.atr_ratio_pct > 3.50 %}bg-danger text-white{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} num-mono">
+                                        {{ risk_assessment.metrics.atr_ratio_pct|default:"—" }}%
+                                    </span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">
+                                    Safety limit: &le; 3.50% of price. ATR expansion signals turbulent swings.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Factor 2: Momentum Exhaustion -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-body">Momentum Exhaustion (RSI 14)</span>
+                                    <span class="badge {% if risk_assessment.metrics.rsi_14 > 75.0 %}bg-danger text-white{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} num-mono">
+                                        {{ risk_assessment.metrics.rsi_14|default:"—" }}
+                                    </span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">
+                                    Overbought ceiling: &le; 75.0. Above 75 signals elevated mean-reversion risk.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Factor 3: Intermediate Drawdown -->
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-body">Trend Drawdown (vs SMA 50)</span>
+                                    <span class="badge {% if risk_assessment.metrics.price_to_sma50_pct < -8.0 %}bg-danger text-white{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} num-mono">
+                                        {{ risk_assessment.metrics.price_to_sma50_pct|default:"—" }}%
+                                    </span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">
+                                    Breakdown limit: &ge; -8.0%. Prices below -8% signal intermediate structural damage.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Factor 4: Bollinger Bandwidth -->
+                        <div class="col-12 col-md-6 col-lg-6">
+                            <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-body">Bollinger Bandwidth (20, 2&sigma;)</span>
+                                    <span class="badge bg-light text-secondary border num-mono">
+                                        {{ risk_assessment.metrics.bb_bandwidth_pct|default:"—" }}%
+                                    </span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">
+                                    Measures channel expansion. Values &gt; 15% indicate high volatility regimes.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Factor 5: Relative Benchmark Strength -->
+                        <div class="col-12 col-md-6 col-lg-6">
+                            <div class="p-3 bg-body-tertiary rounded-3 border border-secondary border-opacity-10 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-body">Benchmark Relative Strength (20d vs NIFTY)</span>
+                                    <span class="badge {% if risk_assessment.metrics.benchmark_rel_strength_pct < -8.0 %}bg-danger text-white{% else %}bg-light text-secondary border{% endif %} num-mono">
+                                        {{ risk_assessment.metrics.benchmark_rel_strength_pct|default:"0.0" }}%
+                                    </span>
+                                </div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">
+                                    Severe relative weakness triggers veto when stock lags NIFTY 50 by &gt; 8%.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. FUNDAMENTAL ANALYSIS TAB -->
         <div class="tab-pane fade" id="fundamental-pane" role="tabpanel">
             {% if fundamental %}
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -963,7 +1429,12 @@
             {% endif %}
         </div>
 
-        <!-- 3. DIVIDEND HISTORY (5Y) TAB -->
+        <!-- 5. SHADOW EVIDENCE TAB -->
+        <div class="tab-pane fade" id="shadow-evidence-pane" role="tabpanel">
+            {% include "stocks/partials/stock_shadow_pane_partial.html" %}
+        </div>
+
+        <!-- 6. DIVIDEND HISTORY (5Y) TAB -->
         <div class="tab-pane fade" id="dividends-pane" role="tabpanel">
             <div class="mb-4">
                 <h5 class="fw-bold mb-1 text-body d-flex align-items-center gap-2">

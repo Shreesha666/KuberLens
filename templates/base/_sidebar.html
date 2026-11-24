@@ -159,6 +159,11 @@
             hx-get="{% url 'ml_engine:dashboard' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-cpu"></i> ML Predictions
         </a>
+        <a href="{% url 'ml_engine:risk_dashboard' %}"
+            class="nav-link {% if active_nav == 'risk_intelligence' %}active{% endif %}"
+            hx-get="{% url 'ml_engine:risk_dashboard' %}" hx-target="#main-content" hx-push-url="true">
+            <i class="bi bi-shield-exclamation"></i> Risk Intelligence
+        </a>
         <a href="{% url 'alerts:list' %}"
             class="nav-link {% if active_nav == 'alerts_notifications' or active_nav == 'notifications' %}active{% endif %}"
             hx-get="{% url 'alerts:list' %}" hx-target="#main-content" hx-push-url="true">
@@ -184,6 +189,18 @@
         <a href="{% url 'accounts:profile' %}" class="nav-link {% if active_nav == 'settings' %}active{% endif %}"
             hx-get="{% url 'accounts:profile' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-gear"></i> Application Settings
+        </a>
+
+        <!-- HELP & SUPPORT -->
+        <div class="nav-section-title">Help & Support</div>
+        <a href="{% url 'help_index' %}" class="nav-link {% if active_nav == 'help_user_guide' %}active{% endif %}">
+            <i class="bi bi-book"></i> User Guide
+        </a>
+        <a href="/help/getting-started/installation-and-setup/" class="nav-link {% if active_nav == 'help_getting_started' %}active{% endif %}">
+            <i class="bi bi-compass"></i> Getting Started
+        </a>
+        <a href="/help/faq/" class="nav-link {% if active_nav == 'help_faq' %}active{% endif %}">
+            <i class="bi bi-question-circle"></i> FAQs
         </a>
     </nav>
 </aside>

@@ -5,7 +5,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
+from apps.core.views import serve_help_docs
 
 handler404 = "apps.core.views.custom_page_not_found"
 handler500 = "apps.core.views.custom_server_error"
@@ -15,6 +16,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls", namespace="accounts")),
     path("core/", include("apps.core.urls", namespace="core")),
+    path("help/", serve_help_docs, {"path": ""}, name="help_index"),
+    re_path(r"^help/(?P<path>.*)$", serve_help_docs, name="help_docs"),
     path("stocks/", include("apps.stocks.urls", namespace="stocks")),
     path("research/technical/", include("apps.technical_analysis.urls", namespace="technical_analysis")),
     path("research/fundamental/", include("apps.fundamental_analysis.urls", namespace="fundamental_analysis")),

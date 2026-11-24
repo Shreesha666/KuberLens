@@ -1,0 +1,344 @@
+[
+  {
+    "slug": "01_market_dashboard",
+    "title": "Market Dashboard",
+    "url": "/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/01_market_dashboard.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "02_market_overview",
+    "title": "Market Overview & Breadth",
+    "url": "/market-overview/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/02_market_overview.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "03_stock_directory",
+    "title": "Stock Directory",
+    "url": "/stocks/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/03_stock_directory.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "04_stock_intelligence_coalindia",
+    "title": "Single Stock Intelligence - COALINDIA",
+    "url": "/stocks/COALINDIA/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/04_stock_intelligence_coalindia.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "05_stock_intelligence_sbin",
+    "title": "Single Stock Intelligence - SBIN",
+    "url": "/stocks/SBIN/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/05_stock_intelligence_sbin.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "06_technical_analysis",
+    "title": "Technical Analysis Workbench",
+    "url": "/research/technical/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/06_technical_analysis.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "07_fundamental_analysis",
+    "title": "Fundamental Health & Valuation Hub",
+    "url": "/research/fundamental/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/07_fundamental_analysis.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "08_ai_stock_research",
+    "title": "AI Stock Research Hub",
+    "url": "/research/ai/?symbol=SBIN&role=INVESTOR",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/08_ai_stock_research.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "09_ai_recommendations",
+    "title": "AI Multi-Factor Recommendations",
+    "url": "/research/ai/recommendations/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/09_ai_recommendations.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "10_stock_screener",
+    "title": "Quantitative Stock Screener",
+    "url": "/screener/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/10_stock_screener.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "11_sector_analysis",
+    "title": "Sector & Industry Heatmap",
+    "url": "/stocks/sectors/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/11_sector_analysis.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "12_news_events",
+    "title": "News & Market Events Feed",
+    "url": "/news/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/12_news_events.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "13_ipo_dashboard",
+    "title": "IPO Intelligence Dashboard",
+    "url": "/ipo/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/13_ipo_dashboard.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "14_ipo_primary_issues",
+    "title": "Primary Issues Desk & GMP",
+    "url": "/ipo/issues/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/14_ipo_primary_issues.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "15_ipo_calendar",
+    "title": "IPO Interactive Calendar",
+    "url": "/ipo/calendar/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/15_ipo_calendar.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "16_ipo_research",
+    "title": "IPO Financials & RHP Analysis",
+    "url": "/ipo/research/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/16_ipo_research.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "17_ipo_listing_performance",
+    "title": "IPO Listing Performance Tracker",
+    "url": "/ipo/performance/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/17_ipo_listing_performance.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "18_ipo_compare",
+    "title": "Compare IPOs Side-by-Side",
+    "url": "/ipo/compare/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/18_ipo_compare.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "19_ipo_backtester",
+    "title": "IPO Strategy Backtester",
+    "url": "/ipo/backtest/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/19_ipo_backtester.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "20_ipo_family_vault",
+    "title": "Family Demat Vault",
+    "url": "/ipo/family-vault/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/20_ipo_family_vault.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "21_ipo_applications",
+    "title": "My IPO Applications",
+    "url": "/ipo/applications/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/21_ipo_applications.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "22_portfolio_overview",
+    "title": "Portfolio Net Worth & Analytics",
+    "url": "/portfolio/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/22_portfolio_overview.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "23_portfolio_holdings",
+    "title": "Holdings & Position Ledger",
+    "url": "/portfolio/holdings/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/23_portfolio_holdings.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "24_watchlists",
+    "title": "Multi-Watchlist Monitoring",
+    "url": "/watchlists/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/24_watchlists.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "25_investment_journal",
+    "title": "Investment Theses Journal",
+    "url": "/portfolio/journal/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/25_investment_journal.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "26_paper_trading",
+    "title": "Paper Trading Execution Terminal",
+    "url": "/papertrading/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/26_paper_trading.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "27_swing_scanner",
+    "title": "Algorithmic Swing Trading Scanner",
+    "url": "/trading/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/27_swing_scanner.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "28_trade_journal",
+    "title": "Trade Execution & Psychological Journal",
+    "url": "/trading/journal/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/28_trade_journal.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "29_strategy_backtesting",
+    "title": "Quantitative Strategy Backtester",
+    "url": "/backtesting/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/29_strategy_backtesting.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "30_fo_derivatives",
+    "title": "F&O Derivatives Desk",
+    "url": "/brokers/derivatives/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/30_fo_derivatives.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "31_risk_management",
+    "title": "Risk & Position Sizing Calculator",
+    "url": "/trading/risk-management/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/31_risk_management.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "32_ml_predictions",
+    "title": "Machine Learning Prediction Engine",
+    "url": "/ml/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/32_ml_predictions.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "33_ml_risk_dashboard",
+    "title": "Institutional Risk Veto Dashboard",
+    "url": "/ml/risk-dashboard/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/33_ml_risk_dashboard.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "34_alerts",
+    "title": "Alerts & Notifications Center",
+    "url": "/alerts/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/34_alerts.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "35_data_sources",
+    "title": "Market Data Feeds Configuration",
+    "url": "/settings/data-sources/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/35_data_sources.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "36_broker_connections",
+    "title": "Indian Broker Integrations",
+    "url": "/brokers/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/36_broker_connections.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "37_reports_exports",
+    "title": "Tax P&L & Financial Reports",
+    "url": "/reports/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/37_reports_exports.png",
+    "notes": "Rendered successfully and captured."
+  },
+  {
+    "slug": "38_account_profile",
+    "title": "User Profile & App Settings",
+    "url": "/accounts/profile/",
+    "status_code": 200,
+    "status": "VERIFIED WORKING",
+    "screenshot": "assets/screenshots/38_account_profile.png",
+    "notes": "Rendered successfully and captured."
+  }
+]

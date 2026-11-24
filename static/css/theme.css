@@ -1701,4 +1701,70 @@ body {
     background: rgba(239, 68, 68, 0.04);
 }
 
+/* ==========================================================================
+   SweetAlert2 KuberLens Toast & Alert Theming
+   ========================================================================== */
+.swal2-container.swal2-top-end {
+    top: 68px !important;
+    right: 1.25rem !important;
+    z-index: 9999 !important;
+}
+
+.kuberlens-swal-toast {
+    border-radius: 12px !important;
+    font-family: inherit !important;
+    padding: 0.75rem 1rem !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}
+
+[data-bs-theme="dark"] .kuberlens-swal-toast {
+    background: rgba(15, 23, 42, 0.95) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-bs-theme="light"] .kuberlens-swal-toast {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.08) !important;
+}
+
+.kuberlens-swal-toast .swal2-title {
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    line-height: 1.35 !important;
+}
+
+.kuberlens-swal-toast .swal2-html-container {
+    font-size: 0.82rem !important;
+    margin: 0.2rem 0 0 0 !important;
+    opacity: 0.92 !important;
+    line-height: 1.4 !important;
+}
+
+.kuberlens-swal-toast .swal2-timer-progress-bar {
+    height: 3px !important;
+    background: rgba(16, 185, 129, 0.85) !important;
+}
+
+.kuberlens-swal-toast.swal2-icon-error .swal2-timer-progress-bar {
+    background: rgba(239, 68, 68, 0.85) !important;
+}
+
+.kuberlens-swal-toast.swal2-icon-warning .swal2-timer-progress-bar {
+    background: rgba(245, 158, 11, 0.85) !important;
+}
+
+.kuberlens-swal-toast.swal2-icon-info .swal2-timer-progress-bar {
+    background: rgba(59, 130, 246, 0.85) !important;
+}
+
+.kuberlens-swal-toast .swal2-icon {
+    transform: scale(0.85);
+    margin: 0 0.6rem 0 0 !important;
+}
+
 

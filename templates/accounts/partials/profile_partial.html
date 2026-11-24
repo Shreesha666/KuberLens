@@ -41,25 +41,12 @@
         </div>
     </div>
 
-    <!-- Live Toast/Feedback Notifications -->
+    <!-- Live Toast/Feedback Notifications (Rendered via SweetAlert2 Toasts) -->
     {% if success_message %}
-    <div class="alert alert-success border-0 shadow-sm py-2 px-3 mb-4 d-flex align-items-center justify-content-between gap-2 rounded-3">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill text-success fs-5"></i>
-            <span class="fw-semibold small text-success-emphasis">{{ success_message }}</span>
-        </div>
-        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div class="d-none" data-django-message="{{ success_message }}" data-tags="success">{{ success_message }}</div>
     {% endif %}
-
     {% if error_message %}
-    <div class="alert alert-danger border-0 shadow-sm py-2 px-3 mb-4 d-flex align-items-center justify-content-between gap-2 rounded-3">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-            <span class="fw-semibold small text-danger-emphasis">{{ error_message }}</span>
-        </div>
-        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div class="d-none" data-django-message="{{ error_message }}" data-tags="error">{{ error_message }}</div>
     {% endif %}
 
     <div class="row g-4">

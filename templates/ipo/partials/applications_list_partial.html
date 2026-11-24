@@ -18,7 +18,7 @@
         <p class="text-muted small mb-0 mt-1">Track your applied IPO bids, UPI mandate blockages, allotment results, and seamlessly sync allotted shares into your portfolio.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'ipo:family_vault' %}" class="btn btn-outline-primary d-flex align-items-center gap-1.5 shadow-sm"
+        <a href="{% url 'ipo:family_vault' %}" class="btn btn-outline-primary d-flex align-items-center gap-2 shadow-sm"
            hx-get="{% url 'ipo:family_vault' %}" hx-target="#main-content" hx-push-url="true">
             <i class="bi bi-people-fill"></i>
             <span>Family Vault</span>
@@ -35,15 +35,11 @@
     </div>
 </div>
 
-<!-- Alert Messages -->
+<!-- Alert Messages Toast Bridge (Rendered via SweetAlert2 Toasts) -->
 {% if messages %}
-<div class="mb-3">
+<div class="d-none">
     {% for message in messages %}
-    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2 py-2 px-3" role="alert">
-        <i class="bi bi-info-circle"></i>
-        <div>{{ message }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <div data-django-message="{{ message }}" data-tags="{{ message.tags|default:'info' }}">{{ message }}</div>
     {% endfor %}
 </div>
 {% endif %}
@@ -170,7 +166,7 @@
                 <tr>
                     <!-- IPO Info -->
                     <td class="ps-4 py-3">
-                        <div class="d-flex align-items-center gap-2.5">
+                        <div class="d-flex align-items-center gap-2">
                             <div class="rounded-3 d-flex align-items-center justify-content-center bg-body-tertiary border flex-shrink-0" style="width: 40px; height: 40px;">
                                 {% if app.ipo.listing and app.ipo.listing.instrument.logo %}
                                 <img src="{{ app.ipo.listing.instrument.logo.url }}" alt="{{ app.ipo.symbol }}" class="rounded-2" style="max-width: 32px; max-height: 32px; object-fit: contain;">
@@ -183,7 +179,7 @@
                                    hx-get="{% url 'ipo:detail' app.ipo.symbol %}" hx-target="#main-content" hx-push-url="true">
                                     {{ app.ipo.company_name }}
                                 </a>
-                                <div class="d-flex align-items-center gap-1.5 mt-0.5">
+                                <div class="d-flex align-items-center gap-2 mt-1">
                                     <span class="badge bg-secondary-subtle text-secondary border small" style="font-size: 0.72rem;">{{ app.ipo.symbol }}</span>
                                     {% if app.application_number %}
                                     <span class="text-muted small" style="font-size: 0.72rem;">App #{{ app.application_number }}</span>
@@ -204,7 +200,7 @@
                         </div>
                         {% endif %}
                         {% if app.demat_account %}
-                        <div class="text-muted small mt-0.5" style="font-size: 0.75rem;">
+                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">
                             <i class="bi bi-person-badge"></i> {{ app.demat_account }}
                         </div>
                         {% endif %}
@@ -299,7 +295,7 @@
                         <form method="post" action="{% url 'ipo:application_transfer_portfolio' app.id %}"
                               hx-post="{% url 'ipo:application_transfer_portfolio' app.id %}" hx-target="#main-content">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 py-0.5 px-2">
+                            <button type="submit" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 py-1 px-2">
                                 <i class="bi bi-wallet2"></i>
                                 <span>Transfer</span>
                             </button>
@@ -460,7 +456,7 @@
                             <label class="form-label small fw-semibold text-muted text-uppercase mb-1">Bid Price (₹)</label>
                             <input type="number" name="bid_price" step="0.05" class="form-control num-mono" placeholder="Leave empty for Cutoff">
                         </div>
-                        <div class="col-6 d-flex align-items-end pb-1.5">
+                        <div class="col-6 d-flex align-items-end pb-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="is_cutoff_bid" id="modalCutoff" checked>
                                 <label class="form-check-label small" for="modalCutoff">

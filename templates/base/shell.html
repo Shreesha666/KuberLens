@@ -52,13 +52,11 @@
 
         <!-- Main Content Area -->
         <main id="main-wrapper" class="flex-grow-1">
+            <!-- Django Messages Toast Bridge (Rendered via SweetAlert2 Toasts) -->
             {% if messages %}
-            <div class="container-fluid px-4 pt-3" id="django-messages-container">
+            <div id="django-messages-container" class="d-none">
                 {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}primary{% endif %} alert-dismissible fade show shadow-sm small" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+                <div data-django-message="{{ message }}" data-tags="{{ message.tags|default:'info' }}"></div>
                 {% endfor %}
             </div>
             {% endif %}
@@ -71,12 +69,14 @@
         </main>
     </div>
 
-    <!-- Notification Toast Container -->
+    <!-- Notification Toast Fallback Container -->
     <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2050;"></div>
 
     <!-- Paper Trading Order Drawer Offcanvas Container -->
     <div id="paper-order-drawer-container"></div>
 
+    <!-- SweetAlert2 Toast & Alert Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <!-- Application Navigation & UX Script -->

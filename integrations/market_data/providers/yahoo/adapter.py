@@ -3,7 +3,7 @@ Yahoo Finance Market Data Provider Adapter for Indian Stock Market.
 """
 import logging
 import time
-from datetime import UTC, date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from django.utils import timezone
@@ -120,7 +120,7 @@ class YahooFinanceProvider(MarketDataProvider):
             return []
 
         start_t = time.time()
-        ticker_map = {self._to_yahoo_ticker(l): l for l in listings}
+        ticker_map = {self._to_yahoo_ticker(lst): lst for lst in listings}
         tickers_str = " ".join(ticker_map.keys())
 
         try:
@@ -194,7 +194,12 @@ class YahooFinanceProvider(MarketDataProvider):
     ) -> list[HistoricalCandleDTO]:
         ticker_str = self._to_yahoo_ticker(listing)
         try:
+            import zoneinfo
+            from datetime import time as dt_time
+
             import yfinance as yf
+
+            ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
             ticker = yf.Ticker(ticker_str)
             # Fetch historical range
             df = ticker.history(
@@ -205,15 +210,14 @@ class YahooFinanceProvider(MarketDataProvider):
             )
             candles = []
             for ts, row in df.iterrows():
-                # Convert timestamp to UTC datetime
-                if hasattr(ts, "to_pydatetime"):
-                    candle_dt = ts.to_pydatetime()
+                # Extract Indian exchange trading session date
+                if hasattr(ts, "date"):
+                    session_date = ts.date()
                 else:
-                    candle_dt = ts
-                if candle_dt.tzinfo is None:
-                    candle_dt = candle_dt.replace(tzinfo=UTC)
-                else:
-                    candle_dt = candle_dt.astimezone(UTC)
+                    session_date = ts.astimezone(ist_tz).date()
+
+                # Normalize EOD candle to official session close (15:30 IST = 10:00 UTC)
+                candle_dt = datetime.combine(session_date, dt_time(15, 30), tzinfo=ist_tz).astimezone(UTC)
 
                 adj_close = Decimal(str(round(row.get("Adj Close", row["Close"]), 4))) if "Adj Close" in row else None
                 c = HistoricalCandleDTO(

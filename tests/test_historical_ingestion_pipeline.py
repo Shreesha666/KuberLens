@@ -423,3 +423,82 @@ class TestHistoricalDataIngestionPipeline:
             assert repair_res["gaps_detected"] == 1
             assert repair_res["gaps_repaired"] == 1
             assert repair_res["remaining_gaps"] == 0
+
+    def test_eod_session_close_ist_normalization(self, test_equity_listing):
+        """
+        Regression test: Verify that an EOD candle for an Indian listing (e.g. Monday session)
+        has its date evaluated in IST so Monday sessions are not dropped as Sunday weekends.
+        """
+        import zoneinfo
+        from datetime import UTC, datetime, time
+
+        IST = zoneinfo.ZoneInfo("Asia/Kolkata")
+        pipeline = HistoricalDataIngestionPipeline(
+            provider_code="YAHOO",
+            rate_limit_delay_seconds=0.0,
+            verify_against_calendar=True,
+        )
+
+        # Monday 2020-01-06: at 15:30 IST (10:00 UTC)
+        monday_date = date(2020, 1, 6)
+        monday_ts = datetime.combine(monday_date, time(15, 30), tzinfo=IST).astimezone(UTC)
+        assert monday_ts.date() == monday_date  # Same calendar date in UTC and IST
+
+        mock_monday_candle = HistoricalCandle(
+            listing=test_equity_listing,
+            timestamp=monday_ts,
+            interval="1d",
+            open=Decimal("100.00"),
+            high=Decimal("105.00"),
+            low=Decimal("95.00"),
+            close=Decimal("102.00"),
+            volume=50000,
+            adjusted_close=Decimal("102.00"),
+            source_provider="YAHOO",
+        )
+
+        with patch.object(pipeline, "get_provider") as mock_get_p:
+            mock_provider = MagicMock()
+            mock_provider.get_historical_candles.return_value = [mock_monday_candle]
+            mock_get_p.return_value = mock_provider
+
+            chk = pipeline.ingest_listing_history(
+                listing=test_equity_listing,
+                start_date=monday_date,
+                end_date=monday_date,
+                backfill_mode=True,
+            )
+            assert chk.status == "SUCCESS"
+            assert chk.total_candles_ingested == 1
+            assert HistoricalCandle.objects.filter(listing=test_equity_listing).count() == 1
+
+    def test_pit_corporate_action_isolation(self, test_equity_listing):
+        """
+        Verifies that point-in-time corporate action adjustments strictly enforce as_of_date
+        and do not leak future splits into historical periods.
+        """
+        from apps.news.models import CorporateEvent
+        from services.ml.dataset_builder import CorporateActionAdjuster
+
+        # Create a 2-for-1 split with event_date in 2024
+        CorporateEvent.objects.create(
+            listing=test_equity_listing,
+            event_type="SPLIT",
+            title="Sub-division from Rs 10 to Rs 5",
+            event_date=date(2024, 6, 1),
+            ratio_or_value="2:1",
+            status="ANNOUNCED",
+        )
+
+        # As of 2023-01-01 (before split), factor must be 1.0 (no future leakage!)
+        events_pre = CorporateActionAdjuster.get_adjustment_events_for_listing(
+            test_equity_listing, as_of_date=date(2023, 1, 1)
+        )
+        assert len(events_pre) == 0
+
+        # As of 2025-01-01 (after split), event is visible and multiplier factor is 0.50
+        events_post = CorporateActionAdjuster.get_adjustment_events_for_listing(
+            test_equity_listing, as_of_date=date(2025, 1, 1)
+        )
+        assert len(events_post) == 1
+        assert events_post[0]["factor"] == 0.50

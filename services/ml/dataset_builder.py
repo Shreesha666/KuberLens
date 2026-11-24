@@ -762,7 +762,7 @@ class DatasetBuilder:
         duplicate_dates = set()
 
         for c in candles_qs:
-            cdate = c.timestamp.date()
+            cdate = c.timestamp.astimezone(ExchangeCalendar.IST).date() if hasattr(c.timestamp, "astimezone") else c.timestamp.date()
             if cdate in seen_dates:
                 duplicate_dates.add(cdate)
             seen_dates.add(cdate)

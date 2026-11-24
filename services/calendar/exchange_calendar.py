@@ -8,6 +8,8 @@ from datetime import date, datetime, time, timedelta
 IST = zoneinfo.ZoneInfo("Asia/Kolkata")
 
 class ExchangeCalendar:
+    IST = IST
+
     # Standard market hours (IST)
     MARKET_OPEN_TIME = time(9, 15)
     MARKET_CLOSE_TIME = time(15, 30)

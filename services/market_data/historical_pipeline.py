@@ -271,7 +271,7 @@ class HistoricalDataIngestionPipeline:
         # Filter against ExchangeCalendar if requested
         valid_candles = []
         for c in candles_raw:
-            cdate = c.timestamp.date()
+            cdate = c.timestamp.astimezone(ExchangeCalendar.IST).date() if hasattr(c.timestamp, "astimezone") else c.timestamp.date()
             if self.verify_against_calendar and not ExchangeCalendar.is_trading_day(cdate):
                 logger.debug("[%s] Skipping candle on non-trading session: %s", symbol, cdate)
                 continue
@@ -284,7 +284,7 @@ class HistoricalDataIngestionPipeline:
 
         with transaction.atomic():
             for c in valid_candles:
-                cdate = c.timestamp.date()
+                cdate = c.timestamp.astimezone(ExchangeCalendar.IST).date() if hasattr(c.timestamp, "astimezone") else c.timestamp.date()
                 existing = HistoricalCandle.objects.select_for_update().filter(
                     listing=listing,
                     timestamp=c.timestamp,

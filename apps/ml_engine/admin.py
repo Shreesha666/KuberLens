@@ -50,10 +50,11 @@ class MLPredictionAdmin(admin.ModelAdmin):
         "confidence_score",
         "calibrated_probability",
         "inference_state",
+        "execution_mode",
         "calibration_status",
         "as_of_session",
     )
-    list_filter = ("horizon_sessions", "inference_state", "calibration_status", "regime_classification")
+    list_filter = ("horizon_sessions", "inference_state", "execution_mode", "calibration_status", "regime_classification")
     search_fields = ("listing__symbol", "prediction_label")
 
 
@@ -64,11 +65,12 @@ class MLPredictionArchiveAdmin(admin.ModelAdmin):
         "horizon_sessions",
         "prediction_label",
         "confidence_score",
+        "execution_mode",
         "as_of_session",
         "archive_reason",
         "archived_at",
     )
-    list_filter = ("horizon_sessions", "archive_reason")
+    list_filter = ("horizon_sessions", "execution_mode", "archive_reason")
     search_fields = ("listing__symbol", "original_prediction_id")
 
 

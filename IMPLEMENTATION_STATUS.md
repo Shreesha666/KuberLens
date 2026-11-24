@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform (KuberLens)  
 **Document Purpose:** Living tracker of modules, phases, components, analytical engines, and verification metrics  
 **Last Updated:** 2026-11-24  
-**Current Overall State:** 🟢 **ALL CORE PHASES & MODULES FULLY IMPLEMENTED & VALIDATED &bull; AI/ML PHASE 1 COMPLETE &bull; 293 / 293 TESTS PASSING**
+**Current Overall State:** 🟢 **ALL CORE PHASES & MODULES FULLY IMPLEMENTED & VALIDATED &bull; AI/ML PHASE 1 & 1.1 COMPLETE &bull; 297 / 297 TESTS PASSING**
 
 ---
 
@@ -37,7 +37,7 @@
 | **Phase 12** | IPO Intelligence Centre | 🟢 **COMPLETED** | 2026-11-18 | Canonical 8-stage lifecycle (DRHP to Listing), Mainboard & SME tracking, live subscription breakdown (QIB/NII/Retail), GMP tracker, quantitative valuation scoring, bid planner, allotment probability predictor, historical backtesting, peer comparison, 35 tests passing |
 | **Phase 13** | PaperTrading Virtual Brokerage Terminal | 🟢 **COMPLETED** | 2026-11-20 | Dedicated zero-contamination virtual accounts (₹10L default), CNC & MIS leverage engine, Kite-style offcanvas order drawer with 1-click quant fill, realistic execution engine with dynamic slippage & Indian statutory taxes (STT, GST, SEBI, Stamp duty), live MTM terminal, AI behavioral coaching, 1-click Trade Journal export bridge, 30 tests passing |
 | **Brand & UI** | KuberLens Brand Identity & Visual System | 🟢 **COMPLETED** | 2026-11-22 | Custom logo system, SVG bull/bear indicators, financial badge typography, stock logo resolver service with local caching & fallbacks, 5 tests passing |
-| **AI/ML Phase 1** | Dependencies & Database Foundation | 🟢 **COMPLETED** | 2026-11-24 | LightGBM 4.7.0, scikit-learn 1.9.1, MLInferenceState, MLModelState, MLDatasetSnapshot, MLFeatureDefinition, MLMonitoringEvent, MLPredictionArchive, 3-stage safe migration, 0 legacy records lost, 9 tests passing |
+| **AI/ML Phase 1 & 1.1** | Dependencies, Database Foundation & Schema Consistency | 🟢 **COMPLETED** | 2026-11-24 | LightGBM 4.7.0, scikit-learn 1.9.1, MLInferenceState & MLExecutionMode separation, MLModelState, MLDatasetSnapshot, MLFeatureDefinition, MLMonitoringEvent, MLPredictionArchive, 4-stage safe migration, 0 legacy records lost, null calibrated_probability on heuristics, 13 tests passing |
 
 ---
 
@@ -103,9 +103,9 @@ The project is structured into **22 domain-specific Django applications**:
 ## 5. Automated Testing & Verification Log
 
 **Environment:** Python 3.13 / Django 5.1 / Pytest 9.2  
-**Total Tests:** **293**  
-**Results:** **293 Passed (100% Pass Rate)**  
-**Average Execution Time:** ~39 seconds
+**Total Tests:** **297**  
+**Results:** **297 Passed (100% Pass Rate)**  
+**Average Execution Time:** ~40 seconds
 
 | Test Suite | File | Tests Run | Result | Key Tested Areas |
 |---|---|:---:|:---:|---|
@@ -142,8 +142,8 @@ The project is structured into **22 domain-specific Django applications**:
 | **IPO Intelligence Centre** | `tests/test_ipo.py` | 35 | 🟢 PASSED | IPO lifecycle, subscription analytics, GMP history, valuation scoring, bid planner, allotment predictor, backtesting |
 | **PaperTrading Virtual Brokerage** | `tests/test_paper_trading.py` | 30 | 🟢 PASSED | Virtual account provisioning, CNC & MIS margin, dynamic slippage, statutory tax breakdown, terminal UI, coach |
 | **Brand Logos & Assets** | `tests/test_logos.py` | 5 | 🟢 PASSED | Company logo resolution, fallback initials, theme styling, logo service caching |
-| **AI/ML Models & Lifecycle** | `tests/test_ml_models.py` | 9 | 🟢 PASSED | Snapshot uniqueness, feature definitions, approved model constraint, atomic promotion/rollback, prediction idempotency, archive preservation, monitoring events |
-| **TOTAL** | **34 Test Files** | **293** | 🟢 **293 / 293 PASSED** | **100% Pass Rate across entire platform** |
+| **AI/ML Models & Lifecycle** | `tests/test_ml_models.py` | 13 | 🟢 PASSED | Snapshot uniqueness, feature definitions, approved model constraint, atomic promotion/rollback, prediction idempotency, inference state separation, execution modes, heuristic null probability, backup restorability, archive preservation, monitoring events |
+| **TOTAL** | **34 Test Files** | **297** | 🟢 **297 / 297 PASSED** | **100% Pass Rate across entire platform** |
 
 ---
 

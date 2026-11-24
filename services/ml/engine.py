@@ -16,6 +16,7 @@ from apps.instruments.models import ExchangeListing
 from apps.market.models import HistoricalCandle
 from apps.ml_engine.models import (
     MarketRegimeType,
+    MLExecutionMode,
     MLInferenceState,
     MLModelRecord,
     MLModelState,
@@ -191,7 +192,10 @@ class StockMLRanker:
                     "feature_contributions": {"data_note": "Under 30 trading candles available."},
                     "is_heuristic": True,
                     "inference_state": MLInferenceState.INSUFFICIENT_DATA,
+                    "execution_mode": MLExecutionMode.ONLINE_REALTIME,
                     "calibration_status": "UNCALIBRATED",
+                    "calibrated_probability": None,
+                    "raw_probability": None,
                 },
             )
             return pred
@@ -268,7 +272,10 @@ class StockMLRanker:
                 "feature_contributions": feature_contrib,
                 "is_heuristic": True,
                 "inference_state": MLInferenceState.HEURISTIC_FALLBACK,
+                "execution_mode": MLExecutionMode.ONLINE_REALTIME,
                 "calibration_status": "UNCALIBRATED",
+                "calibrated_probability": None,
+                "raw_probability": Decimal(str(round(confidence, 4))),
             },
         )
 

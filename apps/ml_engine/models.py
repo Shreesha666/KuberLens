@@ -34,6 +34,13 @@ class MLInferenceState(models.TextChoices):
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA", "Insufficient Data"
 
 
+class MLExecutionMode(models.TextChoices):
+    ONLINE_REALTIME = "ONLINE_REALTIME", "Online Real-Time"
+    EOD_BATCH_SCHEDULED = "EOD_BATCH_SCHEDULED", "EOD Batch Scheduled"
+    MANUAL_ADHOC = "MANUAL_ADHOC", "Manual Ad-Hoc"
+    BACKTEST_SIMULATED = "BACKTEST_SIMULATED", "Backtest Simulated"
+
+
 class MLModelState(models.TextChoices):
     EXPERIMENTAL = "EXPERIMENTAL", "Experimental"
     VALIDATED = "VALIDATED", "Validated"
@@ -239,7 +246,6 @@ class MLPrediction(AuditedModel):
     )
     feature_contributions = models.JSONField(
         default=dict,
-        blank=True,
         help_text="Key driving features and indicator weights for this prediction.",
     )
     disclaimer = models.CharField(
@@ -291,6 +297,14 @@ class MLPrediction(AuditedModel):
         choices=MLInferenceState.choices,
         default=MLInferenceState.HEURISTIC_FALLBACK,
         db_index=True,
+        help_text="APPROVED_MODEL, EXPERIMENTAL_MODEL, HEURISTIC_FALLBACK, STALE_DATA, or INSUFFICIENT_DATA.",
+    )
+    execution_mode = models.CharField(
+        max_length=30,
+        choices=MLExecutionMode.choices,
+        default=MLExecutionMode.ONLINE_REALTIME,
+        db_index=True,
+        help_text="Execution mode under which inference was triggered.",
     )
 
     class Meta:
@@ -337,6 +351,12 @@ class MLPredictionArchive(AuditedModel):
     disclaimer = models.CharField(max_length=250, blank=True)
     horizon_sessions = models.PositiveSmallIntegerField(default=10)
     as_of_session = models.DateField(null=True, blank=True)
+    execution_mode = models.CharField(
+        max_length=30,
+        choices=MLExecutionMode.choices,
+        default=MLExecutionMode.ONLINE_REALTIME,
+        blank=True,
+    )
     archived_at = models.DateTimeField(auto_now_add=True, db_index=True)
     archive_reason = models.CharField(max_length=100, default="MIGRATION_DUPLICATE_KEY_RESOLUTION")
 

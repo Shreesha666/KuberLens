@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.instruments.models import Exchange, ExchangeListing, Instrument
 from apps.ml_engine.models import (
     MLDatasetSnapshot,
+    MLExecutionMode,
     MLFeatureDefinition,
     MLInferenceState,
     MLModelRecord,
@@ -303,6 +304,125 @@ class TestMLPredictionIdempotencyAndStates:
         )
         assert arch.original_prediction_id == pred.id
         assert "MIGRATION_DUPLICATE_KEY_RESOLUTION" in arch.archive_reason
+        assert arch.execution_mode == MLExecutionMode.ONLINE_REALTIME
+
+    def test_execution_mode_and_inference_state_separation(self, test_listing):
+        today = timezone.now().date()
+        model_rec = MLModelRecord.objects.create(
+            model_name="test_modes_model",
+            version="v1.0",
+            target_variable="forward_10d",
+            training_start_date=today - timedelta(days=100),
+            training_end_date=today,
+            horizon_sessions=10,
+        )
+
+        # Verify all inference states can be assigned
+        for state in [
+            MLInferenceState.APPROVED_MODEL,
+            MLInferenceState.EXPERIMENTAL_MODEL,
+            MLInferenceState.HEURISTIC_FALLBACK,
+            MLInferenceState.STALE_DATA,
+            MLInferenceState.INSUFFICIENT_DATA,
+        ]:
+            pred = MLPrediction.objects.create(
+                listing=test_listing,
+                model_record=model_rec,
+                prediction_timestamp=timezone.now(),
+                prediction_label=MLPredictionLabel.SIDEWAYS_CONSOLIDATION,
+                horizon_sessions=10,
+                as_of_session=today - timedelta(days=list(MLInferenceState).index(state) + 1),
+                inference_state=state,
+                execution_mode=MLExecutionMode.EOD_BATCH_SCHEDULED,
+            )
+            assert pred.inference_state == state
+            assert pred.execution_mode == MLExecutionMode.EOD_BATCH_SCHEDULED
+
+        # Verify all execution modes can be assigned
+        for mode in [
+            MLExecutionMode.ONLINE_REALTIME,
+            MLExecutionMode.EOD_BATCH_SCHEDULED,
+            MLExecutionMode.MANUAL_ADHOC,
+            MLExecutionMode.BACKTEST_SIMULATED,
+        ]:
+            pred = MLPrediction.objects.create(
+                listing=test_listing,
+                model_record=model_rec,
+                prediction_timestamp=timezone.now(),
+                prediction_label=MLPredictionLabel.BULLISH_EXPANSION,
+                horizon_sessions=10,
+                as_of_session=today - timedelta(days=20 + list(MLExecutionMode).index(mode)),
+                inference_state=MLInferenceState.HEURISTIC_FALLBACK,
+                execution_mode=mode,
+            )
+            assert pred.execution_mode == mode
+
+    def test_heuristic_predictions_have_null_calibrated_probability(self, test_listing):
+        today = timezone.now().date()
+        model_rec = MLModelRecord.objects.create(
+            model_name="heuristic_test_model",
+            version="v1.0",
+            target_variable="forward_10d",
+            training_start_date=today - timedelta(days=100),
+            training_end_date=today,
+            horizon_sessions=10,
+            model_state=MLModelState.LEGACY_HEURISTIC,
+            algorithm="HEURISTIC_RULE_BASED",
+        )
+        pred = MLPrediction.objects.create(
+            listing=test_listing,
+            model_record=model_rec,
+            prediction_timestamp=timezone.now(),
+            prediction_label=MLPredictionLabel.BULLISH_EXPANSION,
+            confidence_score=Decimal("0.7200"),
+            horizon_sessions=10,
+            as_of_session=today,
+            is_heuristic=True,
+            inference_state=MLInferenceState.HEURISTIC_FALLBACK,
+            execution_mode=MLExecutionMode.ONLINE_REALTIME,
+            calibration_status="UNCALIBRATED",
+            calibrated_probability=None,
+            raw_probability=Decimal("0.7200"),
+        )
+        pred.refresh_from_db()
+        assert pred.is_heuristic is True
+        assert pred.inference_state == MLInferenceState.HEURISTIC_FALLBACK
+        assert pred.execution_mode == MLExecutionMode.ONLINE_REALTIME
+        assert pred.calibration_status == "UNCALIBRATED"
+        assert pred.calibrated_probability is None
+        assert pred.confidence_score == Decimal("0.7200")
+
+    def test_stock_ml_ranker_heuristic_prediction_contract(self, test_listing):
+        from services.ml.engine import StockMLRanker
+        pred = StockMLRanker.evaluate_and_predict(test_listing)
+        assert pred.is_heuristic is True
+        assert pred.inference_state in [MLInferenceState.HEURISTIC_FALLBACK, MLInferenceState.INSUFFICIENT_DATA]
+        assert pred.execution_mode == MLExecutionMode.ONLINE_REALTIME
+        assert pred.calibration_status == "UNCALIBRATED"
+        assert pred.calibrated_probability is None
+        assert pred.confidence_score is not None
+
+    def test_database_backup_integrity_and_restorability(self):
+        import os
+        import sqlite3
+
+        backup_path = "backups/db_post_phase1_1.sqlite3"
+        if not os.path.exists(backup_path):
+            backup_path = "backups/db_pre_phase1_1.sqlite3"
+        assert os.path.exists(backup_path), f"Backup {backup_path} does not exist"
+
+        conn = sqlite3.connect(backup_path)
+        cur = conn.cursor()
+        cur.execute("PRAGMA integrity_check;")
+        res = cur.fetchall()
+        assert res == [("ok",)], f"Integrity check failed: {res}"
+        cur.execute("SELECT count(*) FROM ml_engine_mlprediction;")
+        cnt = cur.fetchone()[0]
+        assert cnt >= 30
+        cur.execute("SELECT count(*) FROM ml_engine_mlpredictionarchive;")
+        arch_cnt = cur.fetchone()[0]
+        assert arch_cnt >= 40
+        conn.close()
 
 
 @pytest.mark.django_db

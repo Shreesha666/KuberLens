@@ -49,7 +49,7 @@ class TestHistoricalDataIngestionPipeline:
         listing = pipeline.register_or_get_benchmark_listing()
         assert listing.symbol == "^NSEI"
         assert listing.exchange.code == "NSE"
-        assert listing.instrument.isin == "IN999NIFTY50"
+        assert listing.instrument.isin == "IN_INDEX_NIFTY50"
         assert listing.instrument.sector == "INDEX"
 
         # Idempotency: second call returns same instance without duplication
@@ -192,3 +192,234 @@ class TestHistoricalDataIngestionPipeline:
             assert chk.status == "SUCCESS"
             assert chk.total_candles_ingested == 1
             assert HistoricalCandle.objects.filter(listing=test_equity_listing).count() == 2
+
+    def test_backfill_mode_overrides_incremental_start(self, test_equity_listing):
+        pipeline = HistoricalDataIngestionPipeline(
+            provider_code="YAHOO",
+            rate_limit_delay_seconds=0.0,
+            verify_against_calendar=False,
+            backfill_mode=True,
+        )
+
+        # Existing candle on Day 2
+        HistoricalCandle.objects.create(
+            listing=test_equity_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 2, 10, 0)),
+            interval="1d",
+            open=Decimal("100.00"),
+            high=Decimal("105.00"),
+            low=Decimal("95.00"),
+            close=Decimal("102.00"),
+            volume=50000,
+            adjusted_close=Decimal("102.00"),
+            source_provider="YAHOO",
+        )
+
+        mock_candle = HistoricalCandle(
+            listing=test_equity_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 1, 10, 0)),
+            interval="1d",
+            open=Decimal("98.00"),
+            high=Decimal("101.00"),
+            low=Decimal("97.00"),
+            close=Decimal("100.00"),
+            volume=45000,
+            adjusted_close=Decimal("100.00"),
+            source_provider="YAHOO",
+        )
+
+        with patch.object(pipeline, "get_provider") as mock_get_p:
+            mock_provider = MagicMock()
+            mock_provider.get_historical_candles.return_value = [mock_candle]
+            mock_get_p.return_value = mock_provider
+
+            # In backfill mode, start_date is respected even if later candles exist
+            chk = pipeline.ingest_listing_history(
+                listing=test_equity_listing,
+                start_date=date(2026, 6, 1),
+                end_date=date(2026, 6, 2),
+            )
+            mock_provider.get_historical_candles.assert_called_once_with(
+                listing=test_equity_listing,
+                start_date=date(2026, 6, 1),
+                end_date=date(2026, 6, 2),
+                interval="1d",
+            )
+            assert chk.status == "SUCCESS"
+
+    def test_source_precedence_authentic_replaces_seeded(self, test_equity_listing):
+        pipeline = HistoricalDataIngestionPipeline(
+            provider_code="YAHOO",
+            rate_limit_delay_seconds=0.0,
+            verify_against_calendar=False,
+            backfill_mode=True,
+        )
+
+        candle_ts = timezone.make_aware(timezone.datetime(2026, 6, 1, 10, 0))
+
+        # Existing seeded candle
+        c_seed = HistoricalCandle.objects.create(
+            listing=test_equity_listing,
+            timestamp=candle_ts,
+            interval="1d",
+            open=Decimal("100.00"),
+            high=Decimal("105.00"),
+            low=Decimal("95.00"),
+            close=Decimal("102.00"),
+            volume=50000,
+            adjusted_close=Decimal("102.00"),
+            source_provider="SEEDED",
+        )
+
+        mock_authentic = HistoricalCandle(
+            listing=test_equity_listing,
+            timestamp=candle_ts,
+            interval="1d",
+            open=Decimal("101.50"),
+            high=Decimal("106.00"),
+            low=Decimal("97.00"),
+            close=Decimal("104.25"),
+            volume=75000,
+            adjusted_close=Decimal("104.25"),
+            source_provider="YAHOO",
+        )
+
+        with patch.object(pipeline, "get_provider") as mock_get_p:
+            mock_provider = MagicMock()
+            mock_provider.get_historical_candles.return_value = [mock_authentic]
+            mock_get_p.return_value = mock_provider
+
+            chk = pipeline.ingest_listing_history(
+                listing=test_equity_listing,
+                start_date=date(2026, 6, 1),
+                end_date=date(2026, 6, 1),
+            )
+            assert chk.status == "SUCCESS"
+
+            # Check candle was updated and source_provider replaced with YAHOO
+            c_seed.refresh_from_db()
+            assert c_seed.source_provider == "YAHOO"
+            assert c_seed.close == Decimal("104.25")
+            assert c_seed.volume == 75000
+
+    def test_source_precedence_seeded_cannot_overwrite_authentic(self, test_equity_listing):
+        # A seeded/lower-precedence pipeline cannot overwrite an authentic candle
+        seeded_pipeline = HistoricalDataIngestionPipeline(
+            provider_code="SEEDED",
+            rate_limit_delay_seconds=0.0,
+            verify_against_calendar=False,
+            backfill_mode=True,
+        )
+
+        candle_ts = timezone.make_aware(timezone.datetime(2026, 6, 1, 10, 0))
+
+        # Existing authentic candle from JUGAAD
+        c_auth = HistoricalCandle.objects.create(
+            listing=test_equity_listing,
+            timestamp=candle_ts,
+            interval="1d",
+            open=Decimal("100.00"),
+            high=Decimal("105.00"),
+            low=Decimal("95.00"),
+            close=Decimal("102.00"),
+            volume=50000,
+            adjusted_close=Decimal("102.00"),
+            source_provider="JUGAAD",
+        )
+
+        mock_seeded = HistoricalCandle(
+            listing=test_equity_listing,
+            timestamp=candle_ts,
+            interval="1d",
+            open=Decimal("50.00"),
+            high=Decimal("55.00"),
+            low=Decimal("45.00"),
+            close=Decimal("52.00"),
+            volume=1000,
+            adjusted_close=Decimal("52.00"),
+            source_provider="SEEDED",
+        )
+
+        with patch.object(seeded_pipeline, "get_provider") as mock_get_p:
+            mock_provider = MagicMock()
+            mock_provider.get_historical_candles.return_value = [mock_seeded]
+            mock_get_p.return_value = mock_provider
+
+            chk = seeded_pipeline.ingest_listing_history(
+                listing=test_equity_listing,
+                start_date=date(2026, 6, 1),
+                end_date=date(2026, 6, 1),
+            )
+            assert chk.status == "SUCCESS"
+
+            # Authentic candle is untouched!
+            c_auth.refresh_from_db()
+            assert c_auth.source_provider == "JUGAAD"
+            assert c_auth.close == Decimal("102.00")
+
+    def test_gap_detection_and_repair(self, test_equity_listing):
+        pipeline = HistoricalDataIngestionPipeline(
+            provider_code="YAHOO",
+            rate_limit_delay_seconds=0.0,
+            verify_against_calendar=True,
+        )
+
+        # Mon 2026-06-01 to Wed 2026-06-03
+        d1 = date(2026, 6, 1)  # Monday
+        d2 = date(2026, 6, 2)  # Tuesday
+        d3 = date(2026, 6, 3)  # Wednesday
+
+        # Candle on d1 and d3, d2 is missing
+        HistoricalCandle.objects.create(
+            listing=test_equity_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 1, 10, 0)),
+            interval="1d",
+            open=Decimal("100.00"),
+            high=Decimal("105.00"),
+            low=Decimal("95.00"),
+            close=Decimal("102.00"),
+            volume=50000,
+            adjusted_close=Decimal("102.00"),
+            source_provider="YAHOO",
+        )
+        HistoricalCandle.objects.create(
+            listing=test_equity_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 3, 10, 0)),
+            interval="1d",
+            open=Decimal("105.00"),
+            high=Decimal("108.00"),
+            low=Decimal("104.00"),
+            close=Decimal("106.00"),
+            volume=55000,
+            adjusted_close=Decimal("106.00"),
+            source_provider="YAHOO",
+        )
+
+        # Gap detection
+        gaps = pipeline.detect_missing_session_gaps(test_equity_listing, d1, d3, "1d", require_authentic=True)
+        assert gaps == [d2]
+
+        # Repair session gaps
+        mock_repair_candle = HistoricalCandle(
+            listing=test_equity_listing,
+            timestamp=timezone.make_aware(timezone.datetime(2026, 6, 2, 10, 0)),
+            interval="1d",
+            open=Decimal("102.00"),
+            high=Decimal("106.00"),
+            low=Decimal("101.00"),
+            close=Decimal("105.00"),
+            volume=52000,
+            adjusted_close=Decimal("105.00"),
+            source_provider="YAHOO",
+        )
+
+        with patch.object(pipeline, "get_provider") as mock_get_p:
+            mock_provider = MagicMock()
+            mock_provider.get_historical_candles.return_value = [mock_repair_candle]
+            mock_get_p.return_value = mock_provider
+
+            repair_res = pipeline.repair_session_gaps(test_equity_listing, d1, d3, "1d")
+            assert repair_res["status"] == "REPAIRED"
+            assert repair_res["gaps_detected"] == 1
+            assert repair_res["gaps_repaired"] == 1
+            assert repair_res["remaining_gaps"] == 0

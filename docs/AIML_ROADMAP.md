@@ -166,34 +166,46 @@ flowchart TD
 
 ---
 
-### Phase 3: Feature Engineering and Target Labels (Completed)
+### Phase 3: Feature Engineering, Target Labels & Historical Data Backfill (Phases 3, 3.1, 3.2 & 3.3 Completed)
 
-- **Objective:** Construct standardized feature vectors from technical indicators, volatility estimators, and publication-date-aware fundamentals, and build forward-return targets for 5, 10, and 20 trading sessions using next-session open ($O_{t+1}$) execution assumptions and realistic statutory cost deductions.
-- **Estimated Duration:** 2 – 3 days.
-- **Status:** 🟢 **COMPLETED**
+- **Objective:** Construct standardized feature vectors from technical indicators, volatility estimators, and publication-date-aware fundamentals, build forward-return targets for 5, 10, and 20 trading sessions using next-session open ($O_{t+1}$) execution assumptions and realistic statutory cost deductions, implement an authentic historical data pipeline with resumable checkpoints and calendar verification, backfill multi-year authentic market data, enforce source precedence, and perform trading session gap repair.
+- **Estimated Duration:** 3 – 4 days.
+- **Status:** 🟢 **COMPLETED (Phases 3, 3.1, 3.2 & 3.3)**
 - **Existing Reusable Components:**
   - `services/indicators/calculator.py:TechnicalIndicatorCalculator`.
   - `services/ml/engine.py:MarketRegimeClassifier`.
   - `services/paper_trading/tax_calculator.py:IndianTaxCalculator`.
+  - `services/calendar/exchange_calendar.py:ExchangeCalendar`.
   - `apps/fundamental_analysis/models.py:FundamentalSnapshot`.
 - **Implemented Components:**
-  - `services/ml/features.py`: `FeaturePipeline`, `FeatureSpec`, `FEATURE_CATALOG` (22 standard features), `sync_feature_definitions_to_db`.
+  - `services/ml/features.py`: `FeaturePipeline`, `FeatureSpec`, `FEATURE_CATALOG` (23 standard features including NIFTY 50 benchmark relative strength and universe median relative strength), `sync_feature_definitions_to_db`.
   - `services/ml/targets.py`: `TargetBuilder`, `TargetConfig`, `DEFAULT_TARGET_CONFIGS` (5d, 10d, 20d targets with next-open execution and Indian tax friction).
-- **Database Changes:** Populated `MLFeatureDefinition` catalog table with 22 active definitions.
+  - `services/market_data/historical_pipeline.py`: `HistoricalDataIngestionPipeline` with explicit `backfill_mode`, `detect_missing_session_gaps`, `repair_session_gaps`, source precedence hierarchy (`PROVIDER_PRECEDENCE`), overwrite protection, and NIFTY 50 benchmark registration (`IN_INDEX_NIFTY50`).
+  - `scripts/ingest_pilot_universe.py`: Dedicated pilot historical backfill and verification runner.
+- **Database Changes:** Populated `MLFeatureDefinition` catalog table with 23 active definitions. Ingested 21,903 authentic candles.
 - **Dependencies:** Phase 2.
 - **Tests Implemented & Passing:**
-  - `tests/test_ml_features_targets.py`: 10 passing tests verifying feature calculation, lookback boundaries, zero future leakage under price mutation, publication date guards excluding unverified fundamentals, warmup trimming, next-session open fills ($O_{t+1}$), $C_{t+h}$ exits, Indian statutory taxes + slippage deduction, incomplete horizon handling (`NaN`), and multi-stock grouped universe transformations.
-  - Verification command: `.venv/bin/pytest tests/test_ml_features_targets.py`.
+  - `tests/test_ml_features_targets.py`: 11 passing tests verifying feature calculation, lookback boundaries, zero future leakage under price mutation, publication date guards excluding unverified fundamentals, warmup trimming, next-session open fills ($O_{t+1}$), $C_{t+h}$ exits, Indian statutory taxes + slippage deduction, incomplete horizon handling (`NaN`), multi-stock grouped universe transformations, and gross vs net holding return verification under corporate actions.
+  - `tests/test_historical_ingestion_pipeline.py`: 8 passing tests verifying benchmark index registration, idempotent upserts, trading calendar session filtering, resumable incremental checkpoints, explicit backfill date bounds, source precedence replacement (authentic replacing seeded), overwrite protection (seeded cannot overwrite authentic), and gap detection/repair.
+  - Verification command: `.venv/bin/pytest tests/test_ml_features_targets.py tests/test_historical_ingestion_pipeline.py`.
+- **Readiness Gate Audit Results:**
+  - **Phase 4 Readiness (Pilot Scope - 11 Core Equities + NIFTY 50 Benchmark):** 🟢 **READY_FOR_PHASE_4: YES** — 14,768 authentic candles (2020–2026), 12,452 complete 23-feature observations (after 200-session SMA-200 warmup), 14,548+ valid forward targets across diverse market regimes.
+  - **Phase 4 Platform-Wide Scale-Up (All 2,000+ NSE & 5,000+ BSE Stocks):** 🔴 **BLOCKED** — Platform-wide scale-up is blocked until commercial licensed data feeds (NSE CM-EOD / BSE Direct Feed / TrueData) are procured to prevent IP blacklisting, 429 throttling, and ToS breaches.
 - **Acceptance Criteria:**
   - Vectorized feature generation achieves throughput $\ge 23,000$ rows/sec on standard CPU.
   - Fundamental features strictly require verified publication timestamps $\le t$ or are excluded from training.
   - Forward returns strictly model realistic next-session execution ($O_{t+1}$) with cost friction ($\approx 0.35\%$).
   - Unit tests prove zero leakage of future candles into feature matrices.
+  - Documented in `docs/AIML_PHASE3_3_HISTORICAL_BACKFILL_REPORT.md`.
 - **Completion Checklist:**
-  - [x] Feature catalog defined with 22 features and synchronized to `MLFeatureDefinition`.
+  - [x] Feature catalog defined with 23 features and synchronized to `MLFeatureDefinition`.
   - [x] Vectorized feature pipeline with fundamental publication date verification built.
   - [x] Multi-horizon next-open cost-adjusted target builder implemented.
   - [x] Leakage tests strictly passing.
+  - [x] Gross vs net target return with friction under corporate actions verified.
+  - [x] `HistoricalDataIngestionPipeline` extended with `backfill_mode`, gap detection, gap repair, and precedence enforcement.
+  - [x] 21,903 authentic multi-year candles ingested for pilot universe (2020–2026) with zero calendar violations.
+  - [x] Complete 23-feature matrix and forward targets validated on authentic pilot dataset.
 
 ---
 

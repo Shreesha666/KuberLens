@@ -240,6 +240,7 @@ class FeaturePipeline:
         self,
         df_canonical: pd.DataFrame,
         fund_publication_lookup: dict[tuple[str, Any], dict[str, float]] | None = None,
+        benchmark_symbol: str = "^NSEI",
     ) -> pd.DataFrame:
         """
         Vectorized transformation of cross-sectional canonical DataFrame containing
@@ -267,8 +268,25 @@ class FeaturePipeline:
             df_out["universe_median_rel_strength_20"] = 0.0
 
         # True Benchmark Relative Strength (against verified NIFTY 50 index candles)
-        # Sourced only when verified benchmark candles are available; otherwise NaN
+        # Sourced only when verified authentic benchmark candles are available; otherwise NaN
         df_out["benchmark_rel_strength_20"] = np.nan
+        try:
+            from apps.market.models import HistoricalCandle
+            bench_candles = HistoricalCandle.objects.filter(
+                listing__symbol=benchmark_symbol,
+                interval="1d",
+                source_provider__in=["YAHOO", "JUGAAD", "EXCHANGE", "NSE_BHAVCOPY"],
+            ).order_by("timestamp")
+            if bench_candles.exists():
+                records = [{"session_date": str(c.timestamp.date()), "close": float(c.close)} for c in bench_candles]
+                bdf = pd.DataFrame(records).drop_duplicates(subset=["session_date"]).sort_values("session_date")
+                bdf["bench_return_20d"] = (bdf["close"] - bdf["close"].shift(20)) / bdf["close"].shift(20)
+                b_map = dict(zip(bdf["session_date"], bdf["bench_return_20d"], strict=False))
+                if "return_20d" in df_out.columns:
+                    bench_series = df_out["session_date"].astype(str).map(b_map)
+                    df_out["benchmark_rel_strength_20"] = df_out["return_20d"] - bench_series
+        except Exception as exc:
+            logger.debug("Benchmark relative strength calculation skipped: %s", exc)
 
         # Point-in-Time Fundamental Feature Integration Guard
         # If no verified filing publication dates exist, fundamental features are strictly excluded.

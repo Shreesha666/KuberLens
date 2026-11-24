@@ -56,23 +56,26 @@ The KuberLens AI/ML subsystem extends the existing Django modular monolith to de
 ```mermaid
 flowchart TD
     subgraph MarketDataLayer["1. Market Data & Corporate Action Layer"]
-        HC["apps.market.models.HistoricalCandle\n(Daily UTC OHLCV)"]
+        HDIP["services.market_data.historical_pipeline.HistoricalDataIngestionPipeline\n(Resumable Checkpoints, Backfill Mode, Precedence, Gap Repair)"]
+        CAL["services.calendar.exchange_calendar.ExchangeCalendar\n(Trading Sessions, Muhurat Overrides, Holidays)"]
+        HC["apps.market.models.HistoricalCandle\n(Daily UTC OHLCV, Unique Constraint, Provenance)"]
         CE["apps.news.models.CorporateEvent\n(Verified Bonus, Split, Dividend Ex-Dates)"]
-        TS["apps.technical_analysis.TechnicalIndicatorSnapshot\n(SMA, EMA, RSI, MACD, ATR, ADX, VWAP)"]
-        FS["apps.fundamental_analysis.FundamentalSnapshot\n(Filing-Date-Aware: P/E, ROE, D/E, Altman Z)"]
-        DSB["services.ml.dataset_builder.DatasetBuilder\n(Point-in-time As-Of Snapshot & Universe)"]
-        MDS["apps.ml_engine.models.MLDatasetSnapshot\n(SHA-256 Content Hash, Adjustment Version)"]
+        BENCH["NIFTY 50 Benchmark Listing (^NSEI)\n(Dummy ISIN: IN_INDEX_NIFTY50, Sector: INDEX)"]
+        DSB["services.ml.dataset_builder.DatasetBuilder\n(Point-in-time Snapshot, Provenance Quarantine, SHA-256)"]
+        MDS["apps.ml_engine.models.MLDatasetSnapshot\n(SHA-256 Content Hash, Adjustment Version, Metadata)"]
+        HDIP --> HC
+        CAL --> HDIP
+        BENCH --> HDIP
         HC --> DSB
         CE --> DSB
-        TS --> DSB
-        FS --> DSB
         DSB --> MDS
     end
 
     subgraph FeaturePipeline["2. Feature & Label Pipeline"]
-        FLP["services.ml.features.FeaturePipeline\n(Lookbacks, Missing-Data Imputation, Standardizers)"]
-        TARGETS["Forward Targets (5d, 10d, 20d)\n(Next-Open Execution, Cost-Adjusted Bounded Returns)"]
+        FLP["services.ml.features.FeaturePipeline\n(23 Standard Features, SMA-200 Warmup, Publication Guard)"]
+        TARGETS["Forward Targets (5d, 10d, 20d)\n(Next-Open O_t+1 Execution, Indian Tax & Slippage Friction)"]
         MDS --> FLP
+        BENCH --> FLP
         FLP --> TARGETS
     end
 

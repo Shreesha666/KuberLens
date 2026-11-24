@@ -33,12 +33,20 @@ class YahooFinanceProvider(MarketDataProvider):
 
     def _to_yahoo_ticker(self, listing) -> str:
         """Converts an internal exchange listing symbol to Yahoo Finance ticker format."""
+        symbol = getattr(listing, "symbol", str(listing)).strip()
+        # Direct special tickers like ^NSEI or ^BSESN
+        if symbol.startswith("^"):
+            return symbol
         exchange_code = getattr(listing.exchange, "code", str(listing.exchange)).upper()
         if exchange_code == "NSE":
-            return f"{listing.symbol}.NS"
+            return f"{symbol}.NS"
         elif exchange_code == "BSE":
-            return f"{listing.symbol}.BO"
-        return listing.symbol
+            # If listing has a trading_symbol (e.g. RELIANCE, TCS) on BSE, prefer trading_symbol.BO
+            trading_sym = getattr(listing, "trading_symbol", None)
+            if trading_sym and not trading_sym.isdigit():
+                return f"{trading_sym}.BO"
+            return f"{symbol}.BO"
+        return symbol
 
     def get_quote(self, listing) -> MarketQuoteDTO:
         start_t = time.time()

@@ -3,7 +3,7 @@
 **Project:** Indian Stock Market Research & Intelligence Platform (KuberLens)  
 **Document Purpose:** Living tracker of modules, phases, components, analytical engines, and verification metrics  
 **Last Updated:** 2026-11-24  
-**Current Overall State:** 🟢 **ALL CORE PHASES & MODULES FULLY IMPLEMENTED & VALIDATED &bull; AI/ML PHASES 1, 1.1, 2, 2.1, 3, 3.1 & 3.2 COMPLETE &bull; 334 / 334 TESTS PASSING**
+**Current Overall State:** 🟢 **ALL CORE PHASES & MODULES FULLY IMPLEMENTED & VALIDATED &bull; AI/ML PHASES 1, 1.1, 2, 2.1, 3, 3.1, 3.2 & 3.3 COMPLETE &bull; 338 / 338 TESTS PASSING**
 
 ---
 
@@ -39,7 +39,7 @@
 | **Brand & UI** | KuberLens Brand Identity & Visual System | 🟢 **COMPLETED** | 2026-11-22 | Custom logo system, SVG bull/bear indicators, financial badge typography, stock logo resolver service with local caching & fallbacks, 5 tests passing |
 | **AI/ML Phase 1 & 1.1** | Dependencies, Database Foundation & Schema Consistency | 🟢 **COMPLETED** | 2026-11-24 | LightGBM 4.7.0, scikit-learn 1.9.1, MLInferenceState & MLExecutionMode separation, MLModelState, MLDatasetSnapshot, MLFeatureDefinition, MLMonitoringEvent, MLPredictionArchive, 4-stage safe migration, 0 legacy records lost, null calibrated_probability on heuristics, 13 tests passing |
 | **AI/ML Phase 2 & 2.1** | Historical Dataset Builder, Multi-Exchange Universe & Readiness Audit | 🟢 **COMPLETED** | 2026-11-24 | DatasetBuilder service, verified split & bonus formulas, point-in-time ex-date slicing, zero future leakage, raw vs adjusted price separation, OHLC quality audit & quarantine, SHA-256 canonical hashing, dynamic multi-exchange universe resolution (`ALL_NSE_BSE`, 2,661 raw listings), ISIN dual-listing deduplication, 7-tier `MLEligibilityClassifier`, memory-bounded chunk streaming, build_ml_dataset CLI, 70,066 clean samples across 280 eligible NSE equities, 19 tests passing |
-| **AI/ML Phase 3, 3.1 & 3.2** | Features, Targets, Data Integrity & Ingestion Pipeline | 🟢 **COMPLETED** | 2026-11-24 | `FeaturePipeline` with 23 features, `TargetBuilder` with next-session open ($O_{t+1}$) fills and $C_{t+h}$ exits for 5/10/20 sessions, statutory Indian taxes via `IndianTaxCalculator` + dynamic slippage, in-holding split gross/net return economic validation, authentic data provenance quarantine (`require_authentic_data=True`), `HistoricalDataIngestionPipeline` with incremental resumable checkpoints, idempotent atomic upserts, rate limiting, calendar validation, NIFTY 50 benchmark registration (`^NSEI`), 11 features/targets tests, 22 dataset builder tests, 4 pipeline tests passing |
+| **AI/ML Phase 3, 3.1, 3.2 & 3.3** | Features, Targets, Historical Backfill & Verification | 🟢 **COMPLETED** | 2026-11-24 | `FeaturePipeline` (23 features, NIFTY 50 benchmark relative strength), `TargetBuilder` (5d/10d/20d horizons, $O_{t+1}$ open fills, $C_{t+h}$ exits, Indian taxes + slippage), `HistoricalDataIngestionPipeline` (backfill mode, missing session gap detection/repair, provider precedence hierarchy, overwrite protection, NIFTY 50 index identifier `IN_INDEX_NIFTY50`), pilot universe backfill (21,903 authentic candles across 26 listings, 2020–2026), 0 calendar violations, 0 OHLC violations, 12,452 observations with 100% complete 23 features, Phase 4 Ready: YES (Pilot scope) / BLOCKED (Platform-wide licensed feeds precondition), 338 tests passing |
 
 ---
 

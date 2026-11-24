@@ -67,6 +67,20 @@ class ExchangeCalendar:
     }
 
     @classmethod
+    def get_trading_days(cls, start_date: date, end_date: date) -> list[date]:
+        """
+        Returns an ordered list of all active exchange trading days
+        between start_date and end_date (inclusive).
+        """
+        days = []
+        current = start_date
+        while current <= end_date:
+            if cls.is_trading_day(current):
+                days.append(current)
+            current += timedelta(days=1)
+        return days
+
+    @classmethod
     def get_holiday_reason(cls, date_obj: date) -> str | None:
         """Returns holiday name if date is a scheduled exchange holiday, else None."""
         if date_obj in cls.VARIABLE_HOLIDAYS:

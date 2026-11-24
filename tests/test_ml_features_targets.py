@@ -287,3 +287,11 @@ class TestTargetBuilder:
         # Economic return should be (50 - 50) / 50 = 0.0 (NOT -50% loss from raw price drop)
         abs_ret = df_target["target_return_abs_5d"].iloc[0]
         assert np.isclose(abs_ret, 0.0)
+
+        # Step 1 Verification: When tax/costs are enabled, gross return is 0.0 but net return strictly deducts friction
+        builder_with_tax = TargetBuilder(target_configs=configs, use_tax_calculator=True)
+        df_target_tax = builder_with_tax.compute_stock_targets(df)
+        net_ret = df_target_tax["target_return_net_5d"].iloc[0]
+        assert np.isclose(df_target_tax["target_return_abs_5d"].iloc[0], 0.0)
+        assert net_ret < 0.0  # Even with 0.0 gross return, net return must deduct statutory friction
+        assert net_ret == 0.0 - builder_with_tax.compute_round_trip_cost_ratio(entry_price=100.0, exit_price=50.0)

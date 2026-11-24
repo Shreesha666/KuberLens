@@ -1,0 +1,131 @@
+<!-- Action Header Bar -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge bg-secondary-subtle text-body border px-2.5 py-1">
+            <i class="bi bi-binoculars me-1"></i><strong>{{ shadow_count|default:"0" }}</strong> Recorded Setup(s)
+        </span>
+        {% if execution_message %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+            <i class="bi bi-check-circle me-1"></i>{{ execution_message }}
+        </span>
+        {% endif %}
+    </div>
+    <div>
+        <form method="post" action="{% url 'stocks:stock_shadow_run' listing.symbol %}"
+              hx-post="{% url 'stocks:stock_shadow_run' listing.symbol %}"
+              hx-target="#shadow-evidence-pane"
+              hx-swap="innerHTML"
+              hx-indicator="#shadow-run-spinner-{{ listing.symbol }}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 shadow-sm text-nowrap">
+                <i class="bi bi-play-circle"></i>
+                <span>Run Shadow Evaluation</span>
+                <span id="shadow-run-spinner-{{ listing.symbol }}" class="htmx-indicator spinner-border spinner-border-sm" role="status"></span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Research Disclosure Alert -->
+<div class="alert alert-secondary border border-secondary border-opacity-25 rounded-3 d-flex align-items-center mb-4 py-2 px-3">
+    <i class="bi bi-binoculars-fill text-secondary me-2 fs-5 flex-shrink-0"></i>
+    <div class="small text-body">
+        <strong>Forward Shadow Evaluation:</strong> Logs point-in-time heuristic candidate setups, model risk classifications, and subsequent forward-matured net returns (5d, 10d, 20d) with realistic Indian equity transaction friction (STT, GST, Stamp Duty, SEBI turnover fees) deducted. Shadow validation operates strictly out-of-sample without contaminating live production rules.
+    </div>
+</div>
+
+{% if shadow_records %}
+<div class="table-responsive rounded-3 border border-secondary border-opacity-10 mb-3">
+    <table class="table table-hover align-middle mb-0 small">
+        <thead class="table-light">
+            <tr>
+                <th>Session Date</th>
+                <th>Setup Name</th>
+                <th>Market Regime</th>
+                <th>Risk Tier</th>
+                <th>Veto Status</th>
+                <th class="num-mono">Net 5d Return</th>
+                <th class="num-mono">Net 10d Return</th>
+                <th class="num-mono">Net 20d Return</th>
+                <th>Provenance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rec in shadow_records %}
+            <tr>
+                <td class="num-mono fw-semibold text-body">{{ rec.session_date }}</td>
+                <td><span class="badge bg-light text-secondary border">{{ rec.setup_name }}</span></td>
+                <td><span class="badge bg-secondary-subtle text-body border">{{ rec.market_regime }}</span></td>
+                <td>
+                    <span class="badge {% if rec.risk_level == 'LOW_RISK' %}bg-success text-white{% elif rec.risk_level == 'MODERATE_RISK' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %}">
+                        {{ rec.risk_level }}
+                    </span>
+                </td>
+                <td>
+                    {% if rec.is_vetoed %}
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">VETOED</span>
+                    {% else %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">ACCEPTED</span>
+                    {% endif %}
+                </td>
+                <td class="num-mono">
+                    {% if rec.status_5d == 'MATURED' and rec.forward_return_5d is not None %}
+                    <span class="{% if rec.forward_return_5d >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
+                        {% if rec.forward_return_5d >= 0 %}+{% endif %}{{ rec.forward_return_5d|floatformat:2 }}%
+                    </span>
+                    {% else %}
+                    <span class="badge bg-light text-muted border">{{ rec.get_status_5d_display }}</span>
+                    {% endif %}
+                </td>
+                <td class="num-mono">
+                    {% if rec.status_10d == 'MATURED' and rec.forward_return_10d is not None %}
+                    <span class="{% if rec.forward_return_10d >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
+                        {% if rec.forward_return_10d >= 0 %}+{% endif %}{{ rec.forward_return_10d|floatformat:2 }}%
+                    </span>
+                    {% else %}
+                    <span class="badge bg-light text-muted border">{{ rec.get_status_10d_display }}</span>
+                    {% endif %}
+                </td>
+                <td class="num-mono">
+                    {% if rec.status_20d == 'MATURED' and rec.forward_return_20d is not None %}
+                    <span class="{% if rec.forward_return_20d >= 0 %}text-gain{% else %}text-loss{% endif %} fw-semibold">
+                        {% if rec.forward_return_20d >= 0 %}+{% endif %}{{ rec.forward_return_20d|floatformat:2 }}%
+                    </span>
+                    {% else %}
+                    <span class="badge bg-light text-muted border">{{ rec.get_status_20d_display }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-light text-secondary border" style="font-size: 0.68rem;">
+                        {{ rec.get_capture_mode_display }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card border border-secondary border-opacity-10 rounded-3 bg-body text-center py-5 px-3">
+    <i class="bi bi-binoculars fs-1 d-block mb-2 text-secondary opacity-50"></i>
+    <h6 class="fw-bold text-body">No Shadow Evaluation Records Logged for {{ listing.symbol }}</h6>
+    <p class="small text-muted mb-3" style="max-width: 540px; margin: 0 auto;">
+        The automated EOD shadow pipeline tracks candidate setups point-in-time and matures forward net returns after 5, 10, and 20 sessions with Indian taxes deducted.
+    </p>
+    <div>
+        <form method="post" action="{% url 'stocks:stock_shadow_run' listing.symbol %}"
+              hx-post="{% url 'stocks:stock_shadow_run' listing.symbol %}"
+              hx-target="#shadow-evidence-pane"
+              hx-swap="innerHTML"
+              hx-indicator="#shadow-run-spinner-empty-{{ listing.symbol }}"
+              class="d-inline-block">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1.5 shadow-sm">
+                <i class="bi bi-play-circle-fill"></i>
+                <span>Run Shadow Evaluation for {{ listing.symbol }}</span>
+                <span id="shadow-run-spinner-empty-{{ listing.symbol }}" class="htmx-indicator spinner-border spinner-border-sm ms-1" role="status"></span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}

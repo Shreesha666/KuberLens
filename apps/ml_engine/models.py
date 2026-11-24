@@ -4,9 +4,11 @@ Complies with Master Specification Section 18 and AIML Architecture Specificatio
 Stores versioned ML models, features, training ranges, evaluation metrics,
 time-series predictions strictly avoiding lookahead bias, and archived prediction records.
 """
+import uuid
 from decimal import Decimal
 
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import AuditedModel
 from apps.instruments.models import ExchangeListing
@@ -377,6 +379,8 @@ class MLMonitoringEvent(AuditedModel):
         MLModelRecord,
         on_delete=models.CASCADE,
         related_name="monitoring_events",
+        null=True,
+        blank=True,
     )
     event_type = models.CharField(max_length=50, db_index=True)  # DRIFT_DETECTED, CALIBRATION_DECAY, INFERENCE_FAILURE, RISK_VETO
     severity = models.CharField(max_length=20, default="MEDIUM", db_index=True)  # LOW, MEDIUM, HIGH, CRITICAL
@@ -389,3 +393,191 @@ class MLMonitoringEvent(AuditedModel):
 
     def __str__(self) -> str:
         return f"[{self.severity}] {self.event_type} for {self.model_record} ({self.created_at.date()})"
+
+
+class HorizonMaturityStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending Horizon"
+    MATURED = "MATURED", "Matured"
+    EXPIRED = "EXPIRED", "Expired / Truncated"
+    DATA_UNAVAILABLE = "DATA_UNAVAILABLE", "Data Unavailable / Suspended"
+    ERROR = "ERROR", "Calculation Error"
+
+
+class ShadowCaptureMode(models.TextChoices):
+    FORWARD_CAPTURED = "FORWARD_CAPTURED", "Genuine Forward Captured"
+    HISTORICAL_REPLAY = "HISTORICAL_REPLAY", "Historical Replay Backtest"
+    TEST_FIXTURE = "TEST_FIXTURE", "Test Fixture / Synthetic"
+
+
+class PipelineHealthState(models.TextChoices):
+    HEALTHY = "HEALTHY", "Healthy"
+    WAITING_FOR_DATA = "WAITING_FOR_DATA", "Waiting For Market Data"
+    STALE = "STALE", "Data Ingestion Stale"
+    DEGRADED = "DEGRADED", "Degraded / Partial Anomalies"
+    FAILED = "FAILED", "Pipeline Execution Failed"
+
+
+class MLShadowEvaluationRecord(AuditedModel):
+    """
+    Persistent forward-looking shadow evaluation record.
+    Tracks point-in-time heuristic candidate setups, model risk classifications,
+    veto decisions, and subsequently matured forward outcomes (5d, 10d, 20d)
+    without contaminating live production recommendations.
+    """
+    listing = models.ForeignKey(
+        ExchangeListing,
+        on_delete=models.CASCADE,
+        related_name="shadow_evaluations",
+        db_index=True,
+    )
+    session_date = models.DateField(db_index=True)
+    setup_name = models.CharField(max_length=100, default="TREND_PULLBACK_HEURISTIC")
+    market_regime = models.CharField(max_length=50, default="SIDEWAYS_CONSOLIDATION", db_index=True)
+    risk_level = models.CharField(max_length=30, default="LOW_RISK", db_index=True)
+    is_vetoed = models.BooleanField(default=False, db_index=True)
+    risk_score = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("20.00"))
+    veto_reasons = models.JSONField(default=list, blank=True)
+    features_snapshot = models.JSONField(default=dict, blank=True)
+    model_version = models.CharField(max_length=50, default="v1.0-risk-veto")
+
+    # Maturation forward returns (populated strictly after horizon has elapsed)
+    forward_return_5d = models.DecimalField(max_digits=7, decimal_places=4, null=True, blank=True)
+    forward_return_10d = models.DecimalField(max_digits=7, decimal_places=4, null=True, blank=True)
+    forward_return_20d = models.DecimalField(max_digits=7, decimal_places=4, null=True, blank=True)
+    is_matured = models.BooleanField(default=False, db_index=True)
+    evaluation_mode = models.CharField(max_length=30, default="SHADOW_RESEARCH_ONLY")
+
+    # Phase 4.4 Data Integrity & Provenance Extensions
+    actual_data_as_of = models.DateTimeField(null=True, blank=True)
+    feature_schema_version = models.CharField(max_length=50, default="feat-v2.1.0")
+    feature_snapshot_checksum = models.CharField(
+        max_length=64, blank=True, help_text="SHA-256 hash of features_snapshot"
+    )
+    source_provider = models.CharField(max_length=50, default="AUTHENTIC_EOD")
+    decision_status = models.CharField(
+        max_length=30,
+        default="PENDING_MATURATION",
+        db_index=True,
+        help_text="RECORDED, PENDING_MATURATION, MATURED, EXPIRED, ERROR",
+    )
+    outcome_matured_at = models.DateTimeField(null=True, blank=True)
+    outcome_source_checksum = models.CharField(
+        max_length=64, blank=True, help_text="SHA-256 hash of maturation prices"
+    )
+    error_message = models.TextField(blank=True)
+
+    # Phase 4.5 Forward Integrity & Per-Horizon State Machine Extensions
+    capture_mode = models.CharField(
+        max_length=30,
+        choices=ShadowCaptureMode.choices,
+        default=ShadowCaptureMode.FORWARD_CAPTURED,
+        db_index=True,
+    )
+    decision_captured_at = models.DateTimeField(default=timezone.now, db_index=True)
+    processing_run_id = models.UUIDField(default=uuid.uuid4, db_index=True)
+
+    # 5-Session Horizon State Machine
+    status_5d = models.CharField(
+        max_length=20,
+        choices=HorizonMaturityStatus.choices,
+        default=HorizonMaturityStatus.PENDING,
+        db_index=True,
+    )
+    matured_at_5d = models.DateTimeField(null=True, blank=True)
+    source_checksum_5d = models.CharField(max_length=64, blank=True, help_text="SHA-256 hash of 5d exit price data")
+
+    # 10-Session Horizon State Machine
+    status_10d = models.CharField(
+        max_length=20,
+        choices=HorizonMaturityStatus.choices,
+        default=HorizonMaturityStatus.PENDING,
+        db_index=True,
+    )
+    matured_at_10d = models.DateTimeField(null=True, blank=True)
+    source_checksum_10d = models.CharField(max_length=64, blank=True, help_text="SHA-256 hash of 10d exit price data")
+
+    # 20-Session Horizon State Machine
+    status_20d = models.CharField(
+        max_length=20,
+        choices=HorizonMaturityStatus.choices,
+        default=HorizonMaturityStatus.PENDING,
+        db_index=True,
+    )
+    matured_at_20d = models.DateTimeField(null=True, blank=True)
+    source_checksum_20d = models.CharField(max_length=64, blank=True, help_text="SHA-256 hash of 20d exit price data")
+
+    class Meta:
+        ordering = ["-session_date", "listing__symbol"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["listing", "session_date", "setup_name"],
+                name="unique_shadow_evaluation_per_session",
+            ),
+        ]
+        verbose_name = "ML Shadow Evaluation Record"
+        verbose_name_plural = "ML Shadow Evaluation Records"
+
+    def __str__(self) -> str:
+        status = "VETOED" if self.is_vetoed else "ACCEPTED"
+        return f"Shadow [{self.session_date}] {self.listing.symbol} ({self.capture_mode}) - {self.risk_level} ({status})"
+
+
+class MLShadowPipelineRun(AuditedModel):
+    """
+    Persistent audit trail of automated EOD shadow pipeline executions,
+    recording health states, processing duration, missed session recoveries,
+    and maturation metrics.
+    """
+    run_id = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True)
+    session_date = models.DateField(db_index=True)
+    status = models.CharField(max_length=30, default="SUCCESS", db_index=True)
+    health_state = models.CharField(
+        max_length=30,
+        choices=PipelineHealthState.choices,
+        default=PipelineHealthState.HEALTHY,
+        db_index=True,
+    )
+    trigger_type = models.CharField(max_length=30, default="SCHEDULED_EOD")
+    started_at = models.DateTimeField(default=timezone.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    duration_seconds = models.FloatField(default=0.0)
+    records_created = models.PositiveIntegerField(default=0)
+    outcomes_matured_5d = models.PositiveIntegerField(default=0)
+    outcomes_matured_10d = models.PositiveIntegerField(default=0)
+    outcomes_matured_20d = models.PositiveIntegerField(default=0)
+    retry_count = models.PositiveIntegerField(default=0)
+    missed_sessions_detected = models.JSONField(default=list, blank=True)
+    error_details = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+        verbose_name = "ML Shadow Pipeline Run"
+        verbose_name_plural = "ML Shadow Pipeline Runs"
+
+    def __str__(self) -> str:
+        return f"Shadow Run [{self.session_date}] ({self.status} - {self.health_state})"
+
+
+class MLPipelineLease(AuditedModel):
+    """
+    Database-backed atomic execution lease with heartbeat expiration.
+    Guarantees mutual exclusion across distributed workers and operating processes,
+    preventing concurrent executions of the same session or pipeline.
+    """
+    lease_name = models.CharField(max_length=100, unique=True, db_index=True)
+    owner_id = models.CharField(max_length=100)
+    acquired_at = models.DateTimeField(default=timezone.now)
+    heartbeat_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField(db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "ML Pipeline Lease"
+        verbose_name_plural = "ML Pipeline Leases"
+
+    def __str__(self) -> str:
+        state = "ACTIVE" if (self.is_active and self.expires_at > timezone.now()) else "EXPIRED"
+        return f"Lease [{self.lease_name}] ({state} by {self.owner_id})"
+

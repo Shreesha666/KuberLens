@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kuberlens.shadow.eod</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/scripts/run_shadow_eod_cron.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django</string>
+    <key>StartCalendarInterval</key>
+    <array>
+        <!-- Monday at 19:15 IST -->
+        <dict>
+            <key>Weekday</key>
+            <integer>1</integer>
+            <key>Hour</key>
+            <integer>19</integer>
+            <key>Minute</key>
+            <integer>15</integer>
+        </dict>
+        <!-- Tuesday at 19:15 IST -->
+        <dict>
+            <key>Weekday</key>
+            <integer>2</integer>
+            <key>Hour</key>
+            <integer>19</integer>
+            <key>Minute</key>
+            <integer>15</integer>
+        </dict>
+        <!-- Wednesday at 19:15 IST -->
+        <dict>
+            <key>Weekday</key>
+            <integer>3</integer>
+            <key>Hour</key>
+            <integer>19</integer>
+            <key>Minute</key>
+            <integer>15</integer>
+        </dict>
+        <!-- Thursday at 19:15 IST -->
+        <dict>
+            <key>Weekday</key>
+            <integer>4</integer>
+            <key>Hour</key>
+            <integer>19</integer>
+            <key>Minute</key>
+            <integer>15</integer>
+        </dict>
+        <!-- Friday at 19:15 IST -->
+        <dict>
+            <key>Weekday</key>
+            <integer>5</integer>
+            <key>Hour</key>
+            <integer>19</integer>
+            <key>Minute</key>
+            <integer>15</integer>
+        </dict>
+    </array>
+    <key>StandardOutPath</key>
+    <string>/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/logs/shadow_launchd_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/logs/shadow_launchd_stderr.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>DJANGO_SETTINGS_MODULE</key>
+        <string>config.settings.development</string>
+    </dict>
+</dict>
+</plist>

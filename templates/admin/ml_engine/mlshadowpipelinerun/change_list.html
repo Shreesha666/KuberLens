@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:ml_engine_shadow_pipeline_trigger' %}" class="addlink" style="background: #2563eb; color: #ffffff; font-weight: 600; padding: 5px 12px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
+      <span style="font-size: 11px;">▶</span> Run EOD Pipeline Now
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}

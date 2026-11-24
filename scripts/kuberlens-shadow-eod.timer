@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger KuberLens EOD Shadow Pipeline Mon-Fri at 19:15 IST (13:45 UTC)
+
+[Timer]
+# Mon-Fri at 19:15 Asia/Kolkata (or 13:45 UTC)
+OnCalendar=Mon..Fri 13:45:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

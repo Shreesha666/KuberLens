@@ -193,21 +193,48 @@ class YahooFinanceProvider(MarketDataProvider):
         interval: str = "1d",
     ) -> list[HistoricalCandleDTO]:
         ticker_str = self._to_yahoo_ticker(listing)
+        import zoneinfo
+        from datetime import time as dt_time, timedelta
+        import yfinance as yf
+
+        ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        ticker = yf.Ticker(ticker_str)
+
+        # yfinance `end` date is EXCLUSIVE. To fetch candles up to and including
+        # end_date, pass end_date + timedelta(days=1).
+        yf_start_str = start_date.strftime("%Y-%m-%d")
+        yf_end_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        max_attempts = 3
+        df = None
+        last_error = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                df = ticker.history(
+                    start=yf_start_str,
+                    end=yf_end_str,
+                    interval="1d",
+                    auto_adjust=False,
+                )
+                break
+            except Exception as e:
+                last_error = e
+                err_str = str(e).lower()
+                if "429" in err_str:
+                    logger.warning("[Yahoo] Attempt %d/%d rate limited (429) for %s: %s", attempt, max_attempts, ticker_str, e)
+                else:
+                    logger.warning("[Yahoo] Attempt %d/%d network/DNS error for %s: %s", attempt, max_attempts, ticker_str, e)
+                if attempt < max_attempts:
+                    time.sleep(0.5 * (2 ** (attempt - 1)))
+
+        if df is None:
+            err_str = str(last_error).lower() if last_error else ""
+            if "429" in err_str:
+                raise RateLimitError(f"Yahoo Finance rate limit exceeded for {ticker_str}: {last_error}") from last_error
+            raise ProviderConnectionError(f"Failed to fetch historical candles from Yahoo Finance for {ticker_str}: {last_error}") from last_error
+
         try:
-            import zoneinfo
-            from datetime import time as dt_time
-
-            import yfinance as yf
-
-            ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
-            ticker = yf.Ticker(ticker_str)
-            # Fetch historical range
-            df = ticker.history(
-                start=start_date.strftime("%Y-%m-%d"),
-                end=end_date.strftime("%Y-%m-%d"),
-                interval="1d",
-                auto_adjust=False,
-            )
             candles = []
             for ts, row in df.iterrows():
                 # Extract Indian exchange trading session date
@@ -215,6 +242,10 @@ class YahooFinanceProvider(MarketDataProvider):
                     session_date = ts.date()
                 else:
                     session_date = ts.astimezone(ist_tz).date()
+
+                # Filter out any candles that fall after requested end_date
+                if session_date > end_date or session_date < start_date:
+                    continue
 
                 # Normalize EOD candle to official session close (15:30 IST = 10:00 UTC)
                 candle_dt = datetime.combine(session_date, dt_time(15, 30), tzinfo=ist_tz).astimezone(UTC)
@@ -238,7 +269,7 @@ class YahooFinanceProvider(MarketDataProvider):
             err_str = str(e).lower()
             if "429" in err_str:
                 raise RateLimitError(f"Yahoo Finance rate limit exceeded: {e}") from e
-            raise ProviderConnectionError(f"Failed to fetch historical candles from Yahoo Finance: {e}") from e
+            raise ProviderConnectionError(f"Failed to process historical candles from Yahoo Finance for {ticker_str}: {e}") from e
 
     def health_check(self) -> ProviderHealthDTO:
         start_t = time.time()

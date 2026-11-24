@@ -126,6 +126,19 @@ class ExchangeCalendar:
         return current
 
     @classmethod
+    def get_next_trading_day(cls, from_date: date | None = None) -> date:
+        """
+        Returns the earliest active exchange trading day strictly after from_date.
+        """
+        if from_date is None:
+            from_date = datetime.now(IST).date()
+
+        current = from_date + timedelta(days=1)
+        while not cls.is_trading_day(current):
+            current += timedelta(days=1)
+        return current
+
+    @classmethod
     def is_market_open(cls, dt: datetime | None = None) -> bool:
         """
         Determines whether the exchange is currently in an active trading session.

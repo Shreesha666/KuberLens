@@ -1,0 +1,14 @@
+[Unit]
+Description=KuberLens Automated EOD Shadow Risk Pipeline Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=kuberlens
+WorkingDirectory=/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django
+ExecStart=/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/scripts/run_shadow_eod_cron.sh
+StandardOutput=append:/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/logs/shadow_systemd.log
+StandardError=append:/Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/logs/shadow_systemd_err.log
+
+[Install]
+WantedBy=multi-user.target

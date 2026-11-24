@@ -8,6 +8,8 @@ from apps.stocks.views import (
     StockLogoProxyView,
     StockQuotePartialView,
     StockSearchView,
+    StockShadowRunView,
+    StockSyncEODView,
 )
 
 app_name = "stocks"
@@ -20,4 +22,6 @@ urlpatterns = [
     path("<str:symbol>/quote/", StockQuotePartialView.as_view(), name="stock_quote_partial"),
     path("<str:symbol>/chart-data/", StockChartDataView.as_view(), name="stock_chart_data"),
     path("<str:symbol>/logo/", StockLogoProxyView.as_view(), name="stock_logo"),
+    path("<str:symbol>/shadow-run/", StockShadowRunView.as_view(), name="stock_shadow_run"),
+    path("<str:symbol>/sync-eod/", StockSyncEODView.as_view(), name="stock_sync_eod"),
 ]

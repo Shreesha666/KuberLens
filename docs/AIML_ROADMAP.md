@@ -34,6 +34,8 @@ This section documents the specific issues identified during review and how each
 | **16. Realistic Implementation Estimates** | All Phases | **Replaced fixed 1-day estimates with realistic multi-day ranges (2–4 days per phase)** reflecting real-world engineering, testing, and data verification. |
 | **17. Strict Raw UI Demarcation** | Phase 8 | **Models with `calibration_status = "RAW"` or `"UNCALIBRATED"` display a prominent warning badge** and are never represented as calibrated. |
 | **18. Zero Broker Order Execution** | Phase 7 | **Affirmed strict read-only decision-support architecture.** Zero automated broker order placement code is introduced. |
+| **19. Strict EOD Data Readiness & Zero-Feature Guard** | Phase 4.6+ | **Enforced strict 5-state data readiness gate.** Target session missing candles or zero calculated features halts with `WAITING_FOR_DATA`/`FAILED`; never records a false `SUCCESS`. |
+| **20. Automated EOD Ingestion & Scheduler Chaining** | Phase 4.6+ | **Integrated `EODIngestionService` and `ingest_eod_data` CLI into `run_shadow_eod_cron.sh`.** Chained daily ingestion with bounded exponential backoff retries and genuine provenance before shadow evaluation. |
 
 ---
 
@@ -231,10 +233,17 @@ flowchart TD
   - Out-of-sample metrics record Brier Skill Score ($\text{BSS}$) and PR-AUC relative to the historical training base rate $\bar{y}_{train}$.
 - **Rollback Strategy:** Delete created experimental `MLModelRecord` rows; training runs do not alter active runtime models.
 - **Completion Checklist:**
-  - [ ] Timestamp-based purged and embargoed walk-forward splitter built.
-  - [ ] Climatological prior ($\bar{y}_{train}$), momentum, and logistic baselines implemented.
-  - [ ] LightGBM binary classifier training pipeline implemented.
-  - [ ] Out-of-sample BSS and PR-AUC recorded in `MLModelRecord`.
+  - [x] Timestamp-based purged and embargoed walk-forward splitter built.
+  - [x] Climatological prior ($\bar{y}_{train}$), momentum, and logistic baselines implemented.
+  - [x] LightGBM binary classifier training pipeline implemented.
+  - [x] Out-of-sample BSS and PR-AUC recorded in `MLModelRecord`.
+  - [x] Documented in `docs/AIML_PHASE4_IMPLEMENTATION_REPORT.md`.
+  - [x] Phase 4.1 model diagnostics, confusion matrix reconciliation, and portfolio simulator completed (`docs/AIML_PHASE4_1_MODEL_DIAGNOSTICS_REPORT.md`).
+  - [x] Phase 4.2 risk intelligence, regime detection, calibration audit, and ledger reconciliation completed (`docs/AIML_PHASE4_2_RISK_INTELLIGENCE_REPORT.md`).
+  - [x] Phase 4.3 risk dashboard, stock/portfolio diagnostics, shadow evaluation service, and accounting reconciliation completed (`docs/AIML_PHASE4_3_RISK_DASHBOARD_SHADOW_REPORT.md`).
+  - [x] Phase 4.4 automated shadow monitoring, data integrity, EOD pipeline (`run_shadow_eod_pipeline`), deterministic SHA-256 feature & outcome checksums, calendar validation, Indian tax friction maturation, and operational health telemetry completed (`docs/AIML_PHASE4_4_SHADOW_OPERATIONS_REPORT.md`).
+  - [x] Phase 4.5 shadow operations acceptance, per-horizon state machines (5d/10d/20d), genuine forward observation integrity, missed session catchup (`--catchup-missed`), cron runner (`run_shadow_eod_cron.sh`), lockfile concurrency safety, staff-only execution authorization, explicit verdict `READY_FOR_UNATTENDED_FORWARD_SHADOW_COLLECTION` (`docs/AIML_PHASE4_5_SHADOW_OPERATIONS_ACCEPTANCE_REPORT.md`).
+  - [x] Phase 4.6 deployment verification & forward research monitoring, scheduler timezone reconciliation (19:15 IST == 13:45 UTC), multi-platform deployment assets (`launchd` plist, `systemd` timer/service, crontab), database-backed distributed leases (`DatabasePipelineLeaseManager` via `MLPipelineLease`), atomic acquisition, heartbeats, crash recovery, evidence-based forward capture validation (`validate_forward_capture_evidence`), genuine observation reconciliation, dashboard telemetry hardening, and operational activation audit (`docs/AIML_PHASE4_6_DEPLOYMENT_VERIFICATION_REPORT.md` and `docs/AIML_PHASE4_6_FINAL_OPERATIONAL_AUDIT.md`).
 
 ---
 

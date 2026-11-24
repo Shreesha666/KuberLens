@@ -1,0 +1,138 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label='ml_engine' %}">ML Engine</a>
+&rsaquo; <a href="{% url 'admin:ml_engine_mlshadowpipelinerun_changelist' %}">ML Shadow Pipeline Runs</a>
+&rsaquo; {% translate 'Run EOD Pipeline' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" style="max-width: 900px;">
+  <div style="background: var(--darkened-bg, #f8fafc); border: 1px solid var(--hairline-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+    <h1 style="margin-top: 0; font-size: 20px; font-weight: 700; color: var(--body-fg, #0f172a); display: flex; align-items: center; gap: 8px;">
+      <span style="color: #2563eb;">▶</span> Execute End-of-Day (EOD) Shadow Pipeline
+    </h1>
+    <p style="color: var(--body-quiet-color, #64748b); font-size: 13px; line-height: 1.5; margin-bottom: 0;">
+      Orchestrates automated shadow risk evaluation: verifies exchange calendar, builds point-in-time features with 0 lookahead bias, evaluates candidate setups against multi-factor risk vetoes, matures forward outcomes (5d, 10d, 20d) with authentic Indian transaction friction deducted, and logs persistent audit telemetry into <code>MLShadowPipelineRun</code>.
+    </p>
+  </div>
+
+  <form method="post" action="">
+    {% csrf_token %}
+    <fieldset class="module aligned" style="border-radius: 6px; padding: 16px 20px; margin-bottom: 20px;">
+      <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid var(--hairline-color, #e2e8f0); padding-bottom: 8px;">
+        Pipeline Parameters
+      </h2>
+
+      <div class="form-row" style="padding: 10px 0; border-bottom: 1px solid var(--hairline-color, #f1f5f9);">
+        <label for="id_session_date" style="font-weight: 600; width: 180px; display: inline-block;">Session Date:</label>
+        <input type="date" id="id_session_date" name="session_date" value="{{ default_session_date }}" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: monospace;">
+        <div class="help" style="margin-left: 180px; color: var(--body-quiet-color, #64748b); font-size: 12px; margin-top: 4px;">
+          Trading day date (YYYY-MM-DD). Defaults to the latest eligible NSE/BSE trading session.
+        </div>
+      </div>
+
+      <div class="form-row" style="padding: 10px 0; border-bottom: 1px solid var(--hairline-color, #f1f5f9);">
+        <label for="id_universe" style="font-weight: 600; width: 180px; display: inline-block;">Universe Symbols:</label>
+        <input type="text" id="id_universe" name="universe" value="{{ default_universe }}" style="width: 480px; padding: 6px 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: monospace;">
+        <div class="help" style="margin-left: 180px; color: var(--body-quiet-color, #64748b); font-size: 12px; margin-top: 4px;">
+          Comma-separated NSE symbols. Defaults to the 11 pilot liquid universe leaders.
+        </div>
+      </div>
+
+      <div class="form-row" style="padding: 10px 0; border-bottom: 1px solid var(--hairline-color, #f1f5f9);">
+        <label for="id_setup_name" style="font-weight: 600; width: 180px; display: inline-block;">Setup Name:</label>
+        <input type="text" id="id_setup_name" name="setup_name" value="TREND_PULLBACK_HEURISTIC" style="width: 320px; padding: 6px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
+        <div class="help" style="margin-left: 180px; color: var(--body-quiet-color, #64748b); font-size: 12px; margin-top: 4px;">
+          Candidate setup identifier for shadow tracking and outcome maturation.
+        </div>
+      </div>
+
+      <div class="form-row" style="padding: 10px 0; border-bottom: 1px solid var(--hairline-color, #f1f5f9);">
+        <label for="id_capture_mode" style="font-weight: 600; width: 180px; display: inline-block;">Capture Mode:</label>
+        <select id="id_capture_mode" name="capture_mode" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
+          <option value="FORWARD_CAPTURED" selected>FORWARD_CAPTURED (Authentic Live Forward Setup)</option>
+          <option value="HISTORICAL_REPLAY">HISTORICAL_REPLAY (Historical Replay Backtest)</option>
+          <option value="TEST_FIXTURE">TEST_FIXTURE (Synthetic / Test Fixture)</option>
+        </select>
+        <div class="help" style="margin-left: 180px; color: var(--body-quiet-color, #64748b); font-size: 12px; margin-top: 4px;">
+          Provenance classification for regulatory isolation and audit tracking.
+        </div>
+      </div>
+
+      <div class="form-row" style="padding: 10px 0; border-bottom: 1px solid var(--hairline-color, #f1f5f9);">
+        <label style="font-weight: 600; width: 180px; display: inline-block;">Execution Options:</label>
+        <div style="display: inline-block; vertical-align: top;">
+          <label style="display: block; margin-bottom: 8px; font-weight: normal; cursor: pointer;">
+            <input type="checkbox" name="ingest_eod" value="true" checked>
+            <strong>Ingest Authentic EOD Market Data:</strong> Fetch fresh post-market closing Bhavcopy/candles before evaluating.
+          </label>
+          <label style="display: block; margin-bottom: 8px; font-weight: normal; cursor: pointer;">
+            <input type="checkbox" name="catchup_missed" value="true" checked>
+            <strong>Catch-up Missed Sessions:</strong> Automatically detect and sequentially evaluate unrecorded past sessions.
+          </label>
+          <label style="display: block; margin-bottom: 8px; font-weight: normal; cursor: pointer;">
+            <input type="checkbox" name="force" value="true">
+            <strong>Force Execution:</strong> Allow execution before session close (15:30 IST) or on weekends/holidays for testing.
+          </label>
+          <label style="display: block; margin-bottom: 4px; font-weight: normal; cursor: pointer;">
+            <input type="checkbox" name="dry_run" value="true">
+            <strong>Dry Run Mode:</strong> Validate data and run risk assessments without writing shadow records to database.
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="submit-row" style="margin-top: 20px; display: flex; align-items: center; gap: 12px;">
+      <input type="submit" value="▶ Run EOD Pipeline Now" class="default" style="background: #2563eb; color: #ffffff; padding: 10px 24px; font-size: 14px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer;">
+      <a href="{% url 'admin:ml_engine_mlshadowpipelinerun_changelist' %}" class="button cancel-link" style="padding: 9px 18px; text-decoration: none; border-radius: 6px; border: 1px solid #cbd5e1; color: var(--body-quiet-color, #64748b);">
+        Cancel
+      </a>
+    </div>
+  </form>
+
+  {% if recent_runs %}
+  <div style="margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--hairline-color, #e2e8f0);">
+    <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--body-fg, #0f172a);">
+      Recent Automated Pipeline Runs
+    </h3>
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--hairline-color, #cbd5e1); text-align: left;">
+          <th style="padding: 8px;">Session Date</th>
+          <th style="padding: 8px;">Status</th>
+          <th style="padding: 8px;">Health</th>
+          <th style="padding: 8px;">Trigger</th>
+          <th style="padding: 8px;">Records Created</th>
+          <th style="padding: 8px;">20d Matured</th>
+          <th style="padding: 8px;">Duration</th>
+          <th style="padding: 8px;">Started At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in recent_runs %}
+        <tr style="border-bottom: 1px solid var(--hairline-color, #f1f5f9);">
+          <td style="padding: 8px; font-family: monospace; font-weight: 600;">{{ run.session_date }}</td>
+          <td style="padding: 8px;">
+            <span style="padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; {% if run.status == 'SUCCESS' %}background: #dcfce7; color: #166534;{% else %}background: #fee2e2; color: #991b1b;{% endif %}">
+              {{ run.status }}
+            </span>
+          </td>
+          <td style="padding: 8px;">{{ run.health_state }}</td>
+          <td style="padding: 8px; font-size: 12px; color: #64748b;">{{ run.trigger_type }}</td>
+          <td style="padding: 8px; font-family: monospace;">{{ run.records_created }}</td>
+          <td style="padding: 8px; font-family: monospace;">{{ run.outcomes_matured_20d }}</td>
+          <td style="padding: 8px; font-family: monospace;">{{ run.duration_seconds|floatformat:2 }}s</td>
+          <td style="padding: 8px; font-size: 12px; color: #64748b;">{{ run.started_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

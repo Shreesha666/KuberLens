@@ -144,27 +144,72 @@ class JugaadDataProvider(MarketDataProvider):
         interval: str = "1d",
     ) -> list[HistoricalCandleDTO]:
         """
-        Retrieves historical EOD candles for an NSE listing via Jugaad-Data.
+        Retrieves historical EOD candles for an NSE listing or index via Jugaad-Data.
+        Supports both equities and benchmark indices (e.g. ^NSEI mapped to NIFTY 50).
         """
-        self._rate_limit()
+        import zoneinfo
+        from datetime import time as dt_time
+
+        ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        sym = listing.symbol.upper()
+        max_attempts = 3
+        df = None
+        last_error = None
+
+        for attempt in range(1, max_attempts + 1):
+            self._rate_limit()
+            try:
+                if sym in ("^NSEI", "NIFTY", "NIFTY 50", "NIFTY50"):
+                    from jugaad_data.nse import index_df
+                    df = index_df(symbol="NIFTY 50", from_date=start_date, to_date=end_date)
+                else:
+                    from jugaad_data.nse import stock_df
+                    series = getattr(listing, "series_or_group", "EQ") or "EQ"
+                    df = stock_df(symbol=sym, from_date=start_date, to_date=end_date, series=series)
+                break
+            except Exception as e:
+                last_error = e
+                logger.warning("[Jugaad] Attempt %d/%d failed for %s: %s", attempt, max_attempts, sym, e)
+                if attempt < max_attempts:
+                    time.sleep(0.5 * (2 ** (attempt - 1)))
+
+        if df is None:
+            err_str = str(last_error).lower() if last_error else ""
+            if "429" in err_str:
+                raise RateLimitError(f"Jugaad-Data rate limit exceeded for {sym}: {last_error}") from last_error
+            raise ProviderConnectionError(f"Failed to fetch historical data from Jugaad-Data for {sym}: {last_error}") from last_error
+
         try:
-            from jugaad_data.nse import stock_df
-            df = stock_df(symbol=listing.symbol, from_date=start_date, to_date=end_date, series=listing.series_or_group)
             candles = []
             for _, row in df.iterrows():
-                row_date = row["DATE"]
+                row_date = row.get("DATE") or row.get("HistoricalDate")
                 if hasattr(row_date, "date"):
-                    row_date = row_date.date()
-                candle_ts = datetime.combine(row_date, datetime.min.time(), tzinfo=UTC)
+                    session_date = row_date.date()
+                elif isinstance(row_date, str):
+                    session_date = date.fromisoformat(row_date[:10])
+                else:
+                    session_date = row_date
+
+                if session_date > end_date or session_date < start_date:
+                    continue
+
+                # Normalize EOD candle to official session close (15:30 IST = 10:00 UTC)
+                candle_dt = datetime.combine(session_date, dt_time(15, 30), tzinfo=ist_tz).astimezone(UTC)
+
+                open_col = row.get("OPEN") or row.get("Open") or 0
+                high_col = row.get("HIGH") or row.get("High") or 0
+                low_col = row.get("LOW") or row.get("Low") or 0
+                close_col = row.get("CLOSE") or row.get("Close") or 0
+                vol_col = row.get("VOLUME") or row.get("Volume") or row.get("Shares Traded") or 0
 
                 c = HistoricalCandleDTO(
-                    timestamp=candle_ts,
+                    timestamp=candle_dt,
                     interval=interval,
-                    open=Decimal(str(row["OPEN"])),
-                    high=Decimal(str(row["HIGH"])),
-                    low=Decimal(str(row["LOW"])),
-                    close=Decimal(str(row["CLOSE"])),
-                    volume=int(row["VOLUME"]),
+                    open=Decimal(str(round(float(open_col), 4))),
+                    high=Decimal(str(round(float(high_col), 4))),
+                    low=Decimal(str(round(float(low_col), 4))),
+                    close=Decimal(str(round(float(close_col), 4))),
+                    volume=int(vol_col),
                     adjusted_close=None,
                     source_provider=self.code,
                 )
@@ -175,7 +220,7 @@ class JugaadDataProvider(MarketDataProvider):
             err_str = str(e).lower()
             if "429" in err_str:
                 raise RateLimitError(f"Jugaad-Data rate limit exceeded: {e}") from e
-            raise ProviderConnectionError(f"Failed to fetch historical data from Jugaad-Data: {e}") from e
+            raise ProviderConnectionError(f"Failed to process historical data from Jugaad-Data for {sym}: {e}") from e
 
     def health_check(self) -> ProviderHealthDTO:
         start_t = time.time()

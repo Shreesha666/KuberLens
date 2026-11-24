@@ -441,3 +441,150 @@ class TestStockViews:
         assert history[0]["type"] == "FINAL"  # August is Final
         assert history[1]["type"] == "INTERIM"  # March is Interim
 
+    def test_stock_detail_consolidated_stock_intelligence_report(self, client, db):
+        """
+        Verify that StockDetailView integrates:
+        1. EOD / market freshness timestamps
+        2. Technical indicators and chart
+        3. ML market-regime classification & forecast
+        4. Stock-level Risk Intelligence & risk veto
+        5. Existing portfolio holdings
+        6. Shadow evaluation evidence
+        """
+        from apps.instruments.models import Exchange, ExchangeListing, Instrument
+        from apps.market.models import HistoricalCandle, MarketQuote
+        from apps.holdings.models import Holding
+        from apps.portfolio.models import Portfolio
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+        from datetime import timedelta, date
+
+        User = get_user_model()
+        user = User.objects.create_user(username="testresearcher", password="password123")
+        portfolio = Portfolio.objects.create(user=user, name="Main Portfolio", is_default=True)
+
+        nse = Exchange.objects.create(code="NSE_TEST", name="National Stock Exchange Test", country="India")
+        inst = Instrument.objects.create(
+            isin="INE999A01099",
+            display_name="Consolidated Test Corp",
+            legal_name="Consolidated Test Corporation Ltd",
+            sector="Technology",
+            market_cap_category="LARGE",
+        )
+        listing = ExchangeListing.objects.create(
+            symbol="CONSOLTEST",
+            exchange=nse,
+            instrument=inst,
+            is_tradeable=True,
+            is_primary=True,
+        )
+
+        now = timezone.now()
+        MarketQuote.objects.create(
+            listing=listing,
+            price=Decimal("1500.00"),
+            open=Decimal("1480.00"),
+            high=Decimal("1510.00"),
+            low=Decimal("1475.00"),
+            close=Decimal("1500.00"),
+            previous_close=Decimal("1475.00"),
+            change=Decimal("25.00"),
+            change_percent=Decimal("1.69"),
+            volume=500000,
+            source_type="DIRECT",
+            freshness_status="FRESH",
+            source_provider="JUGAAD",
+            source_timestamp=now,
+            retrieved_at=now,
+        )
+
+        # Create 35 historical candles for ML and feature calculation
+        candles = []
+        base_price = 1400.0
+        for i in range(35):
+            t = now - timedelta(days=35 - i)
+            p = base_price + (i * 2.5)
+            candles.append(HistoricalCandle(
+                listing=listing,
+                interval="1d",
+                timestamp=t,
+                open=Decimal(str(p - 2)),
+                high=Decimal(str(p + 5)),
+                low=Decimal(str(p - 3)),
+                close=Decimal(str(p)),
+                volume=100000 + (i * 1000),
+                source_provider="NSE_BHAVCOPY",
+            ))
+        HistoricalCandle.objects.bulk_create(candles)
+
+        # Create holding
+        Holding.objects.create(
+            portfolio=portfolio,
+            listing=listing,
+            total_quantity=50,
+            average_buy_price=Decimal("1420.00"),
+            invested_amount=Decimal("71000.00"),
+            current_price=Decimal("1500.00"),
+            current_value=Decimal("75000.00"),
+            unrealised_pnl=Decimal("4000.00"),
+            unrealised_pnl_percent=Decimal("5.63"),
+            first_purchased_at=now - timedelta(days=30),
+        )
+
+        client.force_login(user)
+        response = client.get(f"/stocks/{listing.symbol}/")
+        assert response.status_code == 200
+
+        content = response.content.decode("utf-8")
+
+        # 1. Latest market data & freshness timestamps
+        assert "EOD Session:" in content
+        assert "NSE_BHAVCOPY" in content
+        assert "JUGAAD" in content
+
+        # 2. Technical indicators & chart
+        assert "Technical Indicators & Signals" in content
+        assert "tradingview-chart-container" in content
+
+        # 3. ML market regime classification & experimental forecast
+        assert "ML Regime &amp; Forecasts" in content
+        assert "Structural Market Regime" in content
+        assert "Experimental Forecast" in content
+
+        # 4. Stock-level Risk Intelligence & risk veto
+        assert "Risk Intelligence &amp; Vetoes" in content
+        assert "5-Factor Quantitative Risk Scorecard" in content
+        assert "Risk Tier" in content
+
+        # 5. Existing portfolio holdings
+        assert "Active Portfolio Position" in content
+        assert "50 Shares" in content
+        assert "₹4000.00" in content
+
+        # 6. Shadow evaluation evidence
+        assert "Shadow Evidence (0)" in content
+        assert "No Shadow Evaluation Records Logged for CONSOLTEST" in content
+
+    def test_stock_shadow_run_view_post(self, client, seeded_stocks):
+        """Test on-demand trigger for shadow evaluation via HTMX POST."""
+        rel = seeded_stocks["rel"]
+        response = client.post(f"/stocks/{rel.symbol}/shadow-run/")
+        assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "Run Shadow Evaluation" in content
+        assert "Forward Shadow Evaluation" in content
+
+    def test_stock_sync_eod_view_post(self, client, seeded_stocks):
+        """Test on-demand EOD market data synchronization endpoint."""
+        rel = seeded_stocks["rel"]
+        response = client.post(
+            f"/stocks/{rel.symbol}/sync-eod/",
+            HTTP_HX_REQUEST="true",
+        )
+        assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "EOD Session:" in content
+        assert "Sync EOD" in content
+
+
+

@@ -449,7 +449,74 @@ flowchart TD
 
 ---
 
-## 11. Performance Benchmarks & Hardware Scaling
+## 11. Automated Shadow Monitoring & Cryptographic Data Integrity (Phase 4.4)
+
+### 11.1 Immutable Cryptographic Ledger (`MLShadowEvaluationRecord`)
+Shadow evaluations decouple model risk classification and forward outcome verification from production heuristics:
+- **Feature Checksum:** SHA-256 hash computed deterministically over normalized feature metrics to guarantee point-in-time snapshot immutability.
+- **Outcome Checksum:** SHA-256 hash computed over forward exit prices ($O_{t+1}, C_{t+5}, C_{t+10}, C_{t+20}$) recorded at maturation.
+- **Lifecycle States:** `PENDING_MATURATION` $\rightarrow$ `MATURED` (or `EXPIRED`, `ERROR`).
+- **Immutability Guarantee:** Records marked `is_matured=True` cannot be overwritten by subsequent pipeline cycles.
+
+### 11.2 Automated End-of-Day Pipeline (`run_shadow_eod_pipeline`)
+1. **Exchange Trading Calendar Verification:** Checks `ExchangeCalendar.is_trading_day()` and confirms session close (15:30 IST). Skips holidays and weekends cleanly.
+2. **Freshness & Provenance Audit:** Validates presence of 1d historical candles and official `^NSEI` benchmark index data.
+3. **Point-in-Time Risk Veto Classification:** Applies `MLRiskVetoEngine` and persists candidate evaluations under transactional atomic locks.
+4. **Realistic Execution & Indian Market Frictions:** Forward returns are filled at next-session open ($O_{t+1}$) and exited at $C_{t+h}$ with statutory taxes deducted via `IndianTaxCalculator` (STT, GST, SEBI fees, Stamp Duty, Brokerage cap) plus dynamic slippage.
+5. **Operational Telemetry:** Emits structured events to `MLMonitoringEvent` and execution records to `MLShadowPipelineRun`.
+
+### 11.3 Per-Horizon State Machine & Forward Integrity (Phase 4.5)
+- **Independent Horizons:** 5d, 10d, and 20d horizons maintain isolated state machines (`PENDING`, `MATURED`, `EXPIRED`, `DATA_UNAVAILABLE`, `ERROR`) with dedicated timestamps and outcome hashes (`source_checksum_5d`, `source_checksum_10d`, `source_checksum_20d`). A 5d maturation never causes a 20d horizon to be marked mature.
+- **Capture Classification:** Observations are partitioned into `FORWARD_CAPTURED`, `HISTORICAL_REPLAY`, and `TEST_FIXTURE`. Backfilled setups for past dates are automatically reclassified to `HISTORICAL_REPLAY` to prevent live forward metric impersonation.
+- **Operational Health States:** Real-time health is derived from actual persisted runs: `HEALTHY`, `WAITING_FOR_DATA`, `STALE`, `DEGRADED`, `FAILED`.
+- **Missed Session Catch-Up:** `detect_missed_sessions()` detects un-evaluated trading days; `--catchup-missed` executes them chronologically.
+- **Concurrency & Security:** File locking (`/tmp/kuberlens_shadow_pipeline.lock`) with automated stale lock cleanup prevents race conditions. Manual execution is strictly restricted to staff and superusers via `UserPassesTestMixin`.
+
+### 11.4 Deployment Verification, Distributed Database Leases & Evidence-Based Forward Capture (Phase 4.6)
+- **Timezone Reconciliation & Automated Scheduling:**
+  - Official NSE/BSE EOD Bhavcopy settles between 18:30 and 19:00 IST. Target automated shadow cycle executes at **19:15 IST** (Mon–Fri).
+  - Explicit UTC reconciliation: $19:15\text{ IST} - 05:30 = \mathbf{13:45\text{ UTC}}$.
+  - Multi-platform deployment assets created: macOS `launchd` plist ([`scripts/com.kuberlens.shadow.eod.plist`](file:///Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/scripts/com.kuberlens.shadow.eod.plist)), Linux `systemd` service & timer ([`scripts/kuberlens-shadow-eod.service`](file:///Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/scripts/kuberlens-shadow-eod.service), [`scripts/kuberlens-shadow-eod.timer`](file:///Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/scripts/kuberlens-shadow-eod.timer)), and timezone-explicit crontab (`CRON_TZ=Asia/Kolkata` `15 19 * * 1-5` or `45 13 * * 1-5` UTC).
+- **Database-Backed Distributed Leases:**
+  - Replaces fragile filesystem lockfiles with `DatabasePipelineLeaseManager` backed by `MLPipelineLease`.
+  - Atomic acquisition via `select_for_update()`, heartbeat renewal (`heartbeat_at`, `expires_at`), re-entrant owner updates, and automated crash recovery (takeover of expired unreleased leases).
+- **Evidence-Based Forward Capture Validation:**
+  - `validate_forward_capture_evidence()` enforces strict causality and post-market execution windows:
+    - Permissible forward window: between 15:30 IST on trading session $t$ and 09:15 IST on next trading session $t+1$.
+    - Pre-close captures (<15:30 IST) and retrospective captures ($\ge$ 09:15 IST next session) are strictly reclassified to `HISTORICAL_REPLAY`.
+    - Clock skew / future data injection (`data_as_of > capture_time`) is reclassified to `HISTORICAL_REPLAY`.
+    - Retrospective `--force` executions are reclassified to `HISTORICAL_REPLAY`.
+    - Genuine `FORWARD_CAPTURED` records are immutable and cannot be overwritten or downgraded by replays.
+- **Acceptance Verdict:** `SCHEDULER_INSTALLED_AWAITING_FIRST_RUN`.
+
+
+### 11.5 Automated Daily EOD Market Data Ingestion & Strict Data Readiness Gate
+- **Automated EOD Ingestion Architecture (`EODIngestionService`):**
+  - Synchronizes daily EOD candlesticks for the 11 pilot equities and the benchmark index (`^NSEI`).
+  - Strict calendar alignment: Non-trading sessions (holidays, weekends) are skipped cleanly (`SKIPPED_HOLIDAY`) without querying remote providers.
+  - Candlestick timestamps normalized to session close (15:30 IST / 10:00 UTC) with authentic `retrieved_at` timestamps for forensic auditability.
+  - Dedicated management command: `python manage.py ingest_eod_data [--session-date YYYY-MM-DD] [--universe ...]`.
+- **Root Cause & Fix for November 23 Zero-Feature Anomaly:**
+  - Audit revealed that 2,684 lookback rows loaded without target session candles on 2026-11-23. Because `--catchup-missed` previously set `force=True`, Stage 1 skipped candle existence checks, yielding 0 session features in Stage 3 which was falsely marked `SUCCESS`.
+  - Remediated by:
+    1. Strict Data Readiness Gate: Stage 1 requires `HistoricalCandle` existence, marking `WAITING_FOR_DATA`.
+    2. Stage 3 Feature Verification: If `df_session.empty`, the pipeline aborts immediately with `FAILED`/`DEGRADED`, never marking `SUCCESS`.
+    3. `--catchup-missed` enforces authentic data readiness (`force=False`).
+    4. Database reconciliation: Rectified false `SUCCESS` record for 2026-11-23 to `WAITING_FOR_DATA`.
+- **Provider Connectivity & Error Resilience:**
+  - Bounded exponential backoff retries (3 attempts) handle transient provider rate-limits (HTTP 429) or network/DNS resolution outages (`socket.gaierror`).
+  - Zero synthetic data creation invariant: Missing data on network outage is never substituted with fake candles; pipeline degrades transparently to `WAITING_FOR_DATA` or `DEGRADED`.
+  - Provider fixes: Resolved yfinance exclusive end-date bug (`end_date + timedelta(days=1)`) and added `^NSEI` index support in Jugaad adapter via `index_df`.
+- **Automated Scheduler Runner Integration:**
+  - Runner script [`scripts/run_shadow_eod_cron.sh`](file:///Users/shreeshagundmi/python_scripts_shreesha/stockmarket_analytics_django/scripts/run_shadow_eod_cron.sh) chains `manage.py ingest_eod_data` before `manage.py run_shadow_eod_pipeline --ingest-eod --catchup-missed`.
+- **Truth in Dashboard Observability:**
+  - `get_pipeline_health_state()` never reports `OPERATIONAL` solely because the scheduler is registered. It accurately reflects `WAITING_FOR_DATA` or `DEGRADED` until EOD market data is genuinely ingested.
+- **Verification Verdict:** `VERIFIED_END_TO_END` (408 / 408 tests passing).
+
+
+---
+
+## 12. Performance Benchmarks & Hardware Scaling
 
 Rather than promising arbitrary unverified execution times, performance criteria are defined as scalable unit throughput bounds:
 - **Feature Pipeline Throughput:** $\ge 50$ stocks/second on single CPU core.
@@ -458,8 +525,8 @@ Rather than promising arbitrary unverified execution times, performance criteria
 
 ---
 
-## 12. Security & Zero Broker Execution Safety
+## 13. Security & Zero Broker Execution Safety
 
 1. **Read-Only Intelligence:** The AI/ML subsystem generates decision-support research only. Under no circumstances does the application place live orders, invoke broker trading APIs, or submit automated trading transactions.
 2. **Untrusted Model Protection:** Serialized artifacts are validated against cryptographically secure SHA-256 checksums before loading into memory.
-3. **Process Isolation:** Training tasks execute in background Celery workers and are strictly decoupled from the web-facing Gunicorn/Django request-response loop.
+3. **Process Isolation:** Training tasks execute in background workers and management commands, strictly decoupled from the web-facing request-response loop.

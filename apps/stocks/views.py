@@ -8,21 +8,38 @@ from decimal import Decimal
 
 from django.db.models import Avg, Max, Min, Sum
 from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
+import pandas as pd
 
 from apps.core.mixins import HTMXResponseMixin
 from apps.fundamental_analysis.models import FundamentalSnapshot
 from apps.holdings.models import Holding
 from apps.instruments.models import ExchangeListing, Instrument
 from apps.market.models import HistoricalCandle, MarketQuote
+from apps.ml_engine.models import (
+    MarketRegimeType,
+    MLPrediction,
+    MLShadowEvaluationRecord,
+    ShadowCaptureMode,
+)
 from apps.portfolio.models import Portfolio
 from apps.stocks.search import smart_stock_search
 from apps.technical_analysis.models import TechnicalIndicatorSnapshot
 from services.indicators.calculator import TechnicalIndicatorCalculator
 from services.logos import CompanyLogoService
 from services.market_data.service import MarketDataService
+from services.ml.engine import MarketRegimeClassifier, StockMLRanker
+from services.ml.features import FeaturePipeline
+from services.ml.risk_engine import (
+    MarketRegimeClassification,
+    MLRiskVetoEngine,
+    RiskVetoAssessment,
+    RiskVetoLevel,
+)
+from services.ml.shadow_service import ShadowEvaluationService
 from services.recommendations.evaluator import RecommendationEvaluator
 
 logger = logging.getLogger(__name__)
@@ -216,6 +233,18 @@ class StockDetailView(HTMXResponseMixin, DetailView):
 
         context["candle_count"] = len(candles)
 
+        latest_candle = candles[-1] if candles else None
+        if latest_candle:
+            context["latest_eod_session"] = latest_candle.timestamp.date()
+            context["latest_eod_close"] = latest_candle.close
+            context["candle_source_provider"] = latest_candle.source_provider
+            context["candle_data_as_of"] = latest_candle.timestamp
+        else:
+            context["latest_eod_session"] = None
+            context["latest_eod_close"] = None
+            context["candle_source_provider"] = None
+            context["candle_data_as_of"] = None
+
         if candles:
             agg = candles_qs.aggregate(high_52w=Max("high"), low_52w=Min("low"))
             context["high_52w"] = agg.get("high_52w")
@@ -357,6 +386,17 @@ class StockDetailView(HTMXResponseMixin, DetailView):
         context["recommendations"] = recommendations
         context["holding"] = holding
 
+        # Position allocation percentage within user portfolio
+        holding_allocation_pct = Decimal("0.00")
+        if holding and total_portfolio_val > 0 and holding.current_value:
+            try:
+                holding_allocation_pct = round(
+                    (holding.current_value / total_portfolio_val) * Decimal("100.0"), 2
+                )
+            except Exception:
+                pass
+        context["holding_allocation_pct"] = holding_allocation_pct
+
         # 7. 5-Year Dividend History & Payout Analytics
         try:
             from services.fundamentals.analyzer import FundamentalAnalyzer
@@ -371,6 +411,80 @@ class StockDetailView(HTMXResponseMixin, DetailView):
 
         context["dividend_history_5y"] = div_history_5y
         context["dividend_summary_5y"] = div_summary_5y
+
+        # 8. Machine Learning Market Regime & Point-in-Time Statistical Predictions
+        ml_prediction = None
+        regime_info = None
+        try:
+            if len(candles) >= 20:
+                ml_prediction = (
+                    MLPrediction.objects.filter(listing=listing)
+                    .select_related("model_record")
+                    .order_by("-prediction_timestamp")
+                    .first()
+                )
+                if not ml_prediction or (latest_candle and ml_prediction.as_of_session < latest_candle.timestamp.date()):
+                    ml_prediction = StockMLRanker.evaluate_and_predict(listing)
+                regime_info = MarketRegimeClassifier.classify_regime(candles)
+        except Exception as e:
+            logger.warning("Could not compute ML prediction for %s: %s", listing.symbol, e)
+
+        context["ml_prediction"] = ml_prediction
+        context["regime_info"] = regime_info
+
+        # 9. Stock-Level Risk Intelligence & Multi-Factor Risk Veto
+        risk_assessment = None
+        try:
+            if len(candles) >= 20:
+                df_records = [{
+                    "session_date": str(c.timestamp.date()),
+                    "close_adj": float(c.close),
+                    "high_adj": float(c.high),
+                    "low_adj": float(c.low),
+                    "open_adj": float(c.open),
+                    "volume_adj": float(c.volume),
+                } for c in candles]
+                df_candles = pd.DataFrame(df_records)
+                fp = FeaturePipeline(warmup_sessions=min(20, len(candles) - 1))
+                df_feat = fp.compute_stock_features(df_candles)
+                if not df_feat.empty:
+                    last_row = df_feat.iloc[-1].to_dict()
+                    last_row["symbol"] = listing.symbol
+                    risk_assessment = MLRiskVetoEngine().assess_setup(last_row)
+
+            if not risk_assessment:
+                risk_assessment = RiskVetoAssessment(
+                    symbol=listing.symbol,
+                    session_date=str(latest_candle.timestamp.date()) if latest_candle else str(timezone.now().date()),
+                    regime=MarketRegimeClassification.SIDEWAYS_CONSOLIDATION,
+                    risk_level=RiskVetoLevel.INSUFFICIENT_DATA,
+                    is_vetoed=True,
+                    risk_score=100.0,
+                    veto_reasons=["Insufficient historical session candles (< 20 sessions) to evaluate risk."],
+                    metrics={},
+                )
+        except Exception as e:
+            logger.warning("Could not assess risk for %s: %s", listing.symbol, e)
+            risk_assessment = RiskVetoAssessment(
+                symbol=listing.symbol,
+                session_date=str(timezone.now().date()),
+                regime=MarketRegimeClassification.SIDEWAYS_CONSOLIDATION,
+                risk_level=RiskVetoLevel.INSUFFICIENT_DATA,
+                is_vetoed=True,
+                risk_score=100.0,
+                veto_reasons=[f"Risk assessment calculation error: {e}"],
+                metrics={},
+            )
+
+        context["risk_assessment"] = risk_assessment
+
+        # 10. Forward Shadow Evaluation Records
+        shadow_records = list(
+            MLShadowEvaluationRecord.objects.filter(listing=listing)
+            .order_by("-session_date")[:10]
+        )
+        context["shadow_records"] = shadow_records
+        context["shadow_count"] = MLShadowEvaluationRecord.objects.filter(listing=listing).count()
 
         return context
 
@@ -418,6 +532,12 @@ class StockChartDataView(View):
                     candles = [c for c in candles if c.timestamp >= start_date]
             except Exception as e:
                 logger.warning("Could not backfill candles for %s: %s", listing.symbol, e)
+
+        # Deduplicate candles by session date to prevent duplicate timestamp errors in lightweight-charts
+        candles_by_date = {}
+        for c in candles:
+            candles_by_date[c.timestamp.date()] = c
+        candles = [candles_by_date[d] for d in sorted(candles_by_date.keys())]
 
         # Pull technical snapshots for moving averages and indicators
         snap_query = TechnicalIndicatorSnapshot.objects.filter(listing=listing, interval=interval)
@@ -722,3 +842,183 @@ class StockQuotePartialView(View):
         return HttpResponse(
             render_to_string("stocks/partials/stock_quote_partial.html", context, request=request)
         )
+
+
+class StockShadowRunView(View):
+    """
+    On-demand single-stock shadow evaluation trigger.
+    Evaluates candidate setups and matures pending horizons for the requested stock.
+    Returns the updated stocks/partials/stock_shadow_pane_partial.html partial for HTMX.
+    """
+    def post(self, request, symbol: str, *args, **kwargs):
+        symbol = symbol.upper()
+        listing = get_object_or_404(
+            ExchangeListing.objects.select_related("instrument", "exchange"),
+            symbol=symbol,
+            is_tradeable=True,
+            is_primary=True,
+        )
+
+        service = ShadowEvaluationService()
+        message = ""
+        try:
+            raw_candles = list(
+                HistoricalCandle.objects.filter(listing=listing)
+                .order_by("timestamp")
+            )
+            # Deduplicate by session date keeping the most recent candle for that session
+            candles_by_date = {}
+            for c in raw_candles:
+                candles_by_date[c.timestamp.date()] = c
+            candles = [candles_by_date[d] for d in sorted(candles_by_date.keys())]
+
+            if len(candles) >= 20:
+                df_records = [{
+                    "session_date": str(c.timestamp.date()),
+                    "close_adj": float(c.close),
+                    "high_adj": float(c.high),
+                    "low_adj": float(c.low),
+                    "open_adj": float(c.open),
+                    "volume_adj": float(c.volume),
+                } for c in candles]
+                df_candles = pd.DataFrame(df_records)
+                fp = FeaturePipeline(warmup_sessions=min(20, len(candles) - 1))
+                df_feat = fp.compute_stock_features(df_candles)
+
+                candidates = []
+                for _, row in df_feat.iterrows():
+                    d = row.to_dict()
+                    d["symbol"] = listing.symbol
+                    p_sma = d.get("price_to_sma200")
+                    rsi = d.get("rsi_14")
+                    stoch_k = d.get("stoch_rsi_k")
+                    if p_sma is not None and rsi is not None and stoch_k is not None:
+                        if p_sma > 0.0 and 35.0 <= rsi <= 50.0 and stoch_k < 25.0:
+                            candidates.append(d)
+
+                recorded = 0
+                if candidates:
+                    df_c = pd.DataFrame(candidates)
+                    records = service.record_session_candidates(
+                        df_c,
+                        source_provider="AUTHENTIC_EOD",
+                        capture_mode=ShadowCaptureMode.FORWARD_CAPTURED,
+                        force=True,
+                    )
+                    recorded = len(records)
+
+                price_df = pd.DataFrame([{
+                    "symbol": listing.symbol,
+                    "session_date": str(c.timestamp.date()),
+                    "open_adj": float(c.open),
+                    "close_adj": float(c.close),
+                    "open_raw": float(c.open),
+                    "close_raw": float(c.close),
+                } for c in candles])
+                matured = service.mature_pending_evaluations(price_df)
+
+                if recorded > 0 or matured > 0:
+                    message = f"Shadow evaluation completed: {recorded} new setup(s) logged, {matured} horizon(s) matured."
+                else:
+                    message = f"Shadow evaluation checked {len(candles)} sessions: 0 setups met the pullback criteria (RSI 35–50 above SMA-200)."
+            else:
+                message = f"Insufficient session candles ({len(candles)} < 20) to compute shadow indicators."
+        except Exception as e:
+            logger.exception("Error running on-demand shadow evaluation for %s: %s", symbol, e)
+            message = f"Evaluation executed with notice: {e}"
+
+        shadow_records = list(
+            MLShadowEvaluationRecord.objects.filter(listing=listing)
+            .order_by("-session_date")[:10]
+        )
+        total_count = MLShadowEvaluationRecord.objects.filter(listing=listing).count()
+
+        context = {
+            "listing": listing,
+            "shadow_records": shadow_records,
+            "shadow_count": total_count,
+            "execution_message": message,
+        }
+        return render(request, "stocks/partials/stock_shadow_pane_partial.html", context)
+
+
+class StockSyncEODView(View):
+    """
+    On-demand single-stock EOD market data synchronization.
+    Fetches the latest completed daily candles from exchange providers (YAHOO / JUGAAD)
+    up to the latest trading session, upserts them with provenance tracking,
+    and refreshes the stock detail view.
+    """
+    def post(self, request, symbol: str, *args, **kwargs):
+        symbol = symbol.upper()
+        listing = get_object_or_404(
+            ExchangeListing.objects.select_related("instrument", "exchange"),
+            symbol=symbol,
+            is_tradeable=True,
+            is_primary=True,
+        )
+
+        from datetime import datetime, timedelta
+        from services.calendar.exchange_calendar import ExchangeCalendar
+        from services.market_data.historical_pipeline import HistoricalDataIngestionPipeline
+
+        now_ist = datetime.now(ExchangeCalendar.IST)
+        latest_trading_day = (
+            now_ist.date()
+            if now_ist.time() >= ExchangeCalendar.MARKET_CLOSE_TIME
+            else ExchangeCalendar.get_last_trading_day(now_ist.date())
+        )
+
+        latest_candle = HistoricalCandle.objects.filter(listing=listing).order_by("-timestamp").first()
+        start_date = (
+            latest_candle.timestamp.date() - timedelta(days=7)
+            if latest_candle
+            else (latest_trading_day - timedelta(days=365))
+        )
+
+        sync_msg = ""
+        try:
+            pipeline = HistoricalDataIngestionPipeline(
+                provider_code="YAHOO",
+                verify_against_calendar=True,
+            )
+            checkpoint = pipeline.ingest_listing_history(
+                listing=listing,
+                start_date=start_date,
+                end_date=latest_trading_day,
+                interval="1d",
+            )
+            if checkpoint.status == "SUCCESS":
+                sync_msg = f"Synced {checkpoint.total_candles_ingested} candle(s) through {checkpoint.last_ingested_date or latest_trading_day}."
+            else:
+                sync_msg = f"Sync status: {checkpoint.error_message or 'Up to date'}"
+        except Exception as e:
+            logger.warning("YAHOO sync failed for %s: %s; trying JUGAAD fallback", symbol, e)
+            try:
+                pipeline_fb = HistoricalDataIngestionPipeline(
+                    provider_code="JUGAAD",
+                    verify_against_calendar=True,
+                )
+                checkpoint_fb = pipeline_fb.ingest_listing_history(
+                    listing=listing,
+                    start_date=start_date,
+                    end_date=latest_trading_day,
+                    interval="1d",
+                )
+                sync_msg = f"Synced via JUGAAD: {checkpoint_fb.total_candles_ingested} candle(s)."
+            except Exception as exc:
+                logger.error("All providers failed to sync EOD for %s: %s", symbol, exc)
+                sync_msg = f"Sync notice: {e}"
+
+        # If HTMX request, delegate to StockDetailView
+        if request.headers.get("HX-Request") == "true" or getattr(request, "htmx", False):
+            detail_view = StockDetailView()
+            detail_view.setup(request, symbol=symbol, *args, **kwargs)
+            detail_view.object = listing
+            context = detail_view.get_context_data(object=listing)
+            context["sync_message"] = sync_msg
+            return render(request, "stocks/partials/stock_detail_partial.html", context)
+
+        return redirect("stocks:stock_detail", symbol=symbol)
+
+

@@ -545,52 +545,62 @@ class TradingViewStockChart {
         const stochDData = [];
         const atrData = [];
 
+        const seenDates = new Set();
         for (const c of this.rawCandles) {
-            const time = c.time;
-            candleData.push({ time, open: c.open, high: c.high, low: c.low, close: c.close });
+            const time = normalizeChartDate(c.time);
+            if (!time || seenDates.has(time)) continue;
 
-            const isUp = c.close >= c.open;
+            const open = typeof c.open === 'number' ? c.open : parseFloat(c.open);
+            const high = typeof c.high === 'number' ? c.high : parseFloat(c.high);
+            const low = typeof c.low === 'number' ? c.low : parseFloat(c.low);
+            const close = typeof c.close === 'number' ? c.close : parseFloat(c.close);
+            if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) continue;
+
+            seenDates.add(time);
+            candleData.push({ time, open, high, low, close });
+
+            const isUp = close >= open;
+            const vol = typeof c.volume === 'number' ? c.volume : parseInt(c.volume || 0, 10);
             volumeData.push({
                 time,
-                value: c.volume,
+                value: isNaN(vol) ? 0 : vol,
                 color: isUp ? 'rgba(8, 153, 129, 0.25)' : 'rgba(242, 54, 69, 0.25)',
             });
 
-            if (c.sma20 !== null && c.sma20 !== undefined) sma20Data.push({ time, value: c.sma20 });
-            if (c.sma50 !== null && c.sma50 !== undefined) sma50Data.push({ time, value: c.sma50 });
-            if (c.sma200 !== null && c.sma200 !== undefined) sma200Data.push({ time, value: c.sma200 });
-            if (c.ema9 !== null && c.ema9 !== undefined) ema9Data.push({ time, value: c.ema9 });
-            if (c.ema20 !== null && c.ema20 !== undefined) ema20Data.push({ time, value: c.ema20 });
-            if (c.ema50 !== null && c.ema50 !== undefined) ema50Data.push({ time, value: c.ema50 });
-            if (c.vwap !== null && c.vwap !== undefined) vwapData.push({ time, value: c.vwap });
+            if (c.sma20 !== null && c.sma20 !== undefined && !isNaN(c.sma20)) sma20Data.push({ time, value: Number(c.sma20) });
+            if (c.sma50 !== null && c.sma50 !== undefined && !isNaN(c.sma50)) sma50Data.push({ time, value: Number(c.sma50) });
+            if (c.sma200 !== null && c.sma200 !== undefined && !isNaN(c.sma200)) sma200Data.push({ time, value: Number(c.sma200) });
+            if (c.ema9 !== null && c.ema9 !== undefined && !isNaN(c.ema9)) ema9Data.push({ time, value: Number(c.ema9) });
+            if (c.ema20 !== null && c.ema20 !== undefined && !isNaN(c.ema20)) ema20Data.push({ time, value: Number(c.ema20) });
+            if (c.ema50 !== null && c.ema50 !== undefined && !isNaN(c.ema50)) ema50Data.push({ time, value: Number(c.ema50) });
+            if (c.vwap !== null && c.vwap !== undefined && !isNaN(c.vwap)) vwapData.push({ time, value: Number(c.vwap) });
 
-            // SuperTrend (Clean segmented lines using whitespace breaks)
-            if (c.supertrend !== null && c.supertrend !== undefined) {
+            // SuperTrend
+            if (c.supertrend !== null && c.supertrend !== undefined && !isNaN(c.supertrend)) {
                 if (c.supertrend_dir === 1) {
-                    stBullData.push({ time, value: c.supertrend });
-                    stBearData.push({ time });
+                    stBullData.push({ time, value: Number(c.supertrend) });
                 } else {
-                    stBearData.push({ time, value: c.supertrend });
-                    stBullData.push({ time });
+                    stBearData.push({ time, value: Number(c.supertrend) });
                 }
             }
 
             // Parabolic SAR
-            if (c.sar !== null && c.sar !== undefined) sarData.push({ time, value: c.sar });
+            if (c.sar !== null && c.sar !== undefined && !isNaN(c.sar)) sarData.push({ time, value: Number(c.sar) });
 
-            if (c.bb_upper !== null && c.bb_upper !== undefined) bbUpperData.push({ time, value: c.bb_upper });
-            if (c.bb_lower !== null && c.bb_lower !== undefined) bbLowerData.push({ time, value: c.bb_lower });
-            if (c.resistance !== null && c.resistance !== undefined) donchianUpperData.push({ time, value: c.resistance });
-            if (c.support !== null && c.support !== undefined) donchianLowerData.push({ time, value: c.support });
-            if (c.rsi14 !== null && c.rsi14 !== undefined) rsiData.push({ time, value: c.rsi14 });
-            if (c.macd_line !== null && c.macd_line !== undefined) macdLineData.push({ time, value: c.macd_line });
-            if (c.macd_signal !== null && c.macd_signal !== undefined) macdSignalData.push({ time, value: c.macd_signal });
-            if (c.macd_hist !== null && c.macd_hist !== undefined) {
-                macdHistData.push({ time, value: c.macd_hist, color: c.macd_hist >= 0 ? '#089981' : '#f23645' });
+            if (c.bb_upper !== null && c.bb_upper !== undefined && !isNaN(c.bb_upper)) bbUpperData.push({ time, value: Number(c.bb_upper) });
+            if (c.bb_lower !== null && c.bb_lower !== undefined && !isNaN(c.bb_lower)) bbLowerData.push({ time, value: Number(c.bb_lower) });
+            if (c.resistance !== null && c.resistance !== undefined && !isNaN(c.resistance)) donchianUpperData.push({ time, value: Number(c.resistance) });
+            if (c.support !== null && c.support !== undefined && !isNaN(c.support)) donchianLowerData.push({ time, value: Number(c.support) });
+            if (c.rsi14 !== null && c.rsi14 !== undefined && !isNaN(c.rsi14)) rsiData.push({ time, value: Number(c.rsi14) });
+            if (c.macd_line !== null && c.macd_line !== undefined && !isNaN(c.macd_line)) macdLineData.push({ time, value: Number(c.macd_line) });
+            if (c.macd_signal !== null && c.macd_signal !== undefined && !isNaN(c.macd_signal)) macdSignalData.push({ time, value: Number(c.macd_signal) });
+            if (c.macd_hist !== null && c.macd_hist !== undefined && !isNaN(c.macd_hist)) {
+                const val = Number(c.macd_hist);
+                macdHistData.push({ time, value: val, color: val >= 0 ? '#089981' : '#f23645' });
             }
-            if (c.stoch_k !== null && c.stoch_k !== undefined) stochKData.push({ time, value: c.stoch_k });
-            if (c.stoch_d !== null && c.stoch_d !== undefined) stochDData.push({ time, value: c.stoch_d });
-            if (c.atr14 !== null && c.atr14 !== undefined) atrData.push({ time, value: c.atr14 });
+            if (c.stoch_k !== null && c.stoch_k !== undefined && !isNaN(c.stoch_k)) stochKData.push({ time, value: Number(c.stoch_k) });
+            if (c.stoch_d !== null && c.stoch_d !== undefined && !isNaN(c.stoch_d)) stochDData.push({ time, value: Number(c.stoch_d) });
+            if (c.atr14 !== null && c.atr14 !== undefined && !isNaN(c.atr14)) atrData.push({ time, value: Number(c.atr14) });
         }
 
         // Apply Chart Types
@@ -898,8 +908,21 @@ class TradingViewStockChart {
         if (type === this.currentChartType) return;
         this.currentChartType = type;
 
-        const candleData = this.rawCandles.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }));
-        const lineData = this.rawCandles.map(c => ({ time: c.time, value: c.close }));
+        const seenDates = new Set();
+        const candleData = [];
+        const lineData = [];
+        for (const c of this.rawCandles) {
+            const time = normalizeChartDate(c.time);
+            if (!time || seenDates.has(time)) continue;
+            const open = typeof c.open === 'number' ? c.open : parseFloat(c.open);
+            const high = typeof c.high === 'number' ? c.high : parseFloat(c.high);
+            const low = typeof c.low === 'number' ? c.low : parseFloat(c.low);
+            const close = typeof c.close === 'number' ? c.close : parseFloat(c.close);
+            if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) continue;
+            seenDates.add(time);
+            candleData.push({ time, open, high, low, close });
+            lineData.push({ time, value: close });
+        }
 
         if (type === 'candlestick') {
             if (this.areaSeries) this.areaSeries.applyOptions({ visible: false });

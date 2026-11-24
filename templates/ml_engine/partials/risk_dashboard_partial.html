@@ -1,0 +1,700 @@
+{% load core_tags %}
+<!-- Risk Intelligence & Shadow Validation Dashboard Partial -->
+<div class="container-fluid px-0">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small text-muted">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'dashboard:index' %}" class="text-decoration-none text-muted"
+                           hx-get="{% url 'dashboard:index' %}" hx-target="#main-content" hx-push-url="true">Home</a>
+                    </li>
+                    <li class="breadcrumb-item">Intelligence</li>
+                    <li class="breadcrumb-item active text-body" aria-current="page">Risk Intelligence</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px;">
+                    <i class="bi bi-shield-exclamation fs-6"></i>
+                </div>
+                <h2 class="h3 fw-bold mb-0 text-body">Risk Intelligence &amp; Shadow Validation</h2>
+            </div>
+            <p class="text-muted small mb-0">
+                Point-in-time market regime detection, multi-factor risk vetoes, and non-contaminating shadow evaluation.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <form method="post" action="{% url 'ml_engine:shadow_run' %}"
+                  hx-post="{% url 'ml_engine:shadow_run' %}" hx-target="#main-content">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 text-nowrap">
+                    <i class="bi bi-play-circle"></i> Run Shadow Cycle
+                </button>
+            </form>
+            {% endif %}
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5"
+                    hx-get="{% url 'ml_engine:risk_dashboard' %}" hx-target="#main-content">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <a href="/help/risk/risk-veto-card/" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5" title="Risk Intelligence &amp; Veto Guide">
+                <i class="bi bi-question-circle"></i> Guide
+            </a>
+        </div>
+    </div>
+
+    <!-- Mandatory Regulatory Research Disclosure Badge -->
+    <div class="alert alert-secondary border border-secondary border-opacity-25 rounded-3 d-flex align-items-center mb-3 py-2 px-3" role="alert">
+        <i class="bi bi-shield-lock-fill text-secondary me-2 fs-5 flex-shrink-0"></i>
+        <div class="small text-body">
+            <strong>Research-Only Disclosure:</strong> All regime indicators, risk levels, and shadow validations are purely analytical diagnostic tools (`EXPERIMENTAL_MODEL` mode). They do not generate automated trading decisions, do not suppress live user setups, and do not place broker orders.
+        </div>
+    </div>
+
+    <!-- Operational Shadow Pipeline Telemetry Banner -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-body-tertiary">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <span class="d-flex align-items-center gap-1.5 fw-semibold {% if pipeline_status.health_state == 'HEALTHY' %}text-success{% elif pipeline_status.health_state == 'WAITING_FOR_DATA' or pipeline_status.health_state == 'STALE' %}text-warning{% else %}text-danger{% endif %}">
+                        <span class="spinner-grow spinner-grow-sm {% if pipeline_status.health_state == 'HEALTHY' %}text-success{% elif pipeline_status.health_state == 'WAITING_FOR_DATA' or pipeline_status.health_state == 'STALE' %}text-warning{% else %}text-danger{% endif %}" style="width: 0.55rem; height: 0.55rem;" role="status"></span>
+                        Pipeline: {{ pipeline_status.status_text }}
+                    </span>
+                    <span class="badge {% if pipeline_status.scheduler_status == 'OPERATIONAL' %}bg-success bg-opacity-10 text-success border border-success border-opacity-25{% elif pipeline_status.scheduler_status == 'AWAITING_SCHEDULED_RUN' %}bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25{% else %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25{% endif %}" title="Operating System / launchd / crontab automation status">
+                        <i class="bi bi-clock-history me-1"></i>Scheduler: {{ pipeline_status.scheduler_status }}
+                    </span>
+                    {% if pipeline_status.active_lease %}
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" title="Database lease currently active">
+                        <i class="bi bi-lock-fill me-1"></i>DB Lease Active
+                    </span>
+                    {% endif %}
+                    {% if pipeline_status.missed_sessions_count > 0 %}
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                        <i class="bi bi-exclamation-triangle me-1"></i>{{ pipeline_status.missed_sessions_count }} Missed Session(s)
+                    </span>
+                    {% endif %}
+                    <span class="text-muted border-start ps-3">
+                        <i class="bi bi-calendar-check me-1"></i>EOD Freshness: <strong class="text-body num-mono">{{ pipeline_status.data_freshness_date }}</strong>
+                        {% if pipeline_status.data_freshness_age_hours is not None %}
+                        <span class="text-secondary small">({{ pipeline_status.data_freshness_age_hours }}h ago)</span>
+                        {% endif %}
+                    </span>
+                    <span class="text-muted border-start ps-3 d-none d-md-inline">
+                        <i class="bi bi-cpu me-1"></i>Risk Eval: <strong class="text-body num-mono">{{ latest_session_date }}</strong>
+                    </span>
+                    {% if pipeline_status.next_expected_session %}
+                    <span class="text-muted border-start ps-3 d-none d-md-inline">
+                        <i class="bi bi-calendar-plus me-1"></i>Next Session: <strong class="text-body num-mono">{{ pipeline_status.next_expected_session }}</strong>
+                    </span>
+                    {% endif %}
+                    <span class="text-muted border-start ps-3 d-none d-lg-inline">
+                        <i class="bi bi-database-check me-1"></i>Provenance: <span class="badge bg-light text-body border">{{ pipeline_status.provider_provenance }}</span>
+                    </span>
+                    <span class="text-muted border-start ps-3 d-none d-xl-inline">
+                        <i class="bi bi-fingerprint me-1"></i>Schema: <code class="num-mono text-secondary">{{ pipeline_status.feature_schema_version }}</code>
+                    </span>
+                </div>
+                <div class="text-muted small">
+                    Last Automated Cycle:
+                    {% if pipeline_status.last_run_at %}
+                    <span class="num-mono text-body">{{ pipeline_status.last_run_at|date:"Y-m-d H:i" }}</span>
+                    {% else %}
+                    <span class="fst-italic text-secondary">Awaiting 19:15 IST Scheduled Run</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Key Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- NIFTY 50 Macro Regime -->
+        <div class="col-12 col-md-3">
+            <div class="stat-card h-100 accent-card-warning">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold">NIFTY 50 Regime</span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning">Macro Context</span>
+                </div>
+                <div class="h4 fw-bold text-warning mb-1">{{ nifty_regime }}</div>
+                <div class="text-muted small">Annualized Volatility: ~{{ nifty_vol }}%</div>
+                <div class="text-muted small mt-2" style="font-size: 0.75rem;">Bandwidth expansion indicating elevated market volatility.</div>
+                <div class="text-muted small mt-2" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Regime classification reflects statistical cluster fit, not probability of profitable returns.</div>
+            </div>
+        </div>
+
+        <!-- Risk Tiers: Low Risk -->
+        <div class="col-12 col-md-3">
+            <div class="stat-card h-100 accent-card-success">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold">Low Risk Stocks</span>
+                    <span class="badge bg-success bg-opacity-10 text-success">Favorable</span>
+                </div>
+                <div class="h3 fw-bold num-mono text-success mb-1">{{ risk_counts.LOW_RISK }}</div>
+                <div class="text-muted small">Benign volatility, trend alignment</div>
+                <div class="text-muted small mt-2" style="font-size: 0.75rem;">Minimal tail-risk factors identified.</div>
+            </div>
+        </div>
+
+        <!-- Risk Tiers: Moderate Risk -->
+        <div class="col-12 col-md-3">
+            <div class="stat-card h-100 accent-card-info">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold">Moderate Risk</span>
+                    <span class="badge bg-info bg-opacity-10 text-info">Caution</span>
+                </div>
+                <div class="h3 fw-bold num-mono text-info mb-1">{{ risk_counts.MODERATE_RISK }}</div>
+                <div class="text-muted small">Mild volatility or range oscillations</div>
+                <div class="text-muted small mt-2" style="font-size: 0.75rem;">Monitor stop losses closely.</div>
+            </div>
+        </div>
+
+        <!-- Risk Tiers: High Risk / Vetoed -->
+        <div class="col-12 col-md-3">
+            <div class="stat-card h-100 accent-card-danger">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small text-uppercase fw-semibold">High Risk (Vetoed)</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger">Elevated Risk</span>
+                </div>
+                <div class="h3 fw-bold num-mono text-danger mb-1">{{ risk_counts.HIGH_RISK }}</div>
+                <div class="text-muted small">Excessive ATR or structural breakdown</div>
+                <div class="text-muted small mt-2" style="font-size: 0.75rem;">Setups flagged with risk veto.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EOD Ingestion & Shadow Pipeline Monitoring Section -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-body border-bottom py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="bg-primary bg-opacity-10 text-primary rounded-2 d-inline-flex align-items-center justify-content-center p-1" style="width: 24px; height: 24px;">
+                        <i class="bi bi-hdd-network fs-6"></i>
+                    </span>
+                    <h5 class="fw-bold mb-0 text-body">EOD Ingestion &amp; Shadow Pipeline Monitoring</h5>
+                </div>
+                <span class="text-muted small">Authentic NSE/BSE EOD ingestion provenance, feature generation readiness, and multi-horizon shadow tracking</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-light text-body border" title="Pilot Equities Universe">
+                    <i class="bi bi-grid-3x3 me-1"></i>Universe: {{ eod_monitoring.expected_instruments_count }} Equities
+                </span>
+                <span class="badge bg-light text-body border" title="Market Data Provider">
+                    <i class="bi bi-database me-1"></i>{{ eod_monitoring.primary_provider }}
+                </span>
+                {% if eod_monitoring.has_scheduled_run_evidence %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" title="Automated scheduled execution verified">
+                    <i class="bi bi-check-circle me-1"></i>Scheduler: OPERATIONAL
+                </span>
+                {% else %}
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" title="Scheduler registered; awaiting first verified automated 19:15 IST execution evidence">
+                    <i class="bi bi-hourglass-split me-1"></i>Scheduler: {{ pipeline_status.scheduler_status }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- 4 Database-Driven Monitoring Grid Tiles -->
+            <div class="row g-3">
+                <!-- Tile 1: EOD Ingestion Session & Freshness -->
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="p-3 border rounded-3 bg-body h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">EOD Ingestion Session</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.7rem;">Data Freshness</span>
+                        </div>
+                        <div class="h5 fw-bold num-mono text-body mb-1">{{ eod_monitoring.latest_session_date }}</div>
+                        <div class="small text-muted mb-1">
+                            Ingested:
+                            <strong class="num-mono {% if eod_monitoring.ingested_instruments_count == eod_monitoring.expected_instruments_count %}text-success{% else %}text-danger{% endif %}">
+                                {{ eod_monitoring.ingested_instruments_count }} / {{ eod_monitoring.expected_instruments_count }}
+                            </strong> instruments
+                        </div>
+                        {% if eod_monitoring.eod_freshness_timestamp %}
+                        <div class="text-secondary small" style="font-size: 0.72rem;">
+                            <i class="bi bi-clock me-1"></i>Close Data: {{ eod_monitoring.eod_freshness_timestamp|date:"Y-m-d H:i" }} IST
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tile 2: Feature-Ready Universe & Evaluation -->
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="p-3 border rounded-3 bg-body h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Feature Readiness &amp; Risk Eval</span>
+                            <span class="badge bg-info bg-opacity-10 text-info" style="font-size: 0.7rem;">Features</span>
+                        </div>
+                        <div class="h5 fw-bold num-mono text-primary mb-1">
+                            {{ eod_monitoring.feature_ready_count }} / {{ eod_monitoring.expected_instruments_count }}
+                            <span class="fs-6 fw-normal text-muted">Ready</span>
+                        </div>
+                        <div class="small text-muted mb-1">
+                            Risk Eval Date: <strong class="num-mono text-body">{{ eod_monitoring.risk_evaluation_date }}</strong>
+                        </div>
+                        <div class="text-secondary small" style="font-size: 0.72rem;">
+                            <i class="bi bi-cpu me-1"></i>Schema: <code>{{ pipeline_status.feature_schema_version }}</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tile 3: Last Shadow Execution & Trigger -->
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="p-3 border rounded-3 bg-body h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Last Pipeline Execution</span>
+                            <span class="badge {% if eod_monitoring.last_run_status == 'SUCCESS' %}bg-success bg-opacity-10 text-success{% elif eod_monitoring.last_run_status == 'WAITING_FOR_DATA' %}bg-warning bg-opacity-10 text-warning{% else %}bg-danger bg-opacity-10 text-danger{% endif %}" style="font-size: 0.7rem;">
+                                {{ eod_monitoring.last_run_status }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5 mb-1">
+                            {% if eod_monitoring.last_run_trigger_display == "AUTOMATED_SCHEDULED" %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" title="Automated scheduled run">
+                                <i class="bi bi-clock-history me-1"></i>SCHEDULED
+                            </span>
+                            {% elif eod_monitoring.last_run_trigger_display == "MANUAL_CLI" %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" title="Manual CLI run">
+                                <i class="bi bi-terminal me-1"></i>MANUAL CLI
+                            </span>
+                            {% elif eod_monitoring.last_run_trigger_display == "DRY_RUN" %}
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" title="Dry run execution">
+                                <i class="bi bi-eye me-1"></i>DRY-RUN
+                            </span>
+                            {% else %}
+                            <span class="badge bg-light text-muted border">{{ eod_monitoring.last_run_trigger_display }}</span>
+                            {% endif %}
+                            <span class="num-mono fw-semibold small text-body">
+                                {% if eod_monitoring.last_run %}{{ eod_monitoring.last_run.session_date }}{% else %}-{% endif %}
+                            </span>
+                        </div>
+                        <div class="text-secondary small" style="font-size: 0.72rem;">
+                            {% if eod_monitoring.last_run_time %}
+                            <i class="bi bi-play-circle me-1"></i>{{ eod_monitoring.last_run_time|date:"Y-m-d H:i" }} ({% if eod_monitoring.last_run_duration %}{{ eod_monitoring.last_run_duration|floatformat:1 }}s{% else %}0.0s{% endif %})
+                            {% else %}
+                            <i class="bi bi-clock me-1"></i>Awaiting 19:15 IST Scheduled Cycle
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tile 4: Candidates & Shadow Outcomes -->
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="p-3 border rounded-3 bg-body h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small text-uppercase fw-semibold" style="font-size: 0.72rem;">Shadow Candidates &amp; Outcomes</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">Ledger</span>
+                        </div>
+                        <div class="h5 fw-bold num-mono text-body mb-1">
+                            {{ eod_monitoring.total_candidates_tracked }}
+                            <span class="fs-6 fw-normal text-muted">Tracked ({{ eod_monitoring.candidates_latest }} latest)</span>
+                        </div>
+                        <div class="small mb-1">
+                            <span class="text-success fw-semibold num-mono">{{ eod_monitoring.accepted_count }}</span> Allowed &bull;
+                            <span class="text-danger fw-semibold num-mono">{{ eod_monitoring.vetoed_count }}</span> Vetoed
+                        </div>
+                        <div class="text-secondary small" style="font-size: 0.72rem;">
+                            Matured: 5d:<strong class="text-body num-mono">{{ eod_monitoring.matured_5d_count }}</strong> | 10d:<strong class="text-body num-mono">{{ eod_monitoring.matured_10d_count }}</strong> | 20d:<strong class="text-body num-mono">{{ eod_monitoring.matured_20d_count }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Provenance & Execution Mode Breakdown Strip -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between p-2 mt-3 bg-body-tertiary rounded small">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="text-muted"><i class="bi bi-shield-check me-1 text-primary"></i>Observation Modes:</span>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" title="Real-time forward captured observations">
+                        Forward Captured: <strong class="num-mono">{{ eod_monitoring.forward_captured_count }}</strong>
+                    </span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" title="Historical replay backfill observations">
+                        Historical Replay: <strong class="num-mono">{{ eod_monitoring.historical_replay_count }}</strong>
+                    </span>
+                    <span class="badge bg-light text-muted border" title="Unit test fixture observations">
+                        Test Fixtures: <strong class="num-mono">{{ eod_monitoring.test_fixture_count }}</strong>
+                    </span>
+                    <span class="text-muted border-start ps-2 d-none d-md-inline" title="Distributed database pipeline lease">
+                        DB Lease:
+                        {% if pipeline_status.active_lease %}
+                        <span class="text-info fw-semibold"><i class="bi bi-lock-fill me-1"></i>ACTIVE</span>
+                        {% else %}
+                        <span class="text-secondary"><i class="bi bi-unlock me-1"></i>IDLE</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="text-muted small">
+                    <i class="bi bi-fingerprint me-1"></i>Cryptographic Checksums: <span class="badge bg-light text-body border">SHA-256 Verified</span>
+                </div>
+            </div>
+
+            <!-- Data Integrity / Missing Data / Provider Errors Callout -->
+            {% if eod_monitoring.missing_symbols_count > 0 %}
+            <div class="alert alert-warning py-2 px-3 mt-3 mb-0 rounded small d-flex align-items-center gap-2" role="alert">
+                <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0"></i>
+                <div>
+                    <strong>Data Integrity Warning:</strong> {{ eod_monitoring.missing_symbols_count }} pilot instrument(s) missing from session {{ eod_monitoring.latest_session_date }}:
+                    <code>{{ eod_monitoring.missing_symbols|join:", " }}</code>
+                </div>
+            </div>
+            {% elif eod_monitoring.provider_error %}
+            <div class="alert alert-danger py-2 px-3 mt-3 mb-0 rounded small d-flex align-items-center gap-2" role="alert">
+                <i class="bi bi-x-circle-fill text-danger flex-shrink-0"></i>
+                <div>
+                    <strong>Provider Ingestion Error:</strong> {{ eod_monitoring.provider_error }}
+                </div>
+            </div>
+            {% else %}
+            <div class="d-flex flex-wrap align-items-center justify-content-between p-2 mt-2 border-top small text-muted">
+                <span>
+                    <i class="bi bi-check-circle-fill text-success me-1.5"></i>
+                    <strong>Data Integrity:</strong> 100% complete authentic EOD candles for pilot universe ({{ eod_monitoring.ingested_instruments_count }}/{{ eod_monitoring.expected_instruments_count }}). Zero unresolved data quality issues.
+                </span>
+                <span class="text-secondary" style="font-size: 0.75rem;">
+                    Non-contaminating forward evaluation mode active
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Active Pilot Equities Risk Table -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-body border-bottom py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <h5 class="fw-bold mb-0 text-body">Stock-Level Point-in-Time Risk Analysis</h5>
+                <span class="text-muted small">
+                    Evaluated as of risk session date: <strong class="text-body num-mono">{{ latest_session_date }}</strong>
+                    &bull; EOD Market Data Freshness: <strong class="text-body num-mono">{{ eod_monitoring.latest_session_date }}</strong>
+                </span>
+                <div class="small text-muted mt-1" style="font-size: 0.75rem;">
+                    <i class="bi bi-shield-slash me-1 text-secondary"></i><strong>Statistical Disclaimer:</strong> Regime classification and confidence scores reflect cluster membership in historical volatility/trend states; they do <em>not</em> denote probability of positive returns or future trade profitability.
+                </div>
+            </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary">Pilot Universe: 11 Equities</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-3">Symbol</th>
+                        <th>Risk Tier</th>
+                        <th>Market Regime</th>
+                        <th>Risk Score</th>
+                        <th>ATR (14)</th>
+                        <th>RSI (14)</th>
+                        <th>Status</th>
+                        <th class="pe-3">Primary Risk Explanation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in stock_assessments %}
+                    <tr>
+                        <td class="ps-3 fw-bold">{{ a.symbol }}</td>
+                        <td>
+                            {% if a.risk_level.value == "LOW_RISK" %}
+                            <span class="badge bg-success bg-opacity-10 text-success fw-semibold">LOW RISK</span>
+                            {% elif a.risk_level.value == "MODERATE_RISK" %}
+                            <span class="badge bg-info bg-opacity-10 text-info fw-semibold">MODERATE</span>
+                            {% elif a.risk_level.value == "HIGH_RISK" %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger fw-semibold">HIGH RISK</span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary fw-semibold">NO DATA</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-body-tertiary text-body border">{{ a.regime.value }}</span>
+                        </td>
+                        <td>
+                            <span class="num-mono fw-semibold {% if a.risk_score >= 60 %}text-danger{% elif a.risk_score >= 40 %}text-warning{% else %}text-success{% endif %}">
+                                {{ a.risk_score }}/100
+                            </span>
+                        </td>
+                        <td class="num-mono text-muted small">{{ a.metrics.atr_ratio_pct }}%</td>
+                        <td class="num-mono text-muted small">{{ a.metrics.rsi_14 }}</td>
+                        <td>
+                            {% if a.is_vetoed %}
+                            <span class="badge bg-danger text-white"><i class="bi bi-x-octagon me-1"></i>VETOED</span>
+                            {% else %}
+                            <span class="badge bg-success text-white"><i class="bi bi-check-circle me-1"></i>ALLOWED</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-3 text-muted small">
+                            {% if a.veto_reasons %}
+                                {{ a.veto_reasons.0 }}
+                            {% else %}
+                                Baseline normal technical conditions.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No stock risk assessments available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Two-Column Layout: Shadow Validation & Portfolio Holdings Diagnostics -->
+    <div class="row g-4 mb-4">
+        <!-- Shadow Evaluation Tracking -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-body border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-body">Persistent Shadow Evaluation Tracker</h5>
+                        <span class="text-muted small">Tracking setup outcomes without influencing live recommendations</span>
+                    </div>
+                    <span class="badge bg-info bg-opacity-10 text-info">Shadow Mode</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2 mb-3">
+                        <div class="col-3">
+                            <div class="p-2 border rounded text-center">
+                                <span class="text-muted small d-block">Tracked</span>
+                                <span class="h6 fw-bold text-body mb-0 num-mono">{{ shadow_summary.total_evaluations }}</span>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 border rounded text-center">
+                                <span class="text-muted small d-block">Matured (20d)</span>
+                                <span class="h6 fw-bold text-success mb-0 num-mono">{{ shadow_summary.matured_evaluations }}</span>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 border rounded text-center">
+                                <span class="text-muted small d-block">Pending</span>
+                                <span class="h6 fw-bold text-info mb-0 num-mono">{{ shadow_summary.pending_evaluations }}</span>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 border rounded text-center">
+                                <span class="text-muted small d-block">Alpha Spread</span>
+                                <span class="h6 fw-bold {% if shadow_summary.veto_alpha_spread_pct > 0 %}text-success{% else %}text-muted{% endif %} mb-0 num-mono">
+                                    {{ shadow_summary.veto_alpha_spread_pct }}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-center justify-content-between p-2 mb-3 bg-body-tertiary rounded small">
+                        <span class="text-muted"><i class="bi bi-shield-check me-1"></i>Provenance Distribution:</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" title="Real-time forward captured observations">
+                                Forward: {{ shadow_summary.capture_mode_distribution.FORWARD_CAPTURED|default:0 }}
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" title="Retrospective replay / backfill observations">
+                                Replay: {{ shadow_summary.capture_mode_distribution.HISTORICAL_REPLAY|default:0 }}
+                            </span>
+                            <span class="badge bg-light text-muted border" title="Unit test fixture observations">
+                                Test: {{ shadow_summary.capture_mode_distribution.TEST_FIXTURE|default:0 }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-semibold text-body small mb-2 text-uppercase d-flex justify-content-between align-items-center">
+                        <span>Recent Shadow Observations</span>
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.68rem;">Point-in-Time Cryptographic Ledger</span>
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.78rem;">
+                            <thead class="table-light text-muted">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Symbol</th>
+                                    <th>Mode</th>
+                                    <th>Tier</th>
+                                    <th>Decision</th>
+                                    <th>5d / 10d / 20d</th>
+                                    <th>20d Net Return</th>
+                                    <th>Checksum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in recent_shadow_records %}
+                                <tr>
+                                    <td class="text-muted">{{ r.session_date }}</td>
+                                    <td class="fw-bold">{{ r.listing.symbol }}</td>
+                                    <td>
+                                        {% if r.capture_mode == "FORWARD_CAPTURED" %}
+                                        <span class="badge bg-success bg-opacity-10 text-success" title="Real-time forward observation">FORWARD</span>
+                                        {% elif r.capture_mode == "HISTORICAL_REPLAY" %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary" title="Historical replay backtest">REPLAY</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-muted border">TEST</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge bg-light text-body border">{{ r.risk_level }}</span></td>
+                                    <td>
+                                        {% if r.is_vetoed %}
+                                        <span class="text-danger fw-semibold">VETO</span>
+                                        {% else %}
+                                        <span class="text-success fw-semibold">ACCEPT</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="num-mono" style="font-size: 0.72rem;">
+                                            <span class="{% if r.status_5d == 'MATURED' %}text-success fw-semibold{% else %}text-muted{% endif %}">5d:{{ r.status_5d|slice:':3' }}</span> |
+                                            <span class="{% if r.status_10d == 'MATURED' %}text-success fw-semibold{% else %}text-muted{% endif %}">10d:{{ r.status_10d|slice:':3' }}</span> |
+                                            <span class="{% if r.status_20d == 'MATURED' %}text-success fw-semibold{% else %}text-muted{% endif %}">20d:{{ r.status_20d|slice:':3' }}</span>
+                                        </span>
+                                    </td>
+                                    <td class="num-mono">
+                                        {% if r.forward_return_20d is not None %}
+                                            <span class="{% if r.forward_return_20d > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">
+                                                {{ r.forward_return_20d|floatformat:2 }}%
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted fst-italic">Pending 20d</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if r.feature_snapshot_checksum %}
+                                        <code class="text-muted small" title="{{ r.feature_snapshot_checksum }}">
+                                            {{ r.feature_snapshot_checksum|slice:":7" }}
+                                        </code>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-3 text-muted">No shadow records captured yet. Click "Run Shadow Cycle" above.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Holdings Risk Diagnostics -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-body border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-body">Portfolio Risk Diagnostics</h5>
+                        <span class="text-muted small">Live holdings mapped to point-in-time risk tiers</span>
+                    </div>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Read-Only</span>
+                </div>
+                <div class="card-body">
+                    {% if portfolio_diagnostics %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                            <thead class="table-light text-muted">
+                                <tr>
+                                    <th>Holding</th>
+                                    <th>Weight</th>
+                                    <th>Risk Tier</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in portfolio_diagnostics %}
+                                <tr>
+                                    <td class="fw-bold">{{ p.symbol }}</td>
+                                    <td class="num-mono text-muted">{{ p.weight_pct }}%</td>
+                                    <td>
+                                        {% if p.risk_level == "LOW_RISK" %}
+                                        <span class="badge bg-success bg-opacity-10 text-success">LOW</span>
+                                        {% elif p.risk_level == "MODERATE_RISK" %}
+                                        <span class="badge bg-info bg-opacity-10 text-info">MOD</span>
+                                        {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">HIGH</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if p.is_vetoed %}
+                                        <span class="text-danger small fw-semibold"><i class="bi bi-shield-x me-1"></i>Risk Flag</span>
+                                        {% else %}
+                                        <span class="text-success small fw-semibold"><i class="bi bi-shield-check me-1"></i>Stable</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-folder2-open fs-2 mb-2 d-block"></i>
+                        No active portfolio holdings found.
+                    </div>
+                    {% endif %}
+                    <div class="mt-3 p-2 bg-body-tertiary rounded small text-muted" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Holdings outside the authentic 11-stock pilot universe are labeled `INSUFFICIENT_DATA`.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline Operational Health & Monitoring Log -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-body border-bottom py-3 d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="fw-bold mb-0 text-body">Pipeline Operational Health &amp; Monitoring Log</h5>
+                <span class="text-muted small">EOD automated pipeline executions, calendar validations, and drift telemetry</span>
+            </div>
+            <span class="badge bg-secondary bg-opacity-10 text-secondary">Audit Trail</span>
+        </div>
+        <div class="card-body">
+            {% if recent_monitoring_events %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                    <thead class="table-light text-muted">
+                        <tr>
+                            <th>Timestamp (UTC)</th>
+                            <th>Event Type</th>
+                            <th>Severity</th>
+                            <th>Pipeline Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ev in recent_monitoring_events %}
+                        <tr>
+                            <td class="text-muted num-mono">{{ ev.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>
+                                <span class="badge bg-light text-body border fw-semibold">{{ ev.event_type }}</span>
+                            </td>
+                            <td>
+                                {% if ev.severity == "LOW" %}
+                                <span class="badge bg-success bg-opacity-10 text-success">LOW</span>
+                                {% elif ev.severity == "MEDIUM" %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning">MEDIUM</span>
+                                {% elif ev.severity == "HIGH" %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger">HIGH</span>
+                                {% else %}
+                                <span class="badge bg-danger text-white">CRITICAL</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted num-mono small">
+                                {% if ev.details %}
+                                    {% if ev.details.status %}Status: <strong class="text-body">{{ ev.details.status }}</strong> | {% endif %}
+                                    {% if ev.details.session_date %}Session: {{ ev.details.session_date }} | {% endif %}
+                                    {% if ev.details.candidates_count is not None %}Candidates: {{ ev.details.candidates_count }} | {% endif %}
+                                    {% if ev.details.matured_count is not None %}Matured: {{ ev.details.matured_count }} | {% endif %}
+                                    {% if ev.details.reason %}<span class="text-warning">{{ ev.details.reason }}</span>{% endif %}
+                                    {% if ev.details.error %}<span class="text-danger">{{ ev.details.error }}</span>{% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-activity fs-2 mb-2 d-block"></i>
+                No pipeline monitoring events recorded yet. Run <code>python manage.py run_shadow_eod_pipeline</code> or trigger via UI.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

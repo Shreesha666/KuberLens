@@ -22,7 +22,9 @@ media/
 backups/
 models/**/*.joblib
 models/**/*.parquet
+models/**/*.csv
 models/artifacts/
+models/datasets/
 
 # Static collected
 staticfiles/
